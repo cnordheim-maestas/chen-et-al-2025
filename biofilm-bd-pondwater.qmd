@@ -1,33 +1,66 @@
 ---
 title: "Biofilm Bd Update"
 author: "Caitlin Nordheim-Maestas"
-format: html
-
+format:
+  html:
+    toc: true
+    code-fold: true
+    toc-location: left
 ---
 
 # About the data
 
-### Dataset 1: "9 sites Biofilm on Bd"
+## Dataset 1: Lab Bd innoculation on East Bay Biofilms - "9 sites"
 
-- X variables: day (0, 1, 7), site
-- Y variables: Bd quantity, Bd reduction
+### Purpose: Compare Bd uptake(?) in field-collected biofilms over time
 
-### Dataset 2: "fifteen-sites-PW-on-Bd"
 
-Purpose: look at the change in Bd from day 1 - day 7, and across microbe presence/absence
+### Discussion points: 
+
+1. should we remove the control before analyses? How should we use this control data? 
+
+2. How to account for site? Paired tests/ repeated measures? It's not truly repeated measured because not on the same sample, but it is from the same initial water sample? Ancova with random effect for site?
+
+Columns:
+
+- day (0, 1, 7)
+- site (n=1 per site)
+- bd quantity
+- bd location (in biofilm or in supernatant)
+
+### Potential questions to answer explored here:
+
+Q1: does the amount of Bd in the biofilm differ from day 1 to day 7 overall? - paired t-test
+
+Q2: does the amount of Bd in the supernatant differ from day 1 to day 7 overall? - paired t-test
+
+Q3: Is there a difference in Bd in the biofilm between day 0, 1, 7? - repeated measures anova?
+
+Q3: Is there a difference in Bd in the supernatant between day 0, 1, 7? - repeated measures anova?
+
+
+## Dataset 2: Pond water addition to Bd-monolayer biofilm - 15 sites
+
+### Purpose: How does pond water (and it's microbes) impact Monolayer Bd?
+
+look at the change in Bd from day 1 - day 7, and across microbe presence/absence
+
+This experiment took pond water from 15 East Bay sites in Spring 2022 back to the lab, filtered the pond water to keep or remove the microbes, and added the pond water to lab-cultured Bd-monoculture-biofilms. Two biofilms per water treatment, one destructively sampled day 1, and one destructively sampled day 7 for qPCR quantification of Bd in the supernatant and the biofilm itself. 
 
 - X variables: day (1, 7), microbe presence/absence, bd location, site
 - Y variables: bd quantity
 
-# Data visulaization
+
+# Data wrangling
 
 ```{r}
 #| warning: false
-#| echo: false
 
 ## read in and clean data
 library(tidyverse) # for cleaning and viewing data
 library(here) # for importing data
+library(ggpubr)
+library(rstatix)
 
 ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
 fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
@@ -35,43 +68,55 @@ fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
 # data type cleaning
 ns_biofilm_bd$site <- as.factor(ns_biofilm_bd$site)
 ns_biofilm_bd$bd_location <- factor(ns_biofilm_bd$bd_location, levels = c("supernatant", "biofilm"))
-ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"),
-                            labels = c("Day 0", "Day 1", "Day 7"))
+ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"), 
+                            labels = c("Day_0", "Day_1", "Day_7")) # ,
+                            
 
 # data type cleaning
 fs_pw_bd$bd_location <- factor(fs_pw_bd$bd_location, levels = c("floating", "adherent"))
 fs_pw_bd$filter <- factor(fs_pw_bd$filter,
                           levels = c("40um_filter", "0.22um_filter"))
 fs_pw_bd$day <- factor(fs_pw_bd$day, levels = c("1", "7"),
-                            labels = c("Day 1", "Day 7"))
-fs_pw_bd$site <- factor(fs_pw_bd$site,
-                          levels = c("BARN", "CABIN", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "GRAMPS", "NORTH", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "WEST", "sterile MQ"))
+                            labels = c("Day_1", "Day_7"))
+
+fs_pw_bd$site <- factor(fs_pw_bd$site)
+
 ```
 
-## Visualize 9 sites biofilm data
+# Data visulaization
+
+R recreations of Renwei's excel barplots
+
+## Dataset 1: Lab Bd innoculation on East Bay Biofilms - "9 sites"
 
 ```{r}
 ns_biofilm_bd %>%
 ggplot(aes(y= log10(bd_qty), x = site, fill=bd_location)) + 
     geom_col() +
     facet_grid(.~day)+
-    theme(axis.text.x = element_text(angle = 90)) + 
+    theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") + 
     xlab("Site") +
-  ggtitle("9 Sites Biofilm on Bd")
+  ggtitle("Lab Bd innoculation on East Bay Biofilms - 9 sites")
 ```
 
-## Visualize 15 sites pondwater bd data
+## Dataset 2: Pond water addition to Bd-monolayer biofilm - 15 sites
 
 ### not log scale
 
 ```{r}
+# reorder levels to match Renwei's plot
+fs_pw_bd$site <- factor(fs_pw_bd$site,
+                          levels = c("BARN", "CABIN", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "GRAMPS", "NORTH", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "WEST", "sterile MQ"))
+
 fs_pw_bd %>%
 ggplot(aes(y= bd_qty, x = site, fill=bd_location)) + 
     geom_col() +
     facet_grid(filter~day)+
-    theme(axis.text.x = element_text(angle = 90)) + 
+    theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") + 
     xlab("Site") +
-  ggtitle("fifteen-sites-PW-on-Bd")
+  ggtitle("UNTRANSFORMED Pond water addition to Bd-monolayer biofilm - 15 sites")
 ```
 
 ### log scale
@@ -81,7 +126,293 @@ fs_pw_bd %>%
 ggplot(aes(y= log10(bd_qty), x = site, fill=bd_location)) + 
     geom_col() +
     facet_grid(filter~day)+
-    theme(axis.text.x = element_text(angle = 90)) +
+   theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") + 
     xlab("Site") +
-  ggtitle("fifteen-sites-PW-on-Bd")
+  ggtitle("LOG + 1 TRANSFORMED Pond water addition to Bd-monolayer biofilm - 15 sites")
 ```
+
+# EDA
+
+## Dataset 1: Lab Bd innoculation on East Bay Biofilms - "9 sites"
+
+Overarching question: Does the amount of Bd in the biofilm or supernatant differ across days?
+
+Boxplot of Bd quantity across days #1
+
+```{r}
+ns_biofilm_bd %>%
+  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold"),
+        legend.position = "bottom") +
+  ggtitle(" Lab Bd innoculation on East Bay Biofilms - '9 sites' ")
+
+```
+Boxplot of Bd quantity across days #2: faceted by Bd location to show trends within Bd location
+
+```{r}
+ns_biofilm_bd %>%
+  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
+  geom_boxplot() +
+  theme_classic() +
+  facet_wrap(~bd_location) +
+  theme(axis.title = element_text(size = 12, face = "bold"),
+        legend.position = "bottom") +
+  ggtitle(" Lab Bd innoculation on East Bay Biofilms - '9 sites' ")
+```
+Looks like Bd in supernatant goes down over time, but Bd in the biofilm first increases then decreases. I wonder if these changes from day to day are significant, but am not sure of the proper anova-like test. 
+
+Let's look at the distributions of the Bd in biofilms and supernatant
+
+```{r}
+# all data biofilms
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>% #filter out only bd in biofilm
+  ggplot(aes(x = log(bd_qty +1))) +
+  geom_histogram(position = "identity",  bins=30) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold")) +
+  ggtitle("Bd in BIOFILMS from 9 site experiment")
+
+# faceted by day
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>% #filter out only bd in biofilm
+  ggplot(aes(x = log(bd_qty +1))) +
+  geom_histogram(position = "identity",  bins=30) +
+  facet_wrap(~day) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold")) +
+  ggtitle("Bd in BIOFILMS from 9 site experiment")
+
+# all data supernatant
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>% #filter out only bd in biofilm
+  ggplot(aes(x = log(bd_qty +1))) +
+  geom_histogram(position = "identity",  bins=30) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold")) +
+  ggtitle("Bd in SUPERNATANT from 9 site experiment")
+
+# faceted by day
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>% #filter out only bd in biofilm
+  ggplot(aes(x = log(bd_qty +1))) +
+  geom_histogram(position = "identity", bins=30) +
+  facet_wrap(~day) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold")) +
+  ggtitle("Bd in SUPERNATANT from 9 site experiment")
+
+```
+
+Now let's check out the qqPlots of Bd in biofilms and supernatant
+
+```{r}
+# whole dataset
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  mutate(log_qty = log(bd_qty +1)) %>%
+ggqqplot("log_qty", title = "Bd in biofilm qqPlot")
+
+# per day
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  mutate(log_qty = log(bd_qty +1)) %>%
+ggqqplot("log_qty", facet.by = "day", title = "Bd in biofilm qqPlot")
+
+# difference between day 1 and day 7
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7) %>%
+  mutate(log_diff = log(diff +1)) %>%
+  ggqqplot("log_diff", title = "Bd in biofilm diff between day 1 and 7 qqPlot")
+
+# whole dataset
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  mutate(log_qty = log(bd_qty +1)) %>%
+ggqqplot("log_qty", title = "Bd in SUPERNATANT qqPlot")
+
+# per day
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  mutate(log_qty = log(bd_qty +1)) %>%
+ggqqplot("log_qty", facet.by = "day", title = "Bd in SUPERNATANT qqPlot")
+
+# difference between day 1 and day 7
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7) %>%
+  mutate(log_diff = log(diff +1)) %>%
+  ggqqplot("log_diff", title = "Bd in supernatant diff between day 1 and 7 qqPlot")
+
+```
+
+# Assumptions testing and Stats
+
+### Q1: does the amount of Bd in the biofilm differ from day 1 to day 7 overall? 
+
+*Rationale: Only comparing day 1 and 7 because we only have day 1 and 7 in the next experiment, and I thought it made the most sense to be consistent. Later on I try to ask about all of the days.*
+
+Paired t-test
+
+**Yes, there was significantly more Bd in the biofilm on day 1 than day 7 (paired t-test, p = 7.55e-05). Mention log-transformation somewhere in here.** 
+
+Assumptions of paired t-test:
+
+1. Assumes that the observations from each group represent a *random sample* from the population.  
+2. Assumes that the *difference* of the two observations follow a *normal distribution*.  
+
+**Question for Cherie:** In biometry we just check the normality of the x variable in each group, do we need to take the difference here and test that? I did, but not sure if it's necessary
+
+Shapiro-wilks tests
+
+```{r}
+# shapiro - wilks test: all Bd biofilm
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  mutate(log_bd_qty = log(bd_qty +1)) %>%
+  group_by(day) %>%
+  shapiro_test(log_bd_qty) # day 0 not normal
+
+# shapiro - wilks test: difference in day 1 and day 7
+ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7) %>%
+  mutate(log_diff = log(diff +1)) %>%
+  shapiro_test(log_diff) # normal
+
+```
+
+Paired t-test code
+
+```{r}
+#### paired t-test between day 1 and 7
+d1 <- ns_biofilm_bd %>% 
+  filter(bd_location == "biofilm") %>%
+  filter(day == "Day_1")
+
+d7 <- ns_biofilm_bd %>% 
+  filter(bd_location == "biofilm") %>%
+  filter(day == "Day_7")
+
+t.test(d1$bd_qty, d7$bd_qty, paired = TRUE)
+```
+
+## Q2: does the amount of Bd in the supernatant differ from day 1 to day 7 overall? Paired t-test
+
+**Yes, there was significantly more Bd in the supernatant on day 1 than day 7 (paired t-test, p = 0.00363). Mention log transformation too** 
+
+*Rationale: Only comparing day 1 and 7 because we only have day 1 and 7 in the next experiment, and I thought it made the most sense to be consistent. Later on I try to ask about all of the days.*
+
+Paired t-test
+
+**Yes, there was significantly more Bd in the supernatant on day 1 than day 7 (paired t-test, p = 0.00363). Mention log-transformation somewhere in here.** 
+
+Assumptions of paired t-test:
+
+1. Assumes that the observations from each group represent a *random sample* from the population.  
+2. Assumes that the *difference* of the two observations follow a *normal distribution*.  
+
+**Question for Cherie:** In biometry we just check the normality of the x variable in each group, do we need to take the difference here and test that? I did, but not sure if it's necessary
+
+Shapiro-wilks tests
+
+```{r}
+# shapiro - wilks test: all Bd biofilm
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  mutate(log_bd_qty = log(bd_qty +1)) %>%
+  group_by(day) %>%
+  shapiro_test(log_bd_qty) # all good
+
+# shapiro - wilks test: difference in day 1 and day 7
+ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7) %>%
+  mutate(log_diff = log(diff +1)) %>%
+  shapiro_test(log_diff) # normal
+
+```
+
+Paired t-test code
+
+```{r}
+#### paired t-test between day 1 and 7
+d1 <- ns_biofilm_bd %>% 
+  filter(bd_location == "supernatant") %>%
+  filter(day == "Day_1")
+
+d7 <- ns_biofilm_bd %>% 
+  filter(bd_location == "supernatant") %>%
+  filter(day == "Day_7")
+
+t.test(d1$bd_qty, d7$bd_qty, paired = TRUE)
+```
+
+
+## Q3: Is there a difference in Bd in the biofilm between day 0, 1, 7? 
+
+Repeated Measures ANOVA ?? Is there a better way to do this?
+
+**Take with a lot of salt, not super confident in this one**
+
+Unfamiliar with this test and package, but at first try, looks like there is a difference in Bd in the biofilm across days. Looks like the pairwise comparisons are that day 0 and 1 are different, day 1 and 7 are different, but 0 and 7 are not for the amount of biofilm (after p adjustment). 
+
+Unfamiliar test and function to me, followed this tutorial: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
+
+```{r}
+
+# anova
+biofilm_only <- ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  mutate(log_qty = log(bd_qty +1))
+res.aov <- anova_test(data = biofilm_only, dv = log_qty, wid = site, within = day)
+get_anova_table(res.aov) # ges is the generalized effect size (amount of variability due to the within-subjects factor)
+
+# pairwise comparison: pairwise ttest with bonferroni correction
+pwc <- ns_biofilm_bd %>%
+  filter(bd_location == "biofilm") %>%
+  mutate(log_qty = log(bd_qty +1)) %>%
+  pairwise_t_test(
+    log_qty ~ day, paired = TRUE,
+    p.adjust.method = "bonferroni"
+    )
+pwc
+
+```
+
+### Q4: Is there a difference in Bd in the supernatant between day 0, 1, 7? Repeated Measures ANOVA ?? Is there a better way to do this?
+
+**Take with a lot of salt, not super confident in this one**
+
+Unfamiliar with this test and package, but at first try, looks like there is a difference in Bd in the biofilm across days. Looks like the pairwise comparisons are that all days are different from each other in the supernatant. 
+
+Unfamiliar test and function to me, followed this tutorial: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
+
+```{r}
+
+super_only <- ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  mutate(log_qty = log(bd_qty +1))
+res.aov <- anova_test(data = super_only, dv = log_qty, wid = site, within = day)
+get_anova_table(res.aov) # ges is the generalized effect size (amount of variability due to the within-subjects factor)
+
+# pairwise comparison: pairwise ttest with bonferroni correction
+pwc <- ns_biofilm_bd %>%
+  filter(bd_location == "supernatant") %>%
+  mutate(log_qty = log(bd_qty +1)) %>%
+  pairwise_t_test(
+    log_qty ~ day, paired = TRUE,
+    p.adjust.method = "bonferroni"
+    )
+pwc
+
+```
+

@@ -72,10 +72,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="fullcontent">
+<body>
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#about-the-data" id="toc-about-the-data" class="nav-link active" data-scroll-target="#about-the-data">About the data</a>
+  <ul class="collapse">
+  <li><a href="#dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites" id="toc-dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites" class="nav-link" data-scroll-target="#dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites">Dataset 1: Lab Bd innoculation on East Bay Biofilms - “9 sites”</a>
+  <ul class="collapse">
+  <li><a href="#purpose-compare-bd-uptake-in-field-collected-biofilms-over-time" id="toc-purpose-compare-bd-uptake-in-field-collected-biofilms-over-time" class="nav-link" data-scroll-target="#purpose-compare-bd-uptake-in-field-collected-biofilms-over-time">Purpose: Compare Bd uptake(?) in field-collected biofilms over time</a></li>
+  <li><a href="#discussion-points" id="toc-discussion-points" class="nav-link" data-scroll-target="#discussion-points">Discussion points:</a></li>
+  <li><a href="#potential-questions-to-answer-explored-here" id="toc-potential-questions-to-answer-explored-here" class="nav-link" data-scroll-target="#potential-questions-to-answer-explored-here">Potential questions to answer explored here:</a></li>
+  </ul></li>
+  <li><a href="#dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites" id="toc-dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites" class="nav-link" data-scroll-target="#dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites">Dataset 2: Pond water addition to Bd-monolayer biofilm - 15 sites</a>
+  <ul class="collapse">
+  <li><a href="#purpose-how-does-pond-water-and-its-microbes-impact-monolayer-bd" id="toc-purpose-how-does-pond-water-and-its-microbes-impact-monolayer-bd" class="nav-link" data-scroll-target="#purpose-how-does-pond-water-and-its-microbes-impact-monolayer-bd">Purpose: How does pond water (and it’s microbes) impact Monolayer Bd?</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#data-wrangling" id="toc-data-wrangling" class="nav-link" data-scroll-target="#data-wrangling">Data wrangling</a></li>
+  <li><a href="#data-visulaization" id="toc-data-visulaization" class="nav-link" data-scroll-target="#data-visulaization">Data visulaization</a>
+  <ul class="collapse">
+  <li><a href="#dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-1" id="toc-dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-1" class="nav-link" data-scroll-target="#dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-1">Dataset 1: Lab Bd innoculation on East Bay Biofilms - “9 sites”</a></li>
+  <li><a href="#dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites-1" id="toc-dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites-1" class="nav-link" data-scroll-target="#dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites-1">Dataset 2: Pond water addition to Bd-monolayer biofilm - 15 sites</a>
+  <ul class="collapse">
+  <li><a href="#not-log-scale" id="toc-not-log-scale" class="nav-link" data-scroll-target="#not-log-scale">not log scale</a></li>
+  <li><a href="#log-scale" id="toc-log-scale" class="nav-link" data-scroll-target="#log-scale">log scale</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda">EDA</a>
+  <ul class="collapse">
+  <li><a href="#dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-2" id="toc-dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-2" class="nav-link" data-scroll-target="#dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-2">Dataset 1: Lab Bd innoculation on East Bay Biofilms - “9 sites”</a></li>
+  </ul></li>
+  <li><a href="#assumptions-testing-and-stats" id="toc-assumptions-testing-and-stats" class="nav-link" data-scroll-target="#assumptions-testing-and-stats">Assumptions testing and Stats</a>
+  <ul class="collapse">
+  <li><a href="#q1-does-the-amount-of-bd-in-the-biofilm-differ-from-day-1-to-day-7-overall" id="toc-q1-does-the-amount-of-bd-in-the-biofilm-differ-from-day-1-to-day-7-overall" class="nav-link" data-scroll-target="#q1-does-the-amount-of-bd-in-the-biofilm-differ-from-day-1-to-day-7-overall">Q1: does the amount of Bd in the biofilm differ from day 1 to day 7 overall?</a></li>
+  <li><a href="#q2-does-the-amount-of-bd-in-the-supernatant-differ-from-day-1-to-day-7-overall-paired-t-test" id="toc-q2-does-the-amount-of-bd-in-the-supernatant-differ-from-day-1-to-day-7-overall-paired-t-test" class="nav-link" data-scroll-target="#q2-does-the-amount-of-bd-in-the-supernatant-differ-from-day-1-to-day-7-overall-paired-t-test">Q2: does the amount of Bd in the supernatant differ from day 1 to day 7 overall? Paired t-test</a></li>
+  <li><a href="#q3-is-there-a-difference-in-bd-in-the-biofilm-between-day-0-1-7" id="toc-q3-is-there-a-difference-in-bd-in-the-biofilm-between-day-0-1-7" class="nav-link" data-scroll-target="#q3-is-there-a-difference-in-bd-in-the-biofilm-between-day-0-1-7">Q3: Is there a difference in Bd in the biofilm between day 0, 1, 7?</a>
+  <ul class="collapse">
+  <li><a href="#q4-is-there-a-difference-in-bd-in-the-supernatant-between-day-0-1-7-repeated-measures-anova-is-there-a-better-way-to-do-this" id="toc-q4-is-there-a-difference-in-bd-in-the-supernatant-between-day-0-1-7-repeated-measures-anova-is-there-a-better-way-to-do-this" class="nav-link" data-scroll-target="#q4-is-there-a-difference-in-bd-in-the-supernatant-between-day-0-1-7-repeated-measures-anova-is-there-a-better-way-to-do-this">Q4: Is there a difference in Bd in the supernatant between day 0, 1, 7? Repeated Measures ANOVA ?? Is there a better way to do this?</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -103,51 +148,120 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="about-the-data" class="level1">
 <h1>About the data</h1>
-<section id="dataset-1-9-sites-biofilm-on-bd" class="level3">
-<h3 class="anchored" data-anchor-id="dataset-1-9-sites-biofilm-on-bd">Dataset 1: “9 sites Biofilm on Bd”</h3>
+<section id="dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites">Dataset 1: Lab Bd innoculation on East Bay Biofilms - “9 sites”</h2>
+<section id="purpose-compare-bd-uptake-in-field-collected-biofilms-over-time" class="level3">
+<h3 class="anchored" data-anchor-id="purpose-compare-bd-uptake-in-field-collected-biofilms-over-time">Purpose: Compare Bd uptake(?) in field-collected biofilms over time</h3>
+</section>
+<section id="discussion-points" class="level3">
+<h3 class="anchored" data-anchor-id="discussion-points">Discussion points:</h3>
+<ol type="1">
+<li><p>should we remove the control before analyses? How should we use this control data?</p></li>
+<li><p>How to account for site? Paired tests/ repeated measures? It’s not truly repeated measured because not on the same sample, but it is from the same initial water sample? Ancova with random effect for site?</p></li>
+</ol>
+<p>Columns:</p>
 <ul>
-<li>X variables: day (0, 1, 7), site</li>
-<li>Y variables: Bd quantity, Bd reduction</li>
+<li>day (0, 1, 7)</li>
+<li>site (n=1 per site)</li>
+<li>bd quantity</li>
+<li>bd location (in biofilm or in supernatant)</li>
 </ul>
 </section>
-<section id="dataset-2-fifteen-sites-pw-on-bd" class="level3">
-<h3 class="anchored" data-anchor-id="dataset-2-fifteen-sites-pw-on-bd">Dataset 2: “fifteen-sites-PW-on-Bd”</h3>
-<p>Purpose: look at the change in Bd from day 1 - day 7, and across microbe presence/absence</p>
+<section id="potential-questions-to-answer-explored-here" class="level3">
+<h3 class="anchored" data-anchor-id="potential-questions-to-answer-explored-here">Potential questions to answer explored here:</h3>
+<p>Q1: does the amount of Bd in the biofilm differ from day 1 to day 7 overall? - paired t-test</p>
+<p>Q2: does the amount of Bd in the supernatant differ from day 1 to day 7 overall? - paired t-test</p>
+<p>Q3: Is there a difference in Bd in the biofilm between day 0, 1, 7? - repeated measures anova?</p>
+<p>Q3: Is there a difference in Bd in the supernatant between day 0, 1, 7? - repeated measures anova?</p>
+</section>
+</section>
+<section id="dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites">Dataset 2: Pond water addition to Bd-monolayer biofilm - 15 sites</h2>
+<section id="purpose-how-does-pond-water-and-its-microbes-impact-monolayer-bd" class="level3">
+<h3 class="anchored" data-anchor-id="purpose-how-does-pond-water-and-its-microbes-impact-monolayer-bd">Purpose: How does pond water (and it’s microbes) impact Monolayer Bd?</h3>
+<p>look at the change in Bd from day 1 - day 7, and across microbe presence/absence</p>
+<p>This experiment took pond water from 15 East Bay sites in Spring 2022 back to the lab, filtered the pond water to keep or remove the microbes, and added the pond water to lab-cultured Bd-monoculture-biofilms. Two biofilms per water treatment, one destructively sampled day 1, and one destructively sampled day 7 for qPCR quantification of Bd in the supernatant and the biofilm itself.</p>
 <ul>
 <li>X variables: day (1, 7), microbe presence/absence, bd location, site</li>
 <li>Y variables: bd quantity</li>
 </ul>
 </section>
 </section>
+</section>
+<section id="data-wrangling" class="level1">
+<h1>Data wrangling</h1>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## read in and clean data</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse) <span class="co"># for cleaning and viewing data</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here) <span class="co"># for importing data</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggpubr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstatix)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"nine-sites-biofilm-on-Bd - Sheet1.csv"</span>))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>fs_pw_bd <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"fifteen-sites-PW-on-Bd - Sheet1.csv"</span>))</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># data type cleaning</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd<span class="sc">$</span>site <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(ns_biofilm_bd<span class="sc">$</span>site)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd<span class="sc">$</span>bd_location <span class="ot">&lt;-</span> <span class="fu">factor</span>(ns_biofilm_bd<span class="sc">$</span>bd_location, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"supernatant"</span>, <span class="st">"biofilm"</span>))</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd<span class="sc">$</span>day <span class="ot">&lt;-</span> <span class="fu">factor</span>(ns_biofilm_bd<span class="sc">$</span>day, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"0"</span>, <span class="st">"1"</span>, <span class="st">"7"</span>), </span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Day_0"</span>, <span class="st">"Day_1"</span>, <span class="st">"Day_7"</span>)) <span class="co"># ,</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>                            </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># data type cleaning</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>fs_pw_bd<span class="sc">$</span>bd_location <span class="ot">&lt;-</span> <span class="fu">factor</span>(fs_pw_bd<span class="sc">$</span>bd_location, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"floating"</span>, <span class="st">"adherent"</span>))</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>fs_pw_bd<span class="sc">$</span>filter <span class="ot">&lt;-</span> <span class="fu">factor</span>(fs_pw_bd<span class="sc">$</span>filter,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>                          <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"40um_filter"</span>, <span class="st">"0.22um_filter"</span>))</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>fs_pw_bd<span class="sc">$</span>day <span class="ot">&lt;-</span> <span class="fu">factor</span>(fs_pw_bd<span class="sc">$</span>day, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"1"</span>, <span class="st">"7"</span>),</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>                            <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Day_1"</span>, <span class="st">"Day_7"</span>))</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>fs_pw_bd<span class="sc">$</span>site <span class="ot">&lt;-</span> <span class="fu">factor</span>(fs_pw_bd<span class="sc">$</span>site)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
 <section id="data-visulaization" class="level1">
 <h1>Data visulaization</h1>
-<section id="visualize-9-sites-biofilm-data" class="level2">
-<h2 class="anchored" data-anchor-id="visualize-9-sites-biofilm-data">Visualize 9 sites biofilm data</h2>
+<p>R recreations of Renwei’s excel barplots</p>
+<section id="dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-1" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-1">Dataset 1: Lab Bd innoculation on East Bay Biofilms - “9 sites”</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y=</span> <span class="fu">log10</span>(bd_qty), <span class="at">x =</span> site, <span class="at">fill=</span>bd_location)) <span class="sc">+</span> </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(.<span class="sc">~</span>day)<span class="sc">+</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>)) <span class="sc">+</span> </span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Site"</span>) <span class="sc">+</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"9 Sites Biofilm on Bd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y=</span> <span class="fu">log10</span>(bd_qty), <span class="at">x =</span> site, <span class="at">fill=</span>bd_location)) <span class="sc">+</span> </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(.<span class="sc">~</span>day)<span class="sc">+</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span> </span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Site"</span>) <span class="sc">+</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Lab Bd innoculation on East Bay Biofilms - 9 sites"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output-display">
 <p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 </section>
-<section id="visualize-15-sites-pondwater-bd-data" class="level2">
-<h2 class="anchored" data-anchor-id="visualize-15-sites-pondwater-bd-data">Visualize 15 sites pondwater bd data</h2>
+<section id="dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites-1" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-2-pond-water-addition-to-bd-monolayer-biofilm---15-sites-1">Dataset 2: Pond water addition to Bd-monolayer biofilm - 15 sites</h2>
 <section id="not-log-scale" class="level3">
 <h3 class="anchored" data-anchor-id="not-log-scale">not log scale</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>fs_pw_bd <span class="sc">%&gt;%</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y=</span> bd_qty, <span class="at">x =</span> site, <span class="at">fill=</span>bd_location)) <span class="sc">+</span> </span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(filter<span class="sc">~</span>day)<span class="sc">+</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>)) <span class="sc">+</span> </span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Site"</span>) <span class="sc">+</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"fifteen-sites-PW-on-Bd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># reorder levels to match Renwei's plot</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>fs_pw_bd<span class="sc">$</span>site <span class="ot">&lt;-</span> <span class="fu">factor</span>(fs_pw_bd<span class="sc">$</span>site,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"BARN"</span>, <span class="st">"CABIN"</span>, <span class="st">"GDPND004"</span>, <span class="st">"GDPND005"</span>, <span class="st">"GDPND006"</span>, <span class="st">"GDPND008"</span>, <span class="st">"GDPND009"</span>, <span class="st">"GRAMPS"</span>, <span class="st">"NORTH"</span>, <span class="st">"PRPND002"</span>, <span class="st">"PRPND003"</span>, <span class="st">"PRPND004"</span>, <span class="st">"PRPND009"</span>, <span class="st">"PRPND010"</span>, <span class="st">"WEST"</span>, <span class="st">"sterile MQ"</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>fs_pw_bd <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y=</span> bd_qty, <span class="at">x =</span> site, <span class="at">fill=</span>bd_location)) <span class="sc">+</span> </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(filter<span class="sc">~</span>day)<span class="sc">+</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span> </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Site"</span>) <span class="sc">+</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"UNTRANSFORMED Pond water addition to Bd-monolayer biofilm - 15 sites"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output-display">
 <p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
 </div>
@@ -156,18 +270,443 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="log-scale" class="level3">
 <h3 class="anchored" data-anchor-id="log-scale">log scale</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fs_pw_bd <span class="sc">%&gt;%</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y=</span> <span class="fu">log10</span>(bd_qty), <span class="at">x =</span> site, <span class="at">fill=</span>bd_location)) <span class="sc">+</span> </span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(filter<span class="sc">~</span>day)<span class="sc">+</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>)) <span class="sc">+</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Site"</span>) <span class="sc">+</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"fifteen-sites-PW-on-Bd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fs_pw_bd <span class="sc">%&gt;%</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y=</span> <span class="fu">log10</span>(bd_qty), <span class="at">x =</span> site, <span class="at">fill=</span>bd_location)) <span class="sc">+</span> </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(filter<span class="sc">~</span>day)<span class="sc">+</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>   <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span> </span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"Site"</span>) <span class="sc">+</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"LOG + 1 TRANSFORMED Pond water addition to Bd-monolayer biofilm - 15 sites"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Removed 4 rows containing missing values (`geom_col()`).</code></pre>
 </div>
 <div class="cell-output-display">
 <p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="eda" class="level1">
+<h1>EDA</h1>
+<section id="dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-2" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-1-lab-bd-innoculation-on-east-bay-biofilms---9-sites-2">Dataset 1: Lab Bd innoculation on East Bay Biofilms - “9 sites”</h2>
+<p>Overarching question: Does the amount of Bd in the biofilm or supernatant differ across days?</p>
+<p>Boxplot of Bd quantity across days #1</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> day, <span class="at">y =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>), <span class="at">fill =</span> bd_location)) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">" Lab Bd innoculation on East Bay Biofilms - '9 sites' "</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Boxplot of Bd quantity across days #2: faceted by Bd location to show trends within Bd location</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> day, <span class="at">y =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>), <span class="at">fill =</span> bd_location)) <span class="sc">+</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>bd_location) <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">" Lab Bd innoculation on East Bay Biofilms - '9 sites' "</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Looks like Bd in supernatant goes down over time, but Bd in the biofilm first increases then decreases. I wonder if these changes from day to day are significant, but am not sure of the proper anova-like test.</p>
+<p>Let’s look at the distributions of the Bd in biofilms and supernatant</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># all data biofilms</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span> <span class="co">#filter out only bd in biofilm</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>))) <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">position =</span> <span class="st">"identity"</span>,  <span class="at">bins=</span><span class="dv">30</span>) <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>)) <span class="sc">+</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Bd in BIOFILMS from 9 site experiment"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># faceted by day</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span> <span class="co">#filter out only bd in biofilm</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>))) <span class="sc">+</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">position =</span> <span class="st">"identity"</span>,  <span class="at">bins=</span><span class="dv">30</span>) <span class="sc">+</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>day) <span class="sc">+</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>)) <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Bd in BIOFILMS from 9 site experiment"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-7-2.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># all data supernatant</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span> <span class="co">#filter out only bd in biofilm</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>))) <span class="sc">+</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">position =</span> <span class="st">"identity"</span>,  <span class="at">bins=</span><span class="dv">30</span>) <span class="sc">+</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>)) <span class="sc">+</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Bd in SUPERNATANT from 9 site experiment"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-7-3.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># faceted by day</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span> <span class="co">#filter out only bd in biofilm</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>))) <span class="sc">+</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">position =</span> <span class="st">"identity"</span>, <span class="at">bins=</span><span class="dv">30</span>) <span class="sc">+</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>day) <span class="sc">+</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>)) <span class="sc">+</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Bd in SUPERNATANT from 9 site experiment"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-7-4.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Now let’s check out the qqPlots of Bd in biofilms and supernatant</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># whole dataset</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(<span class="st">"log_qty"</span>, <span class="at">title =</span> <span class="st">"Bd in biofilm qqPlot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># per day</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(<span class="st">"log_qty"</span>, <span class="at">facet.by =</span> <span class="st">"day"</span>, <span class="at">title =</span> <span class="st">"Bd in biofilm qqPlot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-8-2.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># difference between day 1 and day 7</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> day, <span class="at">values_from =</span> bd_qty) <span class="sc">%&gt;%</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff =</span> Day_1 <span class="sc">-</span> Day_7) <span class="sc">%&gt;%</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_diff =</span> <span class="fu">log</span>(diff <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggqqplot</span>(<span class="st">"log_diff"</span>, <span class="at">title =</span> <span class="st">"Bd in biofilm diff between day 1 and 7 qqPlot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-8-3.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># whole dataset</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(<span class="st">"log_qty"</span>, <span class="at">title =</span> <span class="st">"Bd in SUPERNATANT qqPlot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-8-4.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># per day</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(<span class="st">"log_qty"</span>, <span class="at">facet.by =</span> <span class="st">"day"</span>, <span class="at">title =</span> <span class="st">"Bd in SUPERNATANT qqPlot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-8-5.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># difference between day 1 and day 7</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> day, <span class="at">values_from =</span> bd_qty) <span class="sc">%&gt;%</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff =</span> Day_1 <span class="sc">-</span> Day_7) <span class="sc">%&gt;%</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_diff =</span> <span class="fu">log</span>(diff <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggqqplot</span>(<span class="st">"log_diff"</span>, <span class="at">title =</span> <span class="st">"Bd in supernatant diff between day 1 and 7 qqPlot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="biofilm-bd-pondwater_files/figure-html/unnamed-chunk-8-6.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="assumptions-testing-and-stats" class="level1">
+<h1>Assumptions testing and Stats</h1>
+<section id="q1-does-the-amount-of-bd-in-the-biofilm-differ-from-day-1-to-day-7-overall" class="level3">
+<h3 class="anchored" data-anchor-id="q1-does-the-amount-of-bd-in-the-biofilm-differ-from-day-1-to-day-7-overall">Q1: does the amount of Bd in the biofilm differ from day 1 to day 7 overall?</h3>
+<p><em>Rationale: Only comparing day 1 and 7 because we only have day 1 and 7 in the next experiment, and I thought it made the most sense to be consistent. Later on I try to ask about all of the days.</em></p>
+<p>Paired t-test</p>
+<p><strong>Yes, there was significantly more Bd in the biofilm on day 1 than day 7 (paired t-test, p = 7.55e-05). Mention log-transformation somewhere in here.</strong></p>
+<p>Assumptions of paired t-test:</p>
+<ol type="1">
+<li>Assumes that the observations from each group represent a <em>random sample</em> from the population.<br>
+</li>
+<li>Assumes that the <em>difference</em> of the two observations follow a <em>normal distribution</em>.</li>
+</ol>
+<p><strong>Question for Cherie:</strong> In biometry we just check the normality of the x variable in each group, do we need to take the difference here and test that? I did, but not sure if it’s necessary</p>
+<p>Shapiro-wilks tests</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># shapiro - wilks test: all Bd biofilm</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_bd_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day) <span class="sc">%&gt;%</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">shapiro_test</span>(log_bd_qty) <span class="co"># day 0 not normal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 4
+  day   variable   statistic      p
+  &lt;fct&gt; &lt;chr&gt;          &lt;dbl&gt;  &lt;dbl&gt;
+1 Day_0 log_bd_qty     0.782 0.0125
+2 Day_1 log_bd_qty     0.938 0.561 
+3 Day_7 log_bd_qty     0.922 0.411 </code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># shapiro - wilks test: difference in day 1 and day 7</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> day, <span class="at">values_from =</span> bd_qty) <span class="sc">%&gt;%</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff =</span> Day_1 <span class="sc">-</span> Day_7) <span class="sc">%&gt;%</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_diff =</span> <span class="fu">log</span>(diff <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">shapiro_test</span>(log_diff) <span class="co"># normal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  variable statistic     p
+  &lt;chr&gt;        &lt;dbl&gt; &lt;dbl&gt;
+1 log_diff     0.933 0.513</code></pre>
+</div>
+</div>
+<p>Paired t-test code</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="do">#### paired t-test between day 1 and 7</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span> </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">==</span> <span class="st">"Day_1"</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>d7 <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span> </span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">==</span> <span class="st">"Day_7"</span>)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="fu">t.test</span>(d1<span class="sc">$</span>bd_qty, d7<span class="sc">$</span>bd_qty, <span class="at">paired =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Paired t-test
+
+data:  d1$bd_qty and d7$bd_qty
+t = 7.4096, df = 8, p-value = 7.55e-05
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 39389.08 74984.25
+sample estimates:
+mean of the differences 
+               57186.67 </code></pre>
+</div>
+</div>
+</section>
+<section id="q2-does-the-amount-of-bd-in-the-supernatant-differ-from-day-1-to-day-7-overall-paired-t-test" class="level2">
+<h2 class="anchored" data-anchor-id="q2-does-the-amount-of-bd-in-the-supernatant-differ-from-day-1-to-day-7-overall-paired-t-test">Q2: does the amount of Bd in the supernatant differ from day 1 to day 7 overall? Paired t-test</h2>
+<p><strong>Yes, there was significantly more Bd in the supernatant on day 1 than day 7 (paired t-test, p = 0.00363). Mention log transformation too</strong></p>
+<p><em>Rationale: Only comparing day 1 and 7 because we only have day 1 and 7 in the next experiment, and I thought it made the most sense to be consistent. Later on I try to ask about all of the days.</em></p>
+<p>Paired t-test</p>
+<p><strong>Yes, there was significantly more Bd in the supernatant on day 1 than day 7 (paired t-test, p = 0.00363). Mention log-transformation somewhere in here.</strong></p>
+<p>Assumptions of paired t-test:</p>
+<ol type="1">
+<li>Assumes that the observations from each group represent a <em>random sample</em> from the population.<br>
+</li>
+<li>Assumes that the <em>difference</em> of the two observations follow a <em>normal distribution</em>.</li>
+</ol>
+<p><strong>Question for Cherie:</strong> In biometry we just check the normality of the x variable in each group, do we need to take the difference here and test that? I did, but not sure if it’s necessary</p>
+<p>Shapiro-wilks tests</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># shapiro - wilks test: all Bd biofilm</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_bd_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day) <span class="sc">%&gt;%</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">shapiro_test</span>(log_bd_qty) <span class="co"># all good</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 4
+  day   variable   statistic     p
+  &lt;fct&gt; &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
+1 Day_0 log_bd_qty     0.955 0.740
+2 Day_1 log_bd_qty     0.891 0.204
+3 Day_7 log_bd_qty     0.986 0.988</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># shapiro - wilks test: difference in day 1 and day 7</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> day, <span class="at">values_from =</span> bd_qty) <span class="sc">%&gt;%</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diff =</span> Day_1 <span class="sc">-</span> Day_7) <span class="sc">%&gt;%</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_diff =</span> <span class="fu">log</span>(diff <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">shapiro_test</span>(log_diff) <span class="co"># normal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  variable statistic     p
+  &lt;chr&gt;        &lt;dbl&gt; &lt;dbl&gt;
+1 log_diff     0.883 0.167</code></pre>
+</div>
+</div>
+<p>Paired t-test code</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="do">#### paired t-test between day 1 and 7</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span> </span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">==</span> <span class="st">"Day_1"</span>)</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>d7 <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span> </span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">==</span> <span class="st">"Day_7"</span>)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="fu">t.test</span>(d1<span class="sc">$</span>bd_qty, d7<span class="sc">$</span>bd_qty, <span class="at">paired =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Paired t-test
+
+data:  d1$bd_qty and d7$bd_qty
+t = 4.0607, df = 8, p-value = 0.00363
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+  6146.306 22301.205
+sample estimates:
+mean of the differences 
+               14223.76 </code></pre>
+</div>
+</div>
+</section>
+<section id="q3-is-there-a-difference-in-bd-in-the-biofilm-between-day-0-1-7" class="level2">
+<h2 class="anchored" data-anchor-id="q3-is-there-a-difference-in-bd-in-the-biofilm-between-day-0-1-7">Q3: Is there a difference in Bd in the biofilm between day 0, 1, 7?</h2>
+<p>Repeated Measures ANOVA ?? Is there a better way to do this?</p>
+<p><strong>Take with a lot of salt, not super confident in this one</strong></p>
+<p>Unfamiliar with this test and package, but at first try, looks like there is a difference in Bd in the biofilm across days. Looks like the pairwise comparisons are that day 0 and 1 are different, day 1 and 7 are different, but 0 and 7 are not for the amount of biofilm (after p adjustment).</p>
+<p>Unfamiliar test and function to me, followed this tutorial: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># anova</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>biofilm_only <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>))</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>res.aov <span class="ot">&lt;-</span> <span class="fu">anova_test</span>(<span class="at">data =</span> biofilm_only, <span class="at">dv =</span> log_qty, <span class="at">wid =</span> site, <span class="at">within =</span> day)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="fu">get_anova_table</span>(res.aov) <span class="co"># ges is the generalized effect size (amount of variability due to the within-subjects factor)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>ANOVA Table (type III tests)
+
+  Effect DFn DFd      F        p p&lt;.05   ges
+1    day   2  16 30.793 3.27e-06     * 0.741</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># pairwise comparison: pairwise ttest with bonferroni correction</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>pwc <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"biofilm"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pairwise_t_test</span>(</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    log_qty <span class="sc">~</span> day, <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">p.adjust.method =</span> <span class="st">"bonferroni"</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>pwc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 10
+  .y.     group1 group2    n1    n2 statistic    df       p   p.adj p.adj.signif
+* &lt;chr&gt;   &lt;chr&gt;  &lt;chr&gt;  &lt;int&gt; &lt;int&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;       
+1 log_qty Day_0  Day_1      9     9     -5.82     8 3.94e-4 1   e-3 **          
+2 log_qty Day_0  Day_7      9     9      1.04     8 3.29e-1 9.87e-1 ns          
+3 log_qty Day_1  Day_7      9     9     10.1      8 7.86e-6 2.36e-5 ****        </code></pre>
+</div>
+</div>
+<section id="q4-is-there-a-difference-in-bd-in-the-supernatant-between-day-0-1-7-repeated-measures-anova-is-there-a-better-way-to-do-this" class="level3">
+<h3 class="anchored" data-anchor-id="q4-is-there-a-difference-in-bd-in-the-supernatant-between-day-0-1-7-repeated-measures-anova-is-there-a-better-way-to-do-this">Q4: Is there a difference in Bd in the supernatant between day 0, 1, 7? Repeated Measures ANOVA ?? Is there a better way to do this?</h3>
+<p><strong>Take with a lot of salt, not super confident in this one</strong></p>
+<p>Unfamiliar with this test and package, but at first try, looks like there is a difference in Bd in the biofilm across days. Looks like the pairwise comparisons are that all days are different from each other in the supernatant.</p>
+<p>Unfamiliar test and function to me, followed this tutorial: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>super_only <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>))</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>res.aov <span class="ot">&lt;-</span> <span class="fu">anova_test</span>(<span class="at">data =</span> super_only, <span class="at">dv =</span> log_qty, <span class="at">wid =</span> site, <span class="at">within =</span> day)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="fu">get_anova_table</span>(res.aov) <span class="co"># ges is the generalized effect size (amount of variability due to the within-subjects factor)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>ANOVA Table (type III tests)
+
+  Effect DFn DFd       F        p p&lt;.05   ges
+1    day   2  16 110.504 4.31e-10     * 0.905</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># pairwise comparison: pairwise ttest with bonferroni correction</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>pwc <span class="ot">&lt;-</span> ns_biofilm_bd <span class="sc">%&gt;%</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bd_location <span class="sc">==</span> <span class="st">"supernatant"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_qty =</span> <span class="fu">log</span>(bd_qty <span class="sc">+</span><span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pairwise_t_test</span>(</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    log_qty <span class="sc">~</span> day, <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">p.adjust.method =</span> <span class="st">"bonferroni"</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>pwc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 10
+  .y.     group1 group2    n1    n2 statistic    df       p   p.adj p.adj.signif
+* &lt;chr&gt;   &lt;chr&gt;  &lt;chr&gt;  &lt;int&gt; &lt;int&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;       
+1 log_qty Day_0  Day_1      9     9     10.3      8 6.85e-6 2.05e-5 ****        
+2 log_qty Day_0  Day_7      9     9     13.3      8 1   e-6 3   e-6 ****        
+3 log_qty Day_1  Day_7      9     9      6.97     8 1.16e-4 3.48e-4 ***         </code></pre>
 </div>
 </div>
 </section>
