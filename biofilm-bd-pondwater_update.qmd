@@ -64,25 +64,25 @@ File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/
 
 ### Statistical questions:
 
-*NOTE: we need ot discuss how we are handling adherent vs floating, I did one test combining and a test on each*
+*NOTE: we need to discuss how we are handling adherent vs floating, I did one test combining and a test on each*
 
 Part I Q1
 
 Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **TOTAL BD**
 
-**Answer: *There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
+**Answer: There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
 
 Part I Q2
 
 Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **ADHERENT BD**
 
-**Answer: *There is a significant difference in the change in the adherent Bd from Day 1 to Day 7 across the filter types (t = -5.8588, df = 14, p-value = 4.155e-05)**
+**Answer: There is a significant difference in the change in the adherent Bd from Day 1 to Day 7 across the filter types (t = -5.8588, df = 14, p-value = 4.155e-05)**
 
  Part I Q3
 
 Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **FLOATING BD**
 
-**Answer: *Data are not normal enough to test this question for the floating Bd according to qqPlot and shapiro**
+**Answer: Data are not normal enough to test this question for the floating Bd according to qqPlot and shapiro**
 
 This experiment took pond water from 15 East Bay sites in Spring 2022 back to the lab, filtered the pond water to keep or remove the microbes, and added the pond water to lab-cultured Bd-monoculture-biofilms. Two biofilms per water treatment, one destructively sampled day 1, and one destructively sampled day 7 for qPCR quantification of Bd in the supernatant and the biofilm itself.
 
@@ -90,7 +90,7 @@ This experiment took pond water from 15 East Bay sites in Spring 2022 back to th
 
 ### Renwei barplot
 
-Note for Caitlin: change facet labels to something prettier, and consider if we arent distinguishing by floating and adherent, can make a simpler plot with just the total Bd, filter, and day, and can do a side by side boxplot with day to clearly show the difference and only one facet
+Discussion points: Color preferences? And consider if we arent distinguishing bw floating and adherent, can make a simpler plot with just the total Bd, filter, and day, and can do a side by side boxplot with day to clearly show the difference and only one facet. Also labels: do we want it to be "with microbes" and "without microbes"?
 
 ```{r}
 fs_pw_bd %>%
@@ -119,7 +119,7 @@ Assumptions:
 
 Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
 
-Plan: 3 paired t-tests: Simplest: combinine floating and not floating Bd, then more complex: One for floating, one for floating, then let Cherie and Renwei choose which is most appropriate
+Plan: 3 paired t-tests: Simplest: combining floating and not floating Bd, then more complex: One for adherent, one for floating, then let Cherie and Renwei choose which is most appropriate
 
 ### Part I Q1: Paired t-test on the difference in all of the Bd from day 1 to day 7 between the two filters
 
@@ -131,9 +131,11 @@ Plan: 3 paired t-tests: Simplest: combinine floating and not floating Bd, then m
 # Step 1: combine floating and floating
 fs_wider_combined <- fs_pw_bd %>%
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-  mutate(combined_bd = adherent + floating) %>%
-  #mutate(log_combined_bd_qty = log(combined_bd)) %>%
-  select(-adherent, -floating) %>% 
+  mutate(combined_bd = adherent + floating)
+
+fs_wider_combined <- subset(fs_wider_combined, select = -c(adherent,floating) )
+
+fs_wider_combined <- fs_wider_combined %>% 
   # calculate diff
   pivot_wider(names_from = day, values_from = combined_bd) %>%
   mutate(diff = Day_1 - Day_7)
@@ -241,29 +243,6 @@ hist20 <- hist(fs_floating_wide_.22$diff) # good enough
 
 ```
 
-## PI EDA
-
-Boxplot of Bd quantity across days #1
-
-```{r}
-fs_pw_bd %>%
-  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
-  geom_boxplot() +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold"),
-        legend.position = "bottom") +
-  ggtitle("15 sites ")
-
-fs_pw_bd %>%
-  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
-  geom_boxplot() +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold"),
-        legend.position = "bottom") +
-  facet_wrap(~filter) +
-  ggtitle("15 sites ")
-
-```
 
 # Part II: Effect of the aquatic environmental biofilm on Bd growth - "9 sites"
 
@@ -403,12 +382,37 @@ pwc
 ```
 
 
-
 ## Discuss with group: normality assumption, how would we want to structure a glm type model to properly account for site while  accounting for the "paired" apsect of the experiment?
 
-## PII EDA
+## EDA's
+
+## PI EDA
+
+Boxplot of Bd quantity across days #1
+
+```{r}
+fs_pw_bd %>%
+  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold"),
+        legend.position = "bottom") +
+  ggtitle("15 sites ")
+
+fs_pw_bd %>%
+  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.title = element_text(size = 12, face = "bold"),
+        legend.position = "bottom") +
+  facet_wrap(~filter) +
+  ggtitle("15 sites ")
+
+```
 
 Overarching question: Does the amount of Bd in the biofilm or supernatant differ across days?
+
+## P2 
 
 Boxplot of Bd quantity across days #1
 
