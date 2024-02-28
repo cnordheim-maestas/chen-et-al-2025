@@ -10,19 +10,18 @@ format:
 
 # To-do list/ meeting notes from 2/16/24 meeting:
 
-Part I "15 sites pond water"
+Part I "15 sites pond water": Done
 
 - We are using TOTAL Bd for part I
 - Update barplot: side by side barplot with colors, update labels to pond water with and without microbes, order by site by park to keep consistent across plots
 - Visualize a boxplot version too
 - Visualize a scatterplot too: day 1 v day 7, color by filter
-- One version with control, one version without control
 
 Part II: "Nine sites field biofilm"
 
 - Biofilm only for analysis, but keep all data in the plot
 - Stats: this is a randomized block design, so stats accordingly: zsp~ day + site as a random effect
-- Went back and forth on color, I think the final concensus was that biofilm is dark grey and supernatant is lighter gray
+- Went back and forth on color, I think the final consensus was that biofilm is dark grey and supernatant is lighter gray
 
 Part III: Monolayer-Bd biofilm
 
@@ -84,14 +83,23 @@ ns_biofilm_bd$bd_location <- factor(ns_biofilm_bd$bd_location, levels = c("super
 ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"), 
                             labels = c("Day_0", "Day_1", "Day_7")) 
 
+# Step 1: combine floating and floating
+fs_wider_combined <- fs_pw_bd %>%
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating)
 
-#  Part III
-fs_ml_pw_bd$filter <- factor(fs_ml_pw_bd$filter,
-                          levels = c("40um_filter", "0.22um_filter"))
-fs_ml_pw_bd$day <- factor(fs_ml_pw_bd$day, levels = c("Day_1", "Day_7"))
-fs_ml_pw_bd$site <- factor(fs_ml_pw_bd$site,
-                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "MQ"))
+fs_wider_combined <- subset(fs_wider_combined, select = -c(adherent,floating) )
 
+fs_wider_combined <- fs_wider_combined %>% 
+  # calculate diff
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+  mutate(diff = Day_1 - Day_7)
+
+# Step 2: create subsets for each treatment
+fs_wider_combined_40um <- fs_wider_combined %>% 
+  filter(filter =="40um_filter")
+fs_wider_combined_.22um <- fs_wider_combined %>% 
+  filter(filter =="0.22um_filter")
 
 #  Part II
 ns_ml_pw_bd$site <- factor(ns_ml_pw_bd$site,
@@ -100,7 +108,6 @@ ns_ml_pw_bd$bd_location <- factor(ns_ml_pw_bd$bd_location, levels = c("supernata
 ns_ml_pw_bd$day <- factor(ns_ml_pw_bd$day, levels = c("1", "7"), 
                             labels = c("Day_1", "Day_7")) 
 
-       
 # remove the controls
 
 fs_pw_bd <- fs_pw_bd %>%
@@ -117,8 +124,15 @@ ns_ml_pw_bd<- ns_ml_pw_bd %>%
   filter(site != "NORTH")
 
 
-
 # no control for nine site expt
+
+#  Appendix
+fs_ml_pw_bd$filter <- factor(fs_ml_pw_bd$filter,
+                          levels = c("40um_filter", "0.22um_filter"))
+fs_ml_pw_bd$day <- factor(fs_ml_pw_bd$day, levels = c("Day_1", "Day_7"))
+fs_ml_pw_bd$site <- factor(fs_ml_pw_bd$site,
+                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "MQ"))
+
 
 ```
 
@@ -140,38 +154,117 @@ Is there a difference in the **gain or loss of Bd over 7 days** between the **fi
 
 **Answer: There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
 
-Part I Q2
-
-Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **ADHERENT BD**
-
-**Answer: There is a significant difference in the change in the adherent Bd from Day 1 to Day 7 across the filter types (t = -5.8588, df = 14, p-value = 4.155e-05)**
-
-Part I Q3
-
-Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **FLOATING BD**
-
-**Answer: Data are not normal enough to test this question for the floating Bd according to qqPlot and shapiro**
-
 This experiment took pond water from 15 East Bay sites in Spring 2022 back to the lab, filtered the pond water to keep or remove the microbes, and added Bd to the pond water. Two replicates per site per treatment, one destructively sampled day 1, and one destructively sampled day 7 for qPCR quantification of Bd in the supernatant and the biofilm itself.
 
 ## PI Data visualization
 
-### Renwei barplot
-
-Discussion points: Color preferences? And consider if we arent distinguishing bw floating and adherent, can make a simpler plot with just the total Bd, filter, and day, and can do a side by side boxplot with day to clearly show the difference and only one facet. Also labels: do we want it to be "with microbes" and "without microbes"?
+### Renwei barplot remake
 
 ```{r}
+with_microbes <- "#3c3c3c"
+no_microbes <- "#888888"
+
 fs_pw_bd %>%
-ggplot(aes(y= log10(bd_qty + 1), x = site, fill=bd_location)) + 
-    geom_col() +
-    facet_grid(day~filter)+
-    #theme_classic() +
+   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
    theme(axis.text.x = element_text(angle = 90),
-          legend.position = "bottom") + 
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
     xlab("Site") +
-    ylab("Bd Quantity \n (log + 1 transformed zoospore equivalents)")
-  ggtitle("Effect of aquatic environmental microbes on Bd growth")
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+
+# Colors
+# can try fun colors suggested: these are from Paul Tol's colorblind friendly palette
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+fs_pw_bd %>%
+   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
 ```
+## Boxplot
+
+```{r}
+with_microbes <- "#3c3c3c"
+no_microbes <- "#888888"
+
+fs_pw_bd %>%
+   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) + 
+    geom_boxplot() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)")
+
+# can try fun colors suggested: these are from Paul Tol's colorblind friendly palette
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+fs_pw_bd %>%
+   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) + 
+    geom_boxplot() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)")
+```
+
+## Scatterplot
+```{r}
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+fs_wider_combined %>% 
+  ggplot(aes(x = log10(Day_7), y = log10(Day_1), color = filter)) +
+  geom_point() +
+   scale_color_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Bd Quantity Day 7 \n (log transformed zoospore equivalents)") +
+    ylab("Bd Quantity Day 1 \n (log transformed zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+  
+```
+
 
 ## PI Stats and assumption testing
 
@@ -187,8 +280,6 @@ Assumptions:
 
 Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
 
-Plan: 3 paired t-tests: Simplest: combining floating and not floating Bd, then more complex: One for adherent, one for floating, then let Cherie and Renwei choose which is most appropriate
-
 ### Part I Q1: Paired t-test on the difference in all of the Bd from day 1 to day 7 between the two filters
 
 **There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
@@ -196,25 +287,7 @@ Plan: 3 paired t-tests: Simplest: combining floating and not floating Bd, then m
 ```{r}
 # Assumptions testing
 
-# Step 1: combine floating and floating
-fs_wider_combined <- fs_pw_bd %>%
-  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-  mutate(combined_bd = adherent + floating)
-
-fs_wider_combined <- subset(fs_wider_combined, select = -c(adherent,floating) )
-
-fs_wider_combined <- fs_wider_combined %>% 
-  # calculate diff
-  pivot_wider(names_from = day, values_from = combined_bd) %>%
-  mutate(diff = Day_1 - Day_7)
-
-# Step 2: create subsets for each treatment
-fs_wider_combined_40um <- fs_wider_combined %>% 
-  filter(filter =="40um_filter")
-fs_wider_combined_.22um <- fs_wider_combined %>% 
-  filter(filter =="0.22um_filter")
-
-# Step 3: check normality of the differences across groups
+# check normality of the differences across groups
 fs_wider_combined_40um %>% 
  ggqqplot("diff", title = "Untransformed Bd in both floating and floating diff between day 1 and 7 qqPlot") # good enough
 shapiro.test(fs_wider_combined_40um$diff) # normal, yay!
@@ -232,83 +305,6 @@ Stats:
 ```{r}
 # Step 3: run the paired t-test on the difference
 t.test(fs_wider_combined_40um$diff, fs_wider_combined_.22um$diff, paired = TRUE)
-```
-
-
-### Part I Q2: Paired t-test on the difference in floating Bd from day 1 to day 7 between the two filters
-
-**There is a significant difference in the change in the adherent Bd from Day 1 to Day 7 across the filter types (t = -5.8588, df = 14, p-value = 4.155e-05)**
-
-```{r}
-# Step 1: SELECT ONLY adherent BD and calculate the diff between day 1 and 7
-fs_adherent_wide <- fs_pw_bd %>%
-  filter(bd_location =="adherent") %>% 
-  # calculate diff
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7)
-
-# Step 2: create subsets for each treatment
-fs_adherent_wide_40 <- fs_adherent_wide %>% 
-  filter(filter =="40um_filter")
-fs_adherent_wide_.22 <- fs_adherent_wide %>% 
-  filter(filter =="0.22um_filter")
-
-# Step 3: check normality of the differences across groups
-fs_adherent_wide_40  %>% 
- ggqqplot("diff", title = "Untransformed Bd in both adherent and adherent diff between day 1 and 7 qqPlot") # perf
-shapiro.test(fs_adherent_wide_40 $diff) # normal, yay!
-hist(fs_adherent_wide_40 $diff) # good enough
-
-fs_adherent_wide_.22 %>% 
- ggqqplot("diff", title = "Untransformed Bd in both adherent and adherent diff between day 1 and 7 qqPlot") # gorgeous
-shapiro.test(fs_adherent_wide_.22$diff) # normal, yay!
-hist(fs_adherent_wide_.22$diff) # good enough
-  
-```
-
-Stats:
-
-```{r}
-# Step 3: run the paired t-test on the difference
-t.test(fs_adherent_wide_.22$diff, fs_adherent_wide_40$diff, paired = TRUE)
-```
-
-
-### Part I Q3: Paired t-test on the difference in FLOATING Bd from day 1 to day 7 between the two filters
-
-**Floating Bd alone is not normally distrubuted, violates the test assumptions**
-
-If this is an important question, need to determine transformation (log of the neg difference (aka gain in floating Bd is throwing NaN's)
-
-```{r}
-par(mfrow = c(2, 2))
-
-# Step 1: SELECT ONLY floating BD and calculate the diff between day 1 and 7
-fs_floating_wide <- fs_pw_bd %>%
-  filter(bd_location =="floating") %>% 
-  # calculate diff
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7)
-
-# Step 2: create subsets for each treatment
-fs_floating_wide_40 <- fs_floating_wide %>% 
-  filter(filter =="40um_filter")
-fs_floating_wide_.22 <- fs_floating_wide %>% 
-  filter(filter =="0.22um_filter")
-
-# Step 3: check normality of the differences across groups
-qq1 <- qqPlot(fs_floating_wide_40$diff) # NOPE
-shapiro.test(fs_floating_wide_40$diff) # NOPE
-hist40 <- hist(fs_floating_wide_40$diff) # NOPE 
-
-## could log transform and try again if it is of interest
-qq2 <- qqPlot(fs_floating_wide_.22$diff)
-shapiro.test(fs_floating_wide_.22$diff) # normal, yay!
-hist20 <- hist(fs_floating_wide_.22$diff) # good enough
-  
-# Step 3: run the paired t-test on the difference
-#t.test(fs_floating_wide_.22$diff, fs_floating_wide_40$diff, paired = TRUE)
-
 ```
 
 
@@ -452,7 +448,7 @@ pwc
 
 ## Discuss with group: normality assumption, how would we want to structure a glm type model to properly account for site while  accounting for the "paired" apsect of the experiment?
 
-# Part IV: Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm - "9 sites" and included biofilm
+# Part III: Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm - "9 sites" and included biofilm
 
 ## PIV About the data
 
