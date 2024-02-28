@@ -8,6 +8,43 @@ format:
     toc-location: left
 ---
 
+# To-do list/ meeting notes from 2/16/24 meeting:
+
+Part I "15 sites pond water"
+
+- We are using TOTAL Bd for part I
+- Update barplot: side by side barplot with colors, update labels to pond water with and without microbes, order by site by park to keep consistent across plots
+- Visualize a boxplot version too
+- Visualize a scatterplot too: day 1 v day 7, color by filter
+- One version with control, one version without control
+
+Part II: "Nine sites field biofilm"
+
+- Biofilm only for analysis, but keep all data in the plot
+- Stats: this is a randomized block design, so stats accordingly: zsp~ day + site as a random effect
+- Went back and forth on color, I think the final concensus was that biofilm is dark grey and supernatant is lighter gray
+
+Part III: Monolayer-Bd biofilm
+
+- Cut the 15 sites supernatant only experiment
+- Use total Bd
+- Paired ttest on the difference
+
+Part IV: Cross-experiment comparisons: Is a biofilm a better inhibitor compared to microbes alone?
+- 1: susbet out only nine sites
+- 2: calculate the percent Bd lost from day 1 to day 7 per site
+- 3: add column for field biofilm or no biofilm
+- 4: diff ~ type
+- Or just plot them
+
+Part V: Cross-experiment comparisons: Is a monolayer biofilm a better inhibitor compared to microbes alone?
+- 1: susbet out only nine sites
+- 2: calculate the percent Bd lost from day 1 to day 7 per site
+- 3: add column for monolayer biofilm or no biofilm
+- 4: diff ~ type
+- Or just plot them 
+
+
 ```{r}
 #| warning: false
 #| include: false
@@ -25,12 +62,14 @@ library(multcomp)
 
 ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
 fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
+fs_ml_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-MLBd - Sheet1.csv"))
+ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
 
 
 # data type cleaning
 
 #  Part I
-fs_pw_bd$bd_location <- factor(fs_pw_bd$bd_location, levels = c("adherent", "floating"))
+fs_pw_bd$bd_location <- factor(fs_pw_bd$bd_location, levels = c("floating", "adherent"))
 fs_pw_bd$filter <- factor(fs_pw_bd$filter,
                           levels = c("40um_filter", "0.22um_filter"))
 fs_pw_bd$day <- factor(fs_pw_bd$day, levels = c("1", "7"),
@@ -44,11 +83,40 @@ ns_biofilm_bd$site <- factor(ns_biofilm_bd$site,
 ns_biofilm_bd$bd_location <- factor(ns_biofilm_bd$bd_location, levels = c("supernatant", "biofilm"))
 ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"), 
                             labels = c("Day_0", "Day_1", "Day_7")) 
-                            
-unique(ns_biofilm_bd$site)
+
+
+#  Part III
+fs_ml_pw_bd$filter <- factor(fs_ml_pw_bd$filter,
+                          levels = c("40um_filter", "0.22um_filter"))
+fs_ml_pw_bd$day <- factor(fs_ml_pw_bd$day, levels = c("Day_1", "Day_7"))
+fs_ml_pw_bd$site <- factor(fs_ml_pw_bd$site,
+                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "MQ"))
+
+
+#  Part II
+ns_ml_pw_bd$site <- factor(ns_ml_pw_bd$site,
+                                levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010", "control"))
+ns_ml_pw_bd$bd_location <- factor(ns_ml_pw_bd$bd_location, levels = c("supernatant", "adherent"))
+ns_ml_pw_bd$day <- factor(ns_ml_pw_bd$day, levels = c("1", "7"), 
+                            labels = c("Day_1", "Day_7")) 
+
+       
 # remove the controls
+
 fs_pw_bd <- fs_pw_bd %>%
   filter(site != "sterile MQ")
+
+fs_ml_pw_bd <- fs_ml_pw_bd %>%
+  filter(site != "MQ") %>%
+  filter(site != "NORTH")
+
+ns_ml_pw_bd<- ns_ml_pw_bd %>%
+  filter(site != "MQ")
+
+ns_ml_pw_bd<- ns_ml_pw_bd %>%
+  filter(site != "NORTH")
+
+
 
 # no control for nine site expt
 
@@ -78,13 +146,13 @@ Is there a difference in the **gain or loss of Bd over 7 days** between the **fi
 
 **Answer: There is a significant difference in the change in the adherent Bd from Day 1 to Day 7 across the filter types (t = -5.8588, df = 14, p-value = 4.155e-05)**
 
- Part I Q3
+Part I Q3
 
 Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **FLOATING BD**
 
 **Answer: Data are not normal enough to test this question for the floating Bd according to qqPlot and shapiro**
 
-This experiment took pond water from 15 East Bay sites in Spring 2022 back to the lab, filtered the pond water to keep or remove the microbes, and added the pond water to lab-cultured Bd-monoculture-biofilms. Two biofilms per water treatment, one destructively sampled day 1, and one destructively sampled day 7 for qPCR quantification of Bd in the supernatant and the biofilm itself.
+This experiment took pond water from 15 East Bay sites in Spring 2022 back to the lab, filtered the pond water to keep or remove the microbes, and added Bd to the pond water. Two replicates per site per treatment, one destructively sampled day 1, and one destructively sampled day 7 for qPCR quantification of Bd in the supernatant and the biofilm itself.
 
 ## PI Data visualization
 
@@ -384,6 +452,91 @@ pwc
 
 ## Discuss with group: normality assumption, how would we want to structure a glm type model to properly account for site while  accounting for the "paired" apsect of the experiment?
 
+# Part IV: Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm - "9 sites" and included biofilm
+
+## PIV About the data
+
+Wrangled results file name: ["nine-sites-PW-on-MLBd.csv"](https://docs.google.com/spreadsheets/d/1I2Y4uf3rP3__Y2p3JLrsTD_9PBUNBYgjY7XG1uOidYA/edit?usp=sharing)
+
+File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" tab called 9 sites PW on MLBd
+
+### Statistical question:
+
+Scientific Q1: Is mono-strain Bd biofilm resistant to microbes in pond water
+
+Statistical question:
+
+Is there a difference in the **gain or loss of Bd in supernatant over 7 days** between the **filter sizes**?
+
+Again, need to determine what we are doing with the Bd location info, pooling or keeping separate?
+
+Scientific Q2: Does biofilm exhibit a stronger inhibitory effect compared to microbes
+
+Statistical question: Is there more Bd in the biofilm than in the supernatant?
+
+**Need to clarify this one - across water types? Across time?**
+
+### Renwei barplot
+
+```{r}
+ns_ml_pw_bd%>%
+ggplot(aes(y= log10(bd_qty), x = site, fill=bd_location)) + 
+    geom_col() +
+    facet_grid(day~filter)+
+    theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") + 
+    xlab("Site") +
+   ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  ggtitle("Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm\n9 sites experiment") 
+```
+
+## PIV Stats and assumption testing
+
+Question:
+
+Does the difference in Bd from day 1 to day 7 differ between the two filter types?
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+```{r}
+# Assumptions testing
+
+# Step 1: combine floating and floating
+ns_ml_diff <- ns_ml_pw_bd %>% 
+  # calculate diff
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7)
+
+# Step 2: create subsets for each treatment
+ns_ml_diff_40um <- ns_ml_diff %>% 
+  filter(filter =="40um_filter")
+ns_ml_diff_.22um <- ns_ml_diff %>% 
+  filter(filter =="0.22um_filter")
+
+# Step 3: check normality of the differences across groups
+ns_ml_diff_40um%>% 
+ ggqqplot("diff", title = "40 um") # not great
+shapiro.test(ns_ml_diff_40um$diff) # NOT normal
+hist(ns_ml_diff_40um$diff) # nope
+
+# we gotta transform, but we have negative: west GAINED Bd
+
+ns_ml_diff_.22um%>% 
+ ggqqplot("diff", title = ".22 um") # gorg
+shapiro.test(ns_ml_diff_.22um$diff) # not normal
+hist(ns_ml_diff_.22um$diff) # yay!
+  
+```
+
+## **STOP: CANNOT PROCEED WITH TEST UNTIL WE FIGURE OUT TRANSFORMATION OR CHOOSE A DIFFERENT TEST**
+
+
 ## EDA's
 
 ## PI EDA
@@ -601,3 +754,90 @@ d7 <- ns_biofilm_bd %>%
 
 t.test(d1$bd_qty, d7$bd_qty, paired = TRUE)
 ```
+
+# Appendix 
+
+## Cut experiment:Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm: supernatant only!
+
+## PIII About the data
+
+**IMPORTANT: DISCUSS NORTH 40UM FILTER - NO BD ON DAY 1? REMOVE FROM DATASET?**
+
+Wrangled results file name: ["fifteen-sites-PW-on-MLBd.csv"](https://docs.google.com/spreadsheets/d/1CGcQsebGMw3rW7oRXWgw59ICsTxp61qkOBr4nLjlnGM/edit?usp=sharing)
+
+File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" tab called 15 sites PW on MLBd
+
+bd_qty is the amount of Bd in the supernatant of the monostrain biofilm with the pond water
+
+### Statistical question:
+
+Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
+
+Statistical question:
+
+Is there a difference in the **gain or loss of Bd in supernatant over 7 days** between the **filter sizes**?
+
+### Renwei barplot
+
+Discussion points: Color preferences? And consider if we arent distinguishing bw floating and adherent, can make a simpler plot with just the total Bd, filter, and day, and can do a side by side boxplot with day to clearly show the difference and only one facet. Also labels: do we want it to be "with microbes" and "without microbes"?
+
+```{r}
+fs_ml_pw_bd %>%
+ggplot(aes(y= log(bd_qty), x = site)) + 
+    geom_col() +
+    facet_grid(day~filter)+
+    #theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (log + 1 transformed zoospore equivalents)")
+  ggtitle("Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm")
+  
+
+```
+
+## PIII Stats and assumption testing
+
+Question:
+
+Does the difference in Bd from day 1 to day 7 differ between the two filter types?
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+```{r}
+# Assumptions testing
+
+# Step 1: combine floating and floating
+fs_ml_diff <- fs_ml_pw_bd %>% 
+  # calculate diff
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7)
+
+# Step 2: create subsets for each treatment
+fs_ml_diff_40um <- fs_ml_diff %>% 
+  filter(filter =="40um_filter")
+fs_ml_diff_.22um <- fs_ml_diff %>% 
+  filter(filter =="0.22um_filter")
+
+# Step 3: check normality of the differences across groups
+fs_ml_diff_40um%>% 
+ ggqqplot("diff", title = "40 um") # good enough? Outlier in pleasanton 4
+shapiro.test(fs_ml_diff_40um$diff) # NOT normal
+hist(fs_ml_diff_40um$diff) # nope
+
+# we gotta transform, but we have negative: west GAINED Bd
+
+fs_ml_diff_.22um%>% 
+ ggqqplot("diff", title = ".22 um") # gorg
+shapiro.test(fs_ml_diff_.22um$diff) # normal
+hist(fs_ml_diff_.22um$diff) # yay!
+  
+```
+
+## **STOP: CANNOT PROCEED WITH TEST UNTIL WE FIGURE OUT TRANSFORMATION OR CHOOSE A DIFFERENT TEST**
