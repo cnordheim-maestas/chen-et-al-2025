@@ -23,26 +23,25 @@ Part II: "Nine sites field biofilm"
 - Stats: this is a randomized block design, so stats accordingly: zsp~ day + site as a random effect
 - Went back and forth on color, I think the final consensus was that biofilm is dark grey and supernatant is lighter gray
 
-Part III: Monolayer-Bd biofilm
+Part III: Monolayer-Bd biofilm: Done
 
 - Cut the 15 sites supernatant only experiment
 - Use total Bd
 - Paired ttest on the difference
 
-Part IV: Cross-experiment comparisons: Is a biofilm a better inhibitor compared to microbes alone?
-- 1: susbet out only nine sites
-- 2: calculate the percent Bd lost from day 1 to day 7 per site
-- 3: add column for field biofilm or no biofilm
-- 4: diff ~ type
-- Or just plot them
-
-Part V: Cross-experiment comparisons: Is a monolayer biofilm a better inhibitor compared to microbes alone?
+Part IV: Cross-experiment comparisons: Is a monolayer biofilm a better inhibitor compared to microbes alone?
 - 1: susbet out only nine sites
 - 2: calculate the percent Bd lost from day 1 to day 7 per site
 - 3: add column for monolayer biofilm or no biofilm
 - 4: diff ~ type
 - Or just plot them 
 
+Part V: Cross-experiment comparisons: Is a field biofilm a better inhibitor compared to microbes alone?
+- 1: susbet out only nine sites and nly 40 micron filtered from part1
+- 2: calculate the percent Bd lost from day 1 to day 7 per site
+- 3: add column for field biofilm or no biofilm
+- 4: diff ~ type
+- Or just plot them
 
 ```{r}
 #| warning: false
@@ -58,14 +57,19 @@ library(rstatix)
 library(ggplot2)
 library(car)
 library(multcomp)
+library(nlme)
 
 ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
 fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
-fs_ml_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-MLBd - Sheet1.csv"))
+#fs_ml_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-MLBd - Sheet1.csv")) # cut this experiment
 ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
 
+# remove controls
+fs_pw_bd <- fs_pw_bd %>% filter(site != "sterile MQ")
 
+ns_ml_pw_bd<- ns_ml_pw_bd %>% filter(site != "MQ")
 
+ns_ml_pw_bd<- ns_ml_pw_bd %>% filter(site != "NORTH")
 
 #----  Part I
 
@@ -103,6 +107,22 @@ ns_biofilm_bd$bd_location <- factor(ns_biofilm_bd$bd_location, levels = c("super
 ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"), 
                             labels = c("Day_0", "Day_1", "Day_7")) 
 
+biofilm_only <- ns_biofilm_bd %>% 
+  filter(bd_location == "biofilm")
+
+ns_biofilm_wider_combined <-  ns_biofilm_bd %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = biofilm + supernatant)
+
+ns_biofilm_wider_combined <- subset(ns_biofilm_wider_combined, select = -c(biofilm, supernatant))
+
+ns_biofilm_wider_combined <- ns_biofilm_wider_combined %>% 
+  filter(day != "Day_0") %>% 
+  # calculate diff
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+  mutate(diff = Day_1 - Day_7)
+
+  
 #---- Part III
 ns_ml_pw_bd$site <- factor(ns_ml_pw_bd$site,
                                 levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010", "control"))
@@ -111,48 +131,22 @@ ns_ml_pw_bd$day <- factor(ns_ml_pw_bd$day, levels = c("1", "7"),
                             labels = c("Day_1", "Day_7")) 
 
 # Step 1: combine supernatant and adherent
-ns_wider_combined <- ns_ml_pw_bd %>%
+ns_ml_wider_combined <- ns_ml_pw_bd %>%
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + supernatant)
 
-ns_wider_combined <- subset(ns_wider_combined, select = -c(adherent,supernatant) )
+ns_ml_wider_combined <- subset(ns_ml_wider_combined, select = -c(adherent,supernatant) )
 
-ns_wider_combined <- ns_wider_combined %>% 
+ns_ml_wider_combined <- ns_ml_wider_combined %>% 
   # calculate diff
   pivot_wider(names_from = day, values_from = combined_bd) %>%
   mutate(diff = Day_1 - Day_7)
 
 # Step 2: create subsets for each treatment
-ns_wider_combined_40um <- ns_wider_combined %>% 
+ns_ml_wider_combined_40um <- ns_ml_wider_combined %>% 
   filter(filter =="40um_filter")
-ns_wider_combined_.22um <- ns_wider_combined %>% 
+ns_ml_wider_combined_.22um <- ns_ml_wider_combined %>% 
   filter(filter =="0.22um_filter")
-
-# ---- remove the controls
-
-fs_pw_bd <- fs_pw_bd %>%
-  filter(site != "sterile MQ")
-
-fs_ml_pw_bd <- fs_ml_pw_bd %>%
-  filter(site != "MQ") %>%
-  filter(site != "NORTH")
-
-ns_ml_pw_bd<- ns_ml_pw_bd %>%
-  filter(site != "MQ")
-
-ns_ml_pw_bd<- ns_ml_pw_bd %>%
-  filter(site != "NORTH")
-
-
-# no control for nine site expt
-
-#  Appendix
-fs_ml_pw_bd$filter <- factor(fs_ml_pw_bd$filter,
-                          levels = c("40um_filter", "0.22um_filter"))
-fs_ml_pw_bd$day <- factor(fs_ml_pw_bd$day, levels = c("Day_1", "Day_7"))
-fs_ml_pw_bd$site <- factor(fs_ml_pw_bd$site,
-                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "MQ"))
-
 
 ```
 
@@ -187,8 +181,9 @@ no_microbes <- "#888888"
 fs_pw_bd %>%
    pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating) %>% 
-ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) + 
+ggplot(aes(y= combined_bd, x = site, fill = filter)) + 
     geom_col(position = position_dodge()) +
+   #scale_y_log10() +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
@@ -209,8 +204,9 @@ no_microbes <- "#88ccee"
 fs_pw_bd %>%
    pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating) %>% 
-ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) + 
+ggplot(aes(y= combined_bd, x = site, fill = filter)) + 
     geom_col(position = position_dodge()) +
+  scale_y_log10() +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
@@ -220,7 +216,7 @@ ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) +
          strip.text = element_text(face="bold"),
          axis.title = element_text(face = "bold")) + 
     xlab("Site") +
-    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
   guides(fill=guide_legend(title=""))
 ```
 ## Boxplot
@@ -232,11 +228,11 @@ no_microbes <- "#888888"
 fs_pw_bd %>%
    pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating) %>% 
-ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) + 
-    geom_boxplot() +
+ggplot(aes(y= log10(combined_bd), x = filter)) + 
+    geom_boxplot(fill = no_microbes) +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+  scale_fill_manual(values = c(no_microbes)) +
     theme_classic() +
    theme(legend.position = "none",
          strip.text = element_text(face="bold"),
@@ -254,6 +250,8 @@ fs_pw_bd %>%
   mutate(combined_bd = adherent + floating) %>% 
 ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) + 
     geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    #scale_y_log10() +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
@@ -263,7 +261,28 @@ ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) +
          axis.title = element_text(face = "bold")) + 
   scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
     xlab("Presence of Microbes in Pond Water") +
-    ylab("Bd Quantity \n (log transformed zoospore equivalents)") 
+    ylab("Bd Quantity \n (log zoospore equivalents)") 
+```
+
+# visualize the diff
+
+```{r}
+# can try fun colors suggested: these are from Paul Tol's colorblind friendly palette
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+fs_wider_combined %>%
+ggplot(aes(y= diff, x = filter, fill = filter)) + 
+    geom_boxplot() +
+    #scale_y_log10() +
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Reduction \n (Quantity of zoospore equivalents lost over 7 days)") 
 ```
 
 ## Scatterplot
@@ -337,17 +356,7 @@ File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/
 
 ### Statisical questions
 
-Part II Q1: Is there a difference in Bd quantity total between day 0, 1, 7? - repeated measures anova
-
-**There is a significant difference in the amount of log Bd total across the days (p = 1.01e-11). Day 0 and Day 1 differ (p = 2.48e-05), Day 1 and Day 7 differ (p = 1.35e-05), Day 0 and Day 7 differ (p = 5.82e-07)**
-
-Part II Q2: Is there a difference in Bd quantity in the biofilm between day 0, 1, 7? - repeated measures anova
-
-**STOP: DOES NOT PASS NORMALITY ASSUMPTION FOR DAY 0!!!** Discuss alternative tests?
-
-Part II Q3: Is there a difference in Bd quantity in the supernatant between day 0, 1, 7? - repeated measures anova
-
-**There is a significant difference in the amount of log Bd in the supernatant across the days (p = 5.15e-10). Day 0 and Day 1 differ (p = 2.06e-05), Day 1 and Day 7 differ (p = 3.75e-04	), and Day 0 and Day 7 differ (p = 3.36e-06	)**
+Part II Q2: Is there a difference in Bd quantity in the biofilm between day 0, 1, 7?
 
 ## PII Data visualization
 
@@ -355,115 +364,67 @@ Part II Q3: Is there a difference in Bd quantity in the supernatant between day 
 
 ```{r}
 ns_biofilm_bd %>%
-ggplot(aes(y= log10(bd_qty), x = site, fill=bd_location)) + 
+ggplot(aes(y= bd_qty, x = site, fill=bd_location)) + 
     geom_col() +
     facet_grid(.~day)+
+  theme_classic()+
+  scale_fill_manual(values = c("lightgrey", "gray45" )) +
     theme(axis.text.x = element_text(angle = 90),
           legend.position = "bottom") + 
+    scale_y_log10() +
     xlab("Site") +
-   ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
-  ggtitle("Lab Bd innoculation on East Bay Biofilms - 9 sites") 
+   ylab("Total Bd Quantity Per Well \n (zoospore equivalents)") 
+```
+## Boxplot
+
+```{r}
+biofilm_only %>%
+ggplot(aes(y= log10(bd_qty), x = day)) + 
+    geom_boxplot(fill = "gray45") +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Time (days)") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  ggtitle("Amount of Bd incorporated into field-collected biofilm over time")
 ```
 
 ## PII Assumptions testing and Stats
 
-Repeated Measures ANOVA
+Mix-effects model 
 
-Unfamiliar test and function to me, followed this tutorial: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
+Outcome variable: amount of Bd
+Fixed effect: day
+Random effect: site
 
-### Q1: In total Bd, is there a diff across days 0, 1, 7?
-
-**There is a significant difference in the amount of log Bd total across the days (p = 1.01e-11). Day 0 and Day 1 differ (p = 2.48e-05), Day 1 and Day 7 differ (p = 1.35e-05), Day 0 and Day 7 differ (p = 5.82e-07)**
-
+### lme time using nlme
 ```{r}
-# Step 1: combine floating and floating
-combined <- ns_biofilm_bd %>%
-  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-  mutate(combined_bd = biofilm + supernatant) %>% 
-  mutate(log_combined_bd = log(combined_bd))
+biofilm_only <- biofilm_only %>% 
+  mutate(log_qty = log(bd_qty))
 
-# assumptions
-combined %>%
-  group_by(day) %>%
-  #shapiro_test(combined_bd) %>%  # SO DAMN CLOSE without transformation
-  shapiro_test(log_combined_bd) # def normal
+lme_mod <- lme(log_qty ~ day, random = ~1|factor(site),  data = biofilm_only)
+lme_mod # "print" the output
+summary(lme_mod) # summary of the output
 
+# ignore day 0?
+day1_7 <- biofilm_only %>% 
+  filter(day!="Day_0")
 
-# anova
-res.aov <- anova_test(data = combined, dv = log_combined_bd, wid = site, within = day)
-get_anova_table(res.aov) # ges is the generalized effect size (amount of variability due to the within-subjects factor)
-
-# post hoc pairwise comparison: pairwise ttest with bonferroni correction
-pwc <-combined %>%
-  pairwise_t_test(
-    log_combined_bd ~ day, paired = TRUE,
-    p.adjust.method = "bonferroni"
-    )
-pwc
-
-
+lme_mod2 <- lme(log_qty ~ day, random = ~1|factor(site),  data = biofilm_only)
+lme_mod2 # "print" the output
+summary(lme_mod2) # summary of the output
 
 ```
 
-### Q2: In biofilms, is there a diff across days 0, 1, 7?
-
-**STOP: DOES NOT PASS NORMALITY ASSUMPTION FOR DAY 0!!!**
+### using Generalized linear mixed model
 
 ```{r}
-biofilm_only <- ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  mutate(log_qty = log(bd_qty))
+library(lme4)
 
-# assumptions tests
-biofilm_only %>%
-  group_by(day) %>%
-  shapiro_test(log_qty) # day 0 does not pass
-
-# anova
-
-res.aov <- anova_test(data = biofilm_only, dv = log_qty, wid = site, within = day)
-get_anova_table(res.aov) # ges is the generalized effect size (amount of variability due to the within-subjects factor)
-
-# post hoc pairwise comparison: pairwise ttest with bonferroni correction
-pwc <- ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  mutate(log_qty = log(bd_qty +1)) %>%
-  pairwise_t_test(
-    log_qty ~ day, paired = TRUE,
-    p.adjust.method = "bonferroni"
-    )
-pwc
-
-```
-
-
-### Q3: In supernatant, is there a diff across days 0, 1, 7?
-
-**There is a significant difference in the amount of log Bd in the supernatant across the days (p = 5.15e-10). Day 0 and Day 1 differ (p = 2.06e-05), Day 1 and Day 7 differ (p = 3.75e-04	), and Day 0 and Day 7 differ (p = 3.36e-06	)**
-
-```{r}
-
-s_only <- ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>%
-  mutate(log_qty = log(bd_qty))
-
-# assumptions
-s_only %>%
-  group_by(day) %>%
-  shapiro_test(log_qty) #passes
-
-# anova
-res.aov <- anova_test(data = s_only, dv = log_qty, wid = site, within = day)
-get_anova_table(res.aov) # ges is the generalized effect size (amount of variability due to the within-subjects factor)
-
-# post hoc pairwise comparison: pairwise ttest with bonferroni correction
-pwc <-s_only %>%
-  pairwise_t_test(
-    log_qty ~ day, paired = TRUE,
-    p.adjust.method = "bonferroni"
-    )
-pwc
-
+mod<-glmer(log_qty ~ day + (1|site), data=biofilm_only)
+summary(mod) # no p output?
 ```
 
 
@@ -482,8 +443,6 @@ Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
 Statistical question:
 
 Is there a difference in the **gain or loss of Bd in supernatant over 7 days** between the **filter sizes**?
-Yes, there is a significant difference in the 
-
 
 **There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = -6.45, df = 7, p-value = 0.0003)**
 
@@ -587,7 +546,7 @@ ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) +
 with_microbes <- "#999933"
 no_microbes <- "#88ccee"
 
-ns_wider_combined %>% 
+ns_ml_wider_combined %>% 
   ggplot(aes(x = log10(Day_7), y = log10(Day_1), color = filter)) +
   geom_point() +
    scale_color_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
@@ -619,36 +578,36 @@ Assumes that the observations from each group represent a random sample from the
 # Assumptions testing
 
 # check normality of the differences across groups
-ns_wider_combined_40um %>% 
+ns_ml_wider_combined_40um %>% 
  ggqqplot("diff", title = "40 um") # not great
-shapiro.test(ns_wider_combined_40um$diff) # NOT normal
-hist(ns_wider_combined_40um$diff) # nope
+shapiro.test(ns_ml_wider_combined_40um$diff) # NOT normal
+hist(ns_ml_wider_combined_40um$diff) # nope
 
 # we gotta transform, but we have negative: west GAINED Bd
-ns_wider_combined_40um <- ns_wider_combined_40um %>% 
+ns_ml_wider_combined_40um <- ns_ml_wider_combined_40um %>% 
   mutate(log_diff = log(diff))
 
-ns_wider_combined_40um %>% 
+ns_ml_wider_combined_40um %>% 
   ggqqplot("log_diff", title = "40 um") # good enough
-shapiro.test(ns_wider_combined_40um$log_diff) # woohoo!!
-hist(ns_wider_combined_40um$log_diff) # sure
+shapiro.test(ns_ml_wider_combined_40um$log_diff) # woohoo!!
+hist(ns_ml_wider_combined_40um$log_diff) # sure
 
 # 0.22 micron
 
 # check normality of the differences across groups
-ns_wider_combined_.22um %>% 
+ns_ml_wider_combined_.22um %>% 
  ggqqplot("diff", title = ".22 um") # not great
-shapiro.test(ns_wider_combined_.22um$diff) # shapiro says its fine
-hist(ns_wider_combined_.22um$diff) # meh
+shapiro.test(ns_ml_wider_combined_.22um$diff) # shapiro says its fine
+hist(ns_ml_wider_combined_.22um$diff) # meh
 
 # we gotta transform, but we have negative: west GAINED Bd
-ns_wider_combined_.22um <- ns_wider_combined_.22um %>% 
+ns_ml_wider_combined_.22um <- ns_ml_wider_combined_.22um %>% 
   mutate(log_diff = log(diff))
 
-ns_wider_combined_.22um %>% 
+ns_ml_wider_combined_.22um %>% 
   ggqqplot("log_diff", title = ".22 um") # better?
-shapiro.test(ns_wider_combined_.22um$log_diff) # woohoo!!
-hist(ns_wider_combined_.22um$log_diff) # sure
+shapiro.test(ns_ml_wider_combined_.22um$log_diff) # woohoo!!
+hist(ns_ml_wider_combined_.22um$log_diff) # sure
   
 ```
 
@@ -656,9 +615,121 @@ Stats:
 
 ```{r}
 # Step 3: run the paired t-test on the difference
-t.test(ns_wider_combined_40um$log_diff, ns_wider_combined_.22um$log_diff, paired = TRUE)
+t.test(ns_ml_wider_combined_40um$log_diff, ns_ml_wider_combined_.22um$log_diff, paired = TRUE)
+```
+# Part IV Monolayer vs Water
+
+Part IV: Part 1 vs part 3
+- 1: susbet out only nine sites
+- 2: calculate the percent Bd lost from day 1 to day 7 per site
+- 3: add column for field biofilm or no biofilm
+- 4: diff ~ type
+- Or just plot them
+
+```{r}
+# data wrangling for comparisons across experiments
+
+part1 <- fs_wider_combined %>% 
+  filter(site!="NORTH" & site!="BARN" & site!="PRPND002"  & site!="PRPND003" & site!="GDPND004"  & site!="GDPND008") %>% 
+  mutate(expt = "pond_water")
+
+pw_no_microbes <- part1 %>% 
+  filter(filter == "0.22um_filter") %>% 
+  mutate(treatment = "PW 0.22um")
+
+pw_microbes <- part1 %>% 
+  filter(filter != "0.22um_filter") %>% 
+  mutate(treatment = "PW 40um")
+
+part2 <- ns_biofilm_wider_combined %>% 
+  mutate(expt = "field_bd_biofilm") %>% 
+  mutate(filter = "0.22um_filter")
+
+fieldbf_no_microbes <- part2 %>% 
+  filter(filter == "0.22um_filter") %>% 
+  mutate(treatment = "Field bf 0.22")
+
+part3 <- ns_ml_wider_combined %>% 
+  mutate(expt = "monolayer_bd_biofilm") 
+
+monolayer_no_microbes <- part3 %>% 
+  filter(filter == "0.22um_filter") %>% 
+  mutate(treatment = "Monolayer 40um")
+
+monolayer_with_microbes <- part3 %>% 
+  filter(filter != "0.22um_filter") %>% 
+  mutate(treatment = "Monolayer 0.22um")
+  
+all_parts<- bind_rows(pw_no_microbes, pw_microbes, fieldbf_no_microbes, monolayer_no_microbes, monolayer_with_microbes ) %>% 
+  mutate(percent_loss = (diff/Day_1) * 100)
+
 ```
 
+## Boxplot of all parts
+
+```{r}
+all_parts %>% 
+  ggplot(aes(y= percent_loss, x = treatment)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Treatment") +
+    ylab("Percent Reduction of Bd over 7 Days") +
+  ggtitle("Which treatments are we comparing?") 
+```
+
+## What inhibits Bd the most? Microbes vs monolayer vs field biofilm
+
+## throw it all in a mixed model?
+
+```{r}
+lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = all_parts)
+lme_mod # "print" the output
+summary(lme_mod) # summary of the output
+```
+## Look at just PW microbes vs monolayer with microbes
+
+```{r}
+sub1 <- all_parts %>% 
+  filter(treatment == "PW 40um" | treatment == "Monolayer 40um")
+
+lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = sub1)
+lme_mod # "print" the output
+summary(lme_mod) # summary of the output, there's a diff
+
+#alternatively, pairwise t.test
+treat1 <- sub1 %>% 
+  filter(treatment == "PW 40um")
+treat2 <- sub1 %>% 
+  filter(treatment != "PW 40um")
+
+t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # there's a difference
+```
+## Look at just PW microbes vs field bd without microbes
+
+```{r}
+sub1 <- all_parts %>% 
+  filter(treatment == "PW 40um" | treatment == "Field bf 0.22")
+
+lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = sub1)
+lme_mod # "print" the output
+summary(lme_mod) # summary of the output, no diff
+
+#alternatively, pairwise t.test
+treat1 <- sub1 %>% 
+  filter(treatment == "PW 40um")
+treat2 <- sub1 %>% 
+  filter(treatment != "PW 40um")
+
+t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # no diff
+```
+
+# Part V: 
 
 ## EDA's
 
@@ -667,7 +738,7 @@ t.test(ns_wider_combined_40um$log_diff, ns_wider_combined_.22um$log_diff, paired
 Boxplot of Bd quantity across days #1
 
 ```{r}
-fs_pw_bd %>%
+all_parts %>%
   ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
   geom_boxplot() +
   theme_classic() +
@@ -828,7 +899,6 @@ ns_biofilm_bd %>%
 ```{r}
 #| include: false
 
-
 #### paired t-test between day 1 and 7
 d1 <- ns_biofilm_bd %>% 
   filter(bd_location == "biofilm") %>%
@@ -878,89 +948,3 @@ d7 <- ns_biofilm_bd %>%
 t.test(d1$bd_qty, d7$bd_qty, paired = TRUE)
 ```
 
-# Appendix 
-
-## Cut experiment:Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm: supernatant only!
-
-## PIII About the data
-
-**IMPORTANT: DISCUSS NORTH 40UM FILTER - NO BD ON DAY 1? REMOVE FROM DATASET?**
-
-Wrangled results file name: ["fifteen-sites-PW-on-MLBd.csv"](https://docs.google.com/spreadsheets/d/1CGcQsebGMw3rW7oRXWgw59ICsTxp61qkOBr4nLjlnGM/edit?usp=sharing)
-
-File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" tab called 15 sites PW on MLBd
-
-bd_qty is the amount of Bd in the supernatant of the monostrain biofilm with the pond water
-
-### Statistical question:
-
-Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
-
-Statistical question:
-
-Is there a difference in the **gain or loss of Bd in supernatant over 7 days** between the **filter sizes**?
-
-### Renwei barplot
-
-Discussion points: Color preferences? And consider if we arent distinguishing bw floating and adherent, can make a simpler plot with just the total Bd, filter, and day, and can do a side by side boxplot with day to clearly show the difference and only one facet. Also labels: do we want it to be "with microbes" and "without microbes"?
-
-```{r}
-fs_ml_pw_bd %>%
-ggplot(aes(y= log(bd_qty), x = site)) + 
-    geom_col() +
-    facet_grid(day~filter)+
-    #theme_classic() +
-   theme(axis.text.x = element_text(angle = 90),
-          legend.position = "bottom") + 
-    xlab("Site") +
-    ylab("Bd Quantity \n (log + 1 transformed zoospore equivalents)")
-  ggtitle("Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm")
-  
-
-```
-
-## PIII Stats and assumption testing
-
-Question:
-
-Does the difference in Bd from day 1 to day 7 differ between the two filter types?
-
-The samples are essentially paired by site, so a paired t-test is most appropriate
-
-$H0:μ_{difference in Bd}=0$
-
-Assumptions:
-
-Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
-
-```{r}
-# Assumptions testing
-
-# Step 1: combine floating and floating
-fs_ml_diff <- fs_ml_pw_bd %>% 
-  # calculate diff
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7)
-
-# Step 2: create subsets for each treatment
-fs_ml_diff_40um <- fs_ml_diff %>% 
-  filter(filter =="40um_filter")
-fs_ml_diff_.22um <- fs_ml_diff %>% 
-  filter(filter =="0.22um_filter")
-
-# Step 3: check normality of the differences across groups
-fs_ml_diff_40um%>% 
- ggqqplot("diff", title = "40 um") # good enough? Outlier in pleasanton 4
-shapiro.test(fs_ml_diff_40um$diff) # NOT normal
-hist(fs_ml_diff_40um$diff) # nope
-
-# we gotta transform, but we have negative: west GAINED Bd
-
-fs_ml_diff_.22um%>% 
- ggqqplot("diff", title = ".22 um") # gorg
-shapiro.test(fs_ml_diff_.22um$diff) # normal
-hist(fs_ml_diff_.22um$diff) # yay!
-  
-```
-
-## **STOP: CANNOT PROCEED WITH TEST UNTIL WE FIGURE OUT TRANSFORMATION OR CHOOSE A DIFFERENT TEST**
