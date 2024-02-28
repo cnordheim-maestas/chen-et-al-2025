@@ -65,9 +65,11 @@ fs_ml_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-MLBd - Sheet1.csv"))
 ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
 
 
-# data type cleaning
 
-#  Part I
+
+#----  Part I
+
+# data type cleaning
 fs_pw_bd$bd_location <- factor(fs_pw_bd$bd_location, levels = c("floating", "adherent"))
 fs_pw_bd$filter <- factor(fs_pw_bd$filter,
                           levels = c("40um_filter", "0.22um_filter"))
@@ -76,14 +78,7 @@ fs_pw_bd$day <- factor(fs_pw_bd$day, levels = c("1", "7"),
 fs_pw_bd$site <- factor(fs_pw_bd$site,
                           levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ"))
 
-#  Part II
-ns_biofilm_bd$site <- factor(ns_biofilm_bd$site,
-                                levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010"))
-ns_biofilm_bd$bd_location <- factor(ns_biofilm_bd$bd_location, levels = c("supernatant", "biofilm"))
-ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"), 
-                            labels = c("Day_0", "Day_1", "Day_7")) 
-
-# Step 1: combine floating and floating
+# Step 1: combine floating and adherent
 fs_wider_combined <- fs_pw_bd %>%
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating)
@@ -101,14 +96,39 @@ fs_wider_combined_40um <- fs_wider_combined %>%
 fs_wider_combined_.22um <- fs_wider_combined %>% 
   filter(filter =="0.22um_filter")
 
-#  Part II
+#---- Part II
+ns_biofilm_bd$site <- factor(ns_biofilm_bd$site,
+                                levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010"))
+ns_biofilm_bd$bd_location <- factor(ns_biofilm_bd$bd_location, levels = c("supernatant", "biofilm"))
+ns_biofilm_bd$day <- factor(ns_biofilm_bd$day, levels = c("0", "1", "7"), 
+                            labels = c("Day_0", "Day_1", "Day_7")) 
+
+#---- Part III
 ns_ml_pw_bd$site <- factor(ns_ml_pw_bd$site,
                                 levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010", "control"))
 ns_ml_pw_bd$bd_location <- factor(ns_ml_pw_bd$bd_location, levels = c("supernatant", "adherent"))
 ns_ml_pw_bd$day <- factor(ns_ml_pw_bd$day, levels = c("1", "7"), 
                             labels = c("Day_1", "Day_7")) 
 
-# remove the controls
+# Step 1: combine supernatant and adherent
+ns_wider_combined <- ns_ml_pw_bd %>%
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant)
+
+ns_wider_combined <- subset(ns_wider_combined, select = -c(adherent,supernatant) )
+
+ns_wider_combined <- ns_wider_combined %>% 
+  # calculate diff
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+  mutate(diff = Day_1 - Day_7)
+
+# Step 2: create subsets for each treatment
+ns_wider_combined_40um <- ns_wider_combined %>% 
+  filter(filter =="40um_filter")
+ns_wider_combined_.22um <- ns_wider_combined %>% 
+  filter(filter =="0.22um_filter")
+
+# ---- remove the controls
 
 fs_pw_bd <- fs_pw_bd %>%
   filter(site != "sterile MQ")
@@ -243,10 +263,11 @@ ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) +
          axis.title = element_text(face = "bold")) + 
   scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
     xlab("Presence of Microbes in Pond Water") +
-    ylab("Bd Quantity \n (log transformed zoospore equivalents)")
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") 
 ```
 
 ## Scatterplot
+
 ```{r}
 with_microbes <- "#999933"
 no_microbes <- "#88ccee"
@@ -446,11 +467,9 @@ pwc
 ```
 
 
-## Discuss with group: normality assumption, how would we want to structure a glm type model to properly account for site while  accounting for the "paired" apsect of the experiment?
-
 # Part III: Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm - "9 sites" and included biofilm
 
-## PIV About the data
+## PIII About the data
 
 Wrangled results file name: ["nine-sites-PW-on-MLBd.csv"](https://docs.google.com/spreadsheets/d/1I2Y4uf3rP3__Y2p3JLrsTD_9PBUNBYgjY7XG1uOidYA/edit?usp=sharing)
 
@@ -458,35 +477,131 @@ File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/
 
 ### Statistical question:
 
-Scientific Q1: Is mono-strain Bd biofilm resistant to microbes in pond water
+Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
 
 Statistical question:
 
 Is there a difference in the **gain or loss of Bd in supernatant over 7 days** between the **filter sizes**?
+Yes, there is a significant difference in the 
 
-Again, need to determine what we are doing with the Bd location info, pooling or keeping separate?
 
-Scientific Q2: Does biofilm exhibit a stronger inhibitory effect compared to microbes
+**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = -6.45, df = 7, p-value = 0.0003)**
 
-Statistical question: Is there more Bd in the biofilm than in the supernatant?
-
-**Need to clarify this one - across water types? Across time?**
-
-### Renwei barplot
+## Renwei barplot
 
 ```{r}
-ns_ml_pw_bd%>%
-ggplot(aes(y= log10(bd_qty), x = site, fill=bd_location)) + 
-    geom_col() +
-    facet_grid(day~filter)+
-    theme(axis.text.x = element_text(angle = 90),
-          legend.position = "bottom") + 
+with_microbes <- "#3c3c3c"
+no_microbes <- "#888888"
+
+ns_ml_pw_bd %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant) %>% 
+ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
     xlab("Site") +
-   ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
-  ggtitle("Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm\n9 sites experiment") 
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  guides(fill=guide_legend(title="")) +
+  ggtitle("Mono-layer Bd Biofilm exposed to pond water") 
+
+# Colors
+# can try fun colors suggested: these are from Paul Tol's colorblind friendly palette
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+ns_ml_pw_bd %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant) %>% 
+ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  guides(fill=guide_legend(title="")) +
+  ggtitle("Mono-layer Bd Biofilm exposed to pond water") 
 ```
 
-## PIV Stats and assumption testing
+## Boxplot
+
+```{r}
+with_microbes <- "#3c3c3c"
+no_microbes <- "#888888"
+
+ns_ml_pw_bd %>%
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant) %>% 
+
+ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) + 
+    geom_boxplot() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  ggtitle("Mono-layer Bd Biofilm exposed to pond water") 
+
+# can try fun colors suggested: these are from Paul Tol's colorblind friendly palette
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+ns_ml_pw_bd %>%
+   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+ mutate(combined_bd = adherent + supernatant) %>% 
+ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) + 
+    geom_boxplot() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)") +
+  ggtitle("Mono-layer Bd Biofilm exposed to pond water") 
+```
+
+## Scatterplot
+
+```{r}
+with_microbes <- "#999933"
+no_microbes <- "#88ccee"
+
+ns_wider_combined %>% 
+  ggplot(aes(x = log10(Day_7), y = log10(Day_1), color = filter)) +
+  geom_point() +
+   scale_color_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+    theme_classic() +
+   theme(legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Bd Quantity Day 7 \n (log transformed zoospore equivalents)") +
+    ylab("Bd Quantity Day 1 \n (log transformed zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+  
+```
+
+## PIII Stats and assumption testing
 
 Question:
 
@@ -503,34 +618,46 @@ Assumes that the observations from each group represent a random sample from the
 ```{r}
 # Assumptions testing
 
-# Step 1: combine floating and floating
-ns_ml_diff <- ns_ml_pw_bd %>% 
-  # calculate diff
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7)
-
-# Step 2: create subsets for each treatment
-ns_ml_diff_40um <- ns_ml_diff %>% 
-  filter(filter =="40um_filter")
-ns_ml_diff_.22um <- ns_ml_diff %>% 
-  filter(filter =="0.22um_filter")
-
-# Step 3: check normality of the differences across groups
-ns_ml_diff_40um%>% 
+# check normality of the differences across groups
+ns_wider_combined_40um %>% 
  ggqqplot("diff", title = "40 um") # not great
-shapiro.test(ns_ml_diff_40um$diff) # NOT normal
-hist(ns_ml_diff_40um$diff) # nope
+shapiro.test(ns_wider_combined_40um$diff) # NOT normal
+hist(ns_wider_combined_40um$diff) # nope
 
 # we gotta transform, but we have negative: west GAINED Bd
+ns_wider_combined_40um <- ns_wider_combined_40um %>% 
+  mutate(log_diff = log(diff))
 
-ns_ml_diff_.22um%>% 
- ggqqplot("diff", title = ".22 um") # gorg
-shapiro.test(ns_ml_diff_.22um$diff) # not normal
-hist(ns_ml_diff_.22um$diff) # yay!
+ns_wider_combined_40um %>% 
+  ggqqplot("log_diff", title = "40 um") # good enough
+shapiro.test(ns_wider_combined_40um$log_diff) # woohoo!!
+hist(ns_wider_combined_40um$log_diff) # sure
+
+# 0.22 micron
+
+# check normality of the differences across groups
+ns_wider_combined_.22um %>% 
+ ggqqplot("diff", title = ".22 um") # not great
+shapiro.test(ns_wider_combined_.22um$diff) # shapiro says its fine
+hist(ns_wider_combined_.22um$diff) # meh
+
+# we gotta transform, but we have negative: west GAINED Bd
+ns_wider_combined_.22um <- ns_wider_combined_.22um %>% 
+  mutate(log_diff = log(diff))
+
+ns_wider_combined_.22um %>% 
+  ggqqplot("log_diff", title = ".22 um") # better?
+shapiro.test(ns_wider_combined_.22um$log_diff) # woohoo!!
+hist(ns_wider_combined_.22um$log_diff) # sure
   
 ```
 
-## **STOP: CANNOT PROCEED WITH TEST UNTIL WE FIGURE OUT TRANSFORMATION OR CHOOSE A DIFFERENT TEST**
+Stats: 
+
+```{r}
+# Step 3: run the paired t-test on the difference
+t.test(ns_wider_combined_40um$log_diff, ns_wider_combined_.22um$log_diff, paired = TRUE)
+```
 
 
 ## EDA's
