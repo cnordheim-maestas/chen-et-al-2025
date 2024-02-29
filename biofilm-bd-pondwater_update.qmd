@@ -64,6 +64,10 @@ fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
 #fs_ml_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-MLBd - Sheet1.csv")) # cut this experiment
 ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
 
+# keep control for labeling plot
+partI_controls <- fs_pw_bd %>% 
+  filter(site =="sterile MQ")
+
 # remove controls
 fs_pw_bd <- fs_pw_bd %>% filter(site != "sterile MQ")
 
@@ -147,6 +151,11 @@ ns_ml_wider_combined_40um <- ns_ml_wider_combined %>%
   filter(filter =="40um_filter")
 ns_ml_wider_combined_.22um <- ns_ml_wider_combined %>% 
   filter(filter =="0.22um_filter")
+
+### Make df of control
+partI_controls2 <- partI_controls %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating)
 
 ```
 
@@ -262,6 +271,7 @@ ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) +
   scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
     xlab("Presence of Microbes in Pond Water") +
     ylab("Bd Quantity \n (log zoospore equivalents)") 
+
 ```
 
 # visualize the diff
@@ -407,6 +417,9 @@ biofilm_only <- biofilm_only %>%
 lme_mod <- lme(log_qty ~ day, random = ~1|factor(site),  data = biofilm_only)
 lme_mod # "print" the output
 summary(lme_mod) # summary of the output
+anova(lme_mod) # significant effect of day
+
+emmeans::emmeans(lme_mod, pairwise ~ day)
 
 # ignore day 0?
 day1_7 <- biofilm_only %>% 
@@ -459,7 +472,7 @@ ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) +
     geom_col(position = position_dodge()) +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+ # scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
     theme_classic() +
    theme(axis.text.x = element_text(angle = 90),
         legend.position = "bottom",
@@ -482,7 +495,7 @@ ggplot(aes(y= log10(combined_bd), x = site, fill = filter)) +
     geom_col(position = position_dodge()) +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+  #scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
     theme_classic() +
    theme(axis.text.x = element_text(angle = 90),
         legend.position = "bottom",
@@ -508,7 +521,7 @@ ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) +
     geom_boxplot() +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+ # scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
     theme_classic() +
    theme(legend.position = "none",
          strip.text = element_text(face="bold"),
@@ -529,7 +542,7 @@ ggplot(aes(y= log10(combined_bd), x = filter, fill = filter)) +
     geom_boxplot() +
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
+ # scale_fill_manual(values = c(with_microbes, no_microbes), labels=c('Pond water with microbes', 'Pond water without microbes')) +
     theme_classic() +
    theme(legend.position = "none",
          strip.text = element_text(face="bold"),
@@ -661,8 +674,12 @@ monolayer_with_microbes <- part3 %>%
   mutate(treatment = "Monolayer 0.22um")
   
 all_parts<- bind_rows(pw_no_microbes, pw_microbes, fieldbf_no_microbes, monolayer_no_microbes, monolayer_with_microbes ) %>% 
-  mutate(percent_loss = (diff/Day_1) * 100)
+  mutate(percent_loss = (diff/Day_1) * 100) 
 
+# set PW 40 um as the intercept, comparing back to that one
+all_parts$treatment <- factor(all_parts$treatment ,
+                          levels = c("PW 40um","PW 0.22um","Field bf 0.22","Monolayer 40um","Monolayer 0.22um"))
+  
 ```
 
 ## Boxplot of all parts
@@ -683,16 +700,18 @@ all_parts %>%
   ggtitle("Which treatments are we comparing?") 
 ```
 
-## What inhibits Bd the most? Microbes vs monolayer vs field biofilm
-
 ## throw it all in a mixed model?
 
 ```{r}
 lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = all_parts)
 lme_mod # "print" the output
 summary(lme_mod) # summary of the output
+anova(lme_mod)
+
+emmeans::emmeans(lme_mod, pairwise ~ treatment)
+
 ```
-## Look at just PW microbes vs monolayer with microbes
+## "Option A" Look at just PW microbes vs monolayer with microbes
 
 ```{r}
 sub1 <- all_parts %>% 
@@ -709,8 +728,39 @@ treat2 <- sub1 %>%
   filter(treatment != "PW 40um")
 
 t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # there's a difference
+
+# quick vis of comparison
+sub1 %>% 
+  ggplot(aes(y= percent_loss, x = treatment)) + 
+    geom_boxplot()
 ```
-## Look at just PW microbes vs field bd without microbes
+
+## "Option B" Look at just PW microbes vs monolayer without microbes
+
+```{r}
+sub1 <- all_parts %>% 
+  filter(treatment == "PW 40um" | treatment == "Monolayer 0.22um")
+
+lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = sub1)
+lme_mod # "print" the output
+summary(lme_mod) # summary of the output, there's a diff
+
+#alternatively, pairwise t.test
+treat1 <- sub1 %>% 
+  filter(treatment == "PW 40um")
+treat2 <- sub1 %>% 
+  filter(treatment != "PW 40um")
+
+t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # there's a difference
+
+# quick vis of comparison
+sub1 %>% 
+  ggplot(aes(y= percent_loss, x = treatment)) + 
+    geom_boxplot()
+```
+
+
+## Option 2A: Field biofilm with no microbes vs pond water microbes (biofim OR microbes)
 
 ```{r}
 sub1 <- all_parts %>% 
@@ -719,6 +769,7 @@ sub1 <- all_parts %>%
 lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = sub1)
 lme_mod # "print" the output
 summary(lme_mod) # summary of the output, no diff
+anova(lme_mod) # significant effect of day
 
 #alternatively, pairwise t.test
 treat1 <- sub1 %>% 
@@ -726,225 +777,52 @@ treat1 <- sub1 %>%
 treat2 <- sub1 %>% 
   filter(treatment != "PW 40um")
 
-t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # no diff
+t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # no
+
+sub1 %>% 
+  ggplot(aes(y= percent_loss, x = treatment)) + 
+    geom_boxplot()
 ```
 
-# Part V: 
-
-## EDA's
-
-## PI EDA
-
-Boxplot of Bd quantity across days #1
+## Option 2B: Field biofilm with no microbes vs pond water no microbes 
 
 ```{r}
-all_parts %>%
-  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
-  geom_boxplot() +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold"),
-        legend.position = "bottom") +
-  ggtitle("15 sites ")
+sub1 <- all_parts %>% 
+  filter(treatment == "PW 0.22um" | treatment == "Field bf 0.22")
 
-fs_pw_bd %>%
-  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
-  geom_boxplot() +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold"),
-        legend.position = "bottom") +
-  facet_wrap(~filter) +
-  ggtitle("15 sites ")
+lme_mod <- lme(percent_loss ~ treatment, random = ~1|factor(site),  data = sub1)
+lme_mod # "print" the output
+summary(lme_mod) # summary of the output, no diff
+anova(lme_mod) # significant effect of day
 
+#alternatively, pairwise t.test
+treat1 <- sub1 %>% 
+  filter(treatment == "PW 0.22um")
+treat2 <- sub1 %>% 
+  filter(treatment != "PW 0.22um")
+
+t.test(treat1$percent_loss, treat2$percent_loss, paired = TRUE) # yes
+
+sub1 %>% 
+  ggplot(aes(y= percent_loss, x = treatment)) + 
+    geom_boxplot()
 ```
 
-Overarching question: Does the amount of Bd in the biofilm or supernatant differ across days?
-
-## P2 
-
-Boxplot of Bd quantity across days #1
+# Controls and MISC
 
 ```{r}
-ns_biofilm_bd %>%
-  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
-  geom_boxplot() +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold"),
-        legend.position = "bottom") +
-  ggtitle("Lab Bd innoculation on East Bay Biofilms - '9 sites' ")
-
+partI_controls2 %>% 
+  ggplot(aes(y= combined_bd, x = filter)) + 
+    geom_point(shape = 4, size = 5) +
+    facet_wrap(~day, labeller = labeller(day = c("1" = "Day 1",
+                                                    "7" = "Day 7")))+
+  scale_y_log10() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity \n (log transformed zoospore equivalents)")
 ```
 
-Boxplot of Bd quantity across days #2: faceted by Bd location to show trends within Bd location
-
-```{r}
-ns_biofilm_bd %>%
-  ggplot(aes(x = day, y = log(bd_qty +1), fill = bd_location)) +
-  geom_boxplot() +
-  theme_classic() +
-  facet_wrap(~bd_location) +
-  theme(axis.title = element_text(size = 12, face = "bold"),
-        legend.position = "bottom") +
-  ggtitle(" Lab Bd innoculation on East Bay Biofilms - '9 sites' ")
-```
-
-Let's look at the distributions of the Bd in biofilms and supernatant
-
-```{r}
-# all data biofilms
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>% #filter out only bd in biofilm
-  ggplot(aes(x = log(bd_qty +1))) +
-  geom_histogram(position = "identity",  bins=30) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold")) +
-  ggtitle("Bd in BIOFILMS from 9 site experiment")
-
-# faceted by day
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>% #filter out only bd in biofilm
-  ggplot(aes(x = log(bd_qty +1))) +
-  geom_histogram(position = "identity",  bins=30) +
-  facet_wrap(~day) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold")) +
-  ggtitle("Bd in BIOFILMS from 9 site experiment")
-
-# all data supernatant
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>% #filter out only bd in biofilm
-  ggplot(aes(x = log(bd_qty +1))) +
-  geom_histogram(position = "identity",  bins=30) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold")) +
-  ggtitle("Bd in SUPERNATANT from 9 site experiment")
-
-# faceted by day
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>% #filter out only bd in biofilm
-  ggplot(aes(x = log(bd_qty +1))) +
-  geom_histogram(position = "identity", bins=30) +
-  facet_wrap(~day) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12, face = "bold")) +
-  ggtitle("Bd in SUPERNATANT from 9 site experiment")
-
-```
-
-Now let's check out the qqPlots of Bd in biofilms and supernatant
-
-```{r}
-# whole dataset
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  mutate(log_qty = log(bd_qty +1)) %>%
-ggqqplot("log_qty", title = "Bd in biofilm qqPlot")
-
-# per day
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  mutate(log_qty = log(bd_qty +1)) %>%
-ggqqplot("log_qty", facet.by = "day", title = "Bd in biofilm qqPlot")
-
-# difference between day 1 and day 7
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7) %>%
-  mutate(log_diff = log(diff +1)) %>%
-  ggqqplot("log_diff", title = "Bd in biofilm diff between day 1 and 7 qqPlot")
-
-# whole dataset
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>%
-  mutate(log_qty = log(bd_qty +1)) %>%
-ggqqplot("log_qty", title = "Bd in SUPERNATANT qqPlot")
-
-# per day
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>%
-  mutate(log_qty = log(bd_qty +1)) %>%
-ggqqplot("log_qty", facet.by = "day", title = "Bd in SUPERNATANT qqPlot")
-
-# difference between day 1 and day 7
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>%
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7) %>%
-  mutate(log_diff = log(diff +1)) %>%
-  ggqqplot("log_diff", title = "Bd in supernatant diff between day 1 and 7 qqPlot")
-
-```
-
-```{r}
-#| include: false
-
-
-# shapiro - wilks test: all Bd biofilm
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  mutate(log_bd_qty = log(bd_qty +1)) %>%
-  group_by(day) %>%
-  shapiro_test(log_bd_qty) # day 0 not normal
-
-# shapiro - wilks test: difference in day 1 and day 7
-ns_biofilm_bd %>%
-  filter(bd_location == "biofilm") %>%
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7) %>%
-  mutate(log_diff = log(diff +1)) %>%
-  shapiro_test(log_diff) # normal
-
-```
-
-```{r}
-#| include: false
-
-#### paired t-test between day 1 and 7
-d1 <- ns_biofilm_bd %>% 
-  filter(bd_location == "biofilm") %>%
-  filter(day == "Day_1")
-
-d7 <- ns_biofilm_bd %>% 
-  filter(bd_location == "biofilm") %>%
-  filter(day == "Day_7")
-
-t.test(d1$bd_qty, d7$bd_qty, paired = TRUE)
-```
-
-```{r}
-#| include: false
-
-
-# shapiro - wilks test: all Bd biofilm
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>%
-  mutate(log_bd_qty = log(bd_qty +1)) %>%
-  group_by(day) %>%
-  shapiro_test(log_bd_qty) # all good
-
-# shapiro - wilks test: difference in day 1 and day 7
-ns_biofilm_bd %>%
-  filter(bd_location == "supernatant") %>%
-  pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7) %>%
-  mutate(log_diff = log(diff +1)) %>%
-  shapiro_test(log_diff) # normal
-
-```
-
-
-```{r}
-#| include: false
-
-#### paired t-test between day 1 and 7
-d1 <- ns_biofilm_bd %>% 
-  filter(bd_location == "supernatant") %>%
-  filter(day == "Day_1")
-
-d7 <- ns_biofilm_bd %>% 
-  filter(bd_location == "supernatant") %>%
-  filter(day == "Day_7")
-
-t.test(d1$bd_qty, d7$bd_qty, paired = TRUE)
-```
 
