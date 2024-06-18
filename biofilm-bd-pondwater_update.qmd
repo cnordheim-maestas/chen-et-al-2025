@@ -1,0 +1,908 @@
+---
+title: "Biofilm Bd Update"
+author: "Caitlin Nordheim-Maestas"
+format:
+  html:
+    toc: true
+    code-fold: true
+    toc-location: left
+---
+
+```{r}
+#| warning: false
+
+## read in and clean data
+library(tidyverse) # for cleaning and viewing data
+library(here) # for importing data
+library(ggpubr)
+library(rstatix)
+library(ggplot2)
+library(car)
+library(multcomp)
+library(nlme)
+
+ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
+fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
+ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv")) %>% 
+  filter(site != "NORTH")
+
+```
+
+# Part I: Effect of aquatic environmental microbes on Bd growth - 15 sites
+
+## PI About the data
+
+Wrangled results file name: ["fifteen-sites-PW-on-Bd.csv"](https://docs.google.com/spreadsheets/d/11pCxR2oeprag1EGEAtdYpSmjaPwXD9szq_029p4OB2Q/edit?usp=sharing)
+
+File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" first tab called 15 sites PW on Bd
+
+Statistical question:
+
+Is there a difference in the **gain or loss of Bd over 7 days** between the **filter sizes** looking at the **TOTAL BD**
+
+**Answer: There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
+
+## PI Data Wrangling
+
+```{r}
+# remove controls
+partI <- fs_pw_bd %>% filter(site != "sterile MQ")
+
+# keep control for labeling plot
+partI_controls <- fs_pw_bd %>% 
+  filter(site =="sterile MQ") %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+   mutate(day = case_when(
+    day == 1 ~ "Day_1",
+    day == 7 ~ "Day_7"))
+
+# data type cleaning
+partI$bd_location <- factor(partI$bd_location, levels = c("floating", "adherent"))
+partI$filter <- factor(partI$filter,
+                          levels = c("40um_filter", "0.22um_filter"))
+partI$day <- factor(partI$day, levels = c("1", "7"),
+                            labels = c("Day_1", "Day_7"))
+partI$site <- factor(partI$site,
+                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ"))
+
+# get the total difference across days by combining both locations of Bd then subtracting across days
+partI_total_diff <- partI %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  subset(select = -c(adherent,floating)) %>% 
+
+# different metrics of difference in Bd
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+
+  # calculate the rate loss by taking the log of each before subtracting
+  mutate(rate_loss = log(Day_1) - log(Day_7))  %>% 
+
+  # calculate the difference in raw amount of Bd
+  mutate(diff = Day_1 - Day_7)
+
+# Split into 2 data frames one for 40 and one for .22
+
+partI_total_diff_40um <- partI_total_diff %>% 
+  filter(filter =="40um_filter")
+partI_total_diff.22um <- partI_total_diff%>% 
+  filter(filter =="0.22um_filter")
+
+```
+
+
+## PI Data visualization
+
+```{r}
+# Colors: these are from Paul Tol's colorblind friendly palette
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
+```
+
+
+### Renwei barplot remake
+
+```{r}
+partI %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= combined_bd, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+  scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7"))) +
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+```
+## Boxplot
+
+```{r}
+partI %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  
+  # create the plot
+  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  
+  # add controls ad x's
+  geom_point(data = partI_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+```
+
+
+## PI Stats and assumption testing
+
+Question:
+
+Does the difference in Bd from day 1 to day 7 differ between the two filter types?
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+### Part I Q1: Paired t-test on the difference in all of the Bd from day 1 to day 7 between the two filters
+
+**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
+
+### Rate_loss
+
+```{r}
+# check normality of the differences across groups: it's normal untransformed in both!
+partI_total_diff_40um %>% 
+ ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # good enough
+shapiro.test(partI_total_diff_40um$rate_loss) # normal, yay!
+hist(partI_total_diff_40um$rate_loss) # good enough
+
+partI_total_diff.22um%>% 
+ ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # gorgeous
+shapiro.test(partI_total_diff.22um$rate_loss) # normal, yay!
+hist(partI_total_diff.22um$rate_loss) # good enough
+
+# visualize the comparison I am making
+partI_total_diff %>%
+ggplot(aes(y= rate_loss, x = filter)) + 
+    geom_boxplot() +
+  geom_jitter() +
+  ggtitle("Visualizing comparison for paired t-test on the rate_loss")
+```
+
+### "Difference" Another way to measure the change in Bd
+
+### check the "diff" *diff = Day_1 - Day_7 then log the difference if needed
+
+```{r}
+
+# check normality of the differences across groups: it's normal untransformed in both!
+partI_total_diff_40um %>% 
+ ggqqplot("diff", title = "Untransformed Bd in both floating and floating diff between day 1 and 7 qqPlot") # good enough
+shapiro.test(partI_total_diff_40um$diff) # normal, yay!
+hist(partI_total_diff_40um$diff) # good enough
+
+partI_total_diff.22um%>% 
+ ggqqplot("diff", title = "Untransformed Bd in both floating and floating diff between day 1 and 7 qqPlot") # gorgeous
+shapiro.test(partI_total_diff.22um$diff) # normal, yay!
+hist(partI_total_diff.22um$diff) # good enough
+
+# visualize the comparison I am making
+partI_total_diff %>%
+ggplot(aes(y= diff, x = filter)) + 
+    geom_boxplot() +
+  geom_jitter() +
+  ggtitle("Visualizing comparison for paired t-test on the differences")
+  
+```
+
+Stats: 
+
+```{r}
+# Step 3: run the paired t-test on the difference
+t.test(partI_total_diff_40um$diff, partI_total_diff.22um$diff, paired = TRUE)
+```
+
+Pond water with microbes has a significantly greater loss of Bd between day 1 to day 7 than pond water without microbes (t = 4.8, df = 14, p = 0.000289). The t-value is positive, which shows that the first item entered (with microbes) has a larger loss of Bd than the second item entered (no microbes.) Df of 14 is expected, because it's 15 sites. 
+
+
+Stats
+
+```{r}
+# Step 3: run the paired t-test on the difference
+t.test(partI_total_diff_40um$rate_loss, partI_total_diff.22um$rate_loss, paired = TRUE)
+```
+
+
+# Part II: Effect of the aquatic environmental biofilm on Bd growth - "9 sites"
+
+## PII About the Data
+
+Wrangled results file name: ["nine-sites-biofilm-on-Bd.csv"](https://docs.google.com/spreadsheets/d/1YCU_tCge48MhDw7cMfYAZYokpwAVHtkaY7rfrC5jUDg/edit#gid=0)
+
+File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" first tab called 9 sites Biofilm on Bd
+
+Statistical question: Is there a difference in Bd quantity in the biofilm between day 1 & 7?
+
+## PII Data Wrangling
+
+```{r}
+part_two <- ns_biofilm_bd
+
+#---- Part II
+# set as factors with levels so they appear in order in plots later
+part_two$site <- factor(part_two$site,
+                                levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010"))
+part_two$bd_location <- factor(part_two$bd_location, levels = c("supernatant", "biofilm"))
+part_two$day <- factor(part_two$day, levels = c("Day_0", "Day_1", "Day_7"))
+
+# Biofilm only, no supernatant, and days 1 and 7 only, no day 0
+part_two_bf_only <- part_two %>% 
+  filter(bd_location == "biofilm") %>% 
+  filter(day != "Day_0")
+  
+
+```
+
+
+## PII Data Visualization
+
+### Renwei barplot
+
+```{r}
+part_two %>%
+ggplot(aes(y= bd_qty, x = site, fill=bd_location)) + 
+    geom_col() +
+    facet_grid(.~day)+
+  theme_classic()+
+  scale_fill_manual(values = c("lightgrey", "gray45" )) +
+    theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") + 
+    scale_y_log10() +
+    xlab("Site") +
+   ylab("Total Bd Quantity Per Well \n (zoospore equivalents)") 
+```
+## Boxplot
+
+```{r}
+part2 <- part_two_bf_only %>%
+ggplot(aes(y= bd_qty, x = day)) + 
+    geom_boxplot(fill = no_microbes_.22_color) +
+    geom_point(alpha = 0.3) +
+    theme_classic() +
+  scale_y_log10() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Time (days)") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  scale_x_discrete (labels= c("Day_1" = "Day 1", "Day_7" = "Day 7"))
+
+# Let's add significance letters
+significance_data <- tibble(
+ day = factor(c("Day_1", "Day_7"), levels = c("Day_1", "Day_7")),
+  y_position = c(1.6e+05, 1.4e+04),  # Adjust this depending on your plot's scale
+  label = c("a", "b"))
+
+part2 + 
+geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
+            position = position_dodge(width = 0.75), vjust = 0) 
+
+```
+
+## PII Assumptions testing and Stats
+
+### Paired t-test
+
+## PI Stats and assumption testing
+
+Question:
+
+Does the amount of Bd in the biofilm differ between day 1 and day 7?
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+Check assumptions
+
+```{r}
+# check normality of the differences across groups let's try untransformed
+part_two_bf_only %>% 
+ ggqqplot("bd_qty", title = "Untransformed Bd loads") +
+  facet_wrap(~day) # gotta transform the data, day 1 is not normal
+
+part_two_bf_only %>% 
+  mutate(log_bd = log(bd_qty)) %>% 
+  ggqqplot("log_bd", title = "Transformed Bd loads") +
+  facet_wrap(~day) # not perfect but close, let's try shapiro tests
+
+# Shapiro tests
+day_one <- part_two_bf_only %>% 
+  mutate(log_bd = log(bd_qty)) %>% 
+  filter(day == "Day_1") %>% # filter to only include day 1
+  pull(log_bd)
+
+shapiro.test(day_one) # p >> 0.05, it's normal!
+
+day_seven <- part_two_bf_only %>% 
+  mutate(log_bd = log(bd_qty)) %>% 
+  filter(day == "Day_7") %>% # filter to only include day 1
+  pull(log_bd)
+
+shapiro.test(day_seven) # p >> 0.05, it's normal!
+
+# Histograms for funsies
+part_two_bf_only %>% 
+  mutate(log_bd = log(bd_qty)) %>% 
+ggplot(aes(x = log_bd)) + # x-axis
+  geom_histogram(bins = 4) + # make a histogram
+  facet_wrap(~ day, # make multiple panels by day
+             scales = "free") # let the axes vary between panels
+```
+
+Stats
+
+```{r}
+# Step 3: run the paired t-test
+t.test(day_one, day_seven, paired = TRUE)
+```
+
+
+**There is significantly more Bd in the biofilm on Day 1 than on Day 7 (t = 10.094, df = 8, p-value < 0.0001)**
+
+Mixed-effects model 
+
+Outcome variable: amount of Bd
+Fixed effect: day
+Random effect: site
+
+### LME
+
+```{r}
+#| warning: false
+#| message: false
+
+# wrangle
+part_two_bf_only  <- part_two_bf_only  %>% 
+  mutate(log_qty = log(bd_qty))
+
+# visualize
+psych::pairs.panels(part_two_bf_only)
+part_two_bf_only %>%
+ ggqqplot("log_qty", title = "log_qty") # good enough
+  shapiro.test(part_two_bf_only$log_qty) # normal, yay!
+  hist(part_two_bf_only$log_qty) # good enough?
+mod <- aov(log_qty ~ day, data = part_two_bf_only) # couldn't use "plot" on lme so this was next best thing?
+plot(mod) # good enough resids?
+
+
+# Model for randomized block design
+lme_mod <- lme(log_qty ~ factor(day), random = ~1|factor(site),  data = part_two_bf_only)
+summary(lme_mod) # summary of the output
+anova(lme_mod) # suse anova table to determine if the fixed effect of day is significant
+
+emmeans::emmeans(lme_mod, pairwise ~ day) # pairwise comparisons
+
+emmeans::lsmeans(lme_mod, pairwise~day, adjust="tukey") # pairwise comparisons
+
+```
+
+There is an overall effect of Day on the amount of Bd detected in the field biofilm (p > 0.001). Specifically, there was more Bd in the field biofilm on day 1 than day 0 (p <.0001), but there was significantly less Bd in the biofilm on day 7 than on day 1 (p <.0001), and there was no difference in the amount of the Bd on day 0 and day 7 (p=0.43). The test is a linear mixed effects model (the model is the log transformed Bd quantity ~ day, random = ~1|site) with a post hoc pairwise comparison using the emmeans package. 
+
+
+# Part III: Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm - "9 sites" and included biofilm
+
+## PIII About the data
+
+Wrangled results file name: ["nine-sites-PW-on-MLBd.csv"](https://docs.google.com/spreadsheets/d/1I2Y4uf3rP3__Y2p3JLrsTD_9PBUNBYgjY7XG1uOidYA/edit?usp=sharing)
+
+File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" tab called 9 sites PW on MLBd
+
+### Statistical question:
+
+Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
+
+Statistical question:
+
+Is there a difference in the **gain or loss of Bd total over 7 days** between the **filter sizes**?
+
+**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = -6.45, df = 7, p-value = 0.0003)**
+
+# PIII Data Wrangling
+
+```{r}
+part_three <- ns_ml_pw_bd %>% 
+  filter(filter != "control") %>% 
+  filter(site != "MQ")
+
+# keep control for labeling plot
+partIII_controls <- ns_ml_pw_bd %>% 
+  filter(site =="MQ") %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant)
+
+# Data type cleaning
+part_three$site <- factor(part_three$site,
+                                levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010"))
+part_three$bd_location <- factor(part_three$bd_location, levels = c("supernatant", "adherent"))
+part_three$day <- factor(part_three$day, levels = c("Day_1", "Day_7")) 
+
+# get the total difference across days by combining both locations of Bd then subtracting across days
+part_three_total_diff <- part_three %>%
+  # combine supernatant and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant) %>% 
+  subset(select = -c(adherent,supernatant)) %>% 
+  
+# different metrics of difference in Bd
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+  
+  # calculate the difference in raw amount of Bd
+  mutate(diff = Day_1 - Day_7) %>% 
+
+  # calculate the rate loss by taking the log of each before subtracting
+  mutate(rate_loss = log(Day_1) - log(Day_7))
+
+# Step 2: create subsets for each treatment
+part_three_total_diff_40um <- part_three_total_diff %>% 
+  filter(filter =="40um_filter")
+part_three_total_diff.22um <- part_three_total_diff %>% 
+  filter(filter =="0.22um_filter")
+
+```
+
+
+## Renwei barplot
+
+```{r}
+part_three %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + supernatant) %>% 
+ggplot(aes(y= combined_bd, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+  scale_y_log10() +
+    facet_wrap(~day)+
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+
+```
+
+## Boxplot
+
+```{r}
+part_three %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+ mutate(combined_bd = adherent + supernatant) %>% 
+
+  # plot it
+  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    theme_classic() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in Pond Water Added to Monolayer Biofilm") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+
+ # add controls ad x's
+geom_point(data = partIII_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+
+```
+
+
+## PIII Stats and assumption testing
+
+Question:
+
+Does the difference in Bd from day 1 to day 7 differ between the two filter types?
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+### Rate_loss
+
+```{r}
+# check normality of the differences across groups: it's normal untransformed in both!
+part_three_total_diff_40um %>% 
+ ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # good enough
+shapiro.test(partI_total_diff_40um$rate_loss) # normal, yay!
+hist(partI_total_diff_40um$rate_loss) # good enough
+
+part_three_total_diff.22um%>% 
+ ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # gorgeous
+shapiro.test(partI_total_diff.22um$rate_loss) # normal, yay!
+hist(partI_total_diff.22um$rate_loss) # good enough
+
+# visualize the comparison I am making
+part_three_total_diff %>%
+ggplot(aes(y= rate_loss, x = filter)) + 
+    geom_boxplot() +
+  geom_jitter() +
+  ggtitle("Visualizing comparison for paired t-test on the rate_loss")
+```
+
+Stats: 
+
+```{r}
+# Step 3: run the paired t-test on the difference
+t.test(part_three_total_diff_40um$rate_loss, part_three_total_diff.22um$rate_loss, paired = TRUE)
+```
+
+When monolayer Bd biofilm is exposed to pond water without microbes has a significantly greater loss of Bd between day 1 to day 7 than pond water with microbes (t = -5.4, df = 8, p = 0.0006825). The t-value is negative, which shows that the first item entered (with microbes) has a smaller loss of Bd than the second item entered (no microbes).
+
+
+### diff not rate loss method, ignore for now
+
+```{r}
+# Assumptions testing
+
+# check normality of the differences across groups
+part_three_total_diff_40um %>% 
+ ggqqplot("diff", title = "40 um") # not great
+shapiro.test(part_three_total_diff_40um$diff) # NOT normal
+hist(part_three_total_diff_40um$diff) # nope
+
+# we gotta transform, and note we have negative: west GAINED Bd
+part_three_total_diff_40um <- part_three_total_diff_40um %>% 
+  mutate(log_diff = log(diff)) # warning: NaN's produced
+
+part_three_total_diff_40um %>% 
+  ggqqplot("log_diff", title = "40 um") # good enough
+shapiro.test(part_three_total_diff_40um$log_diff) # woohoo!!
+hist(part_three_total_diff_40um$log_diff) # sure
+
+# 0.22 micron
+
+# check normality of the differences across groups
+part_three_total_diff.22um  %>% 
+ ggqqplot("diff", title = ".22 um") # not great
+shapiro.test(part_three_total_diff.22um $diff) # shapiro says its fine
+hist(part_three_total_diff.22um $diff) # meh
+
+# we gotta transform, but we have negative: west GAINED Bd
+part_three_total_diff.22um  <- part_three_total_diff.22um %>% 
+  mutate(log_diff = log(diff))
+
+part_three_total_diff.22um  %>% 
+  ggqqplot("log_diff", title = ".22 um") # better?
+shapiro.test(part_three_total_diff.22um $log_diff) # woohoo!!
+hist(part_three_total_diff.22um $log_diff) # sure
+
+# visualize the comparison I am making
+part_three_total_diff %>%
+ggplot(aes(y= diff, x = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.1) +
+  scale_y_log10()+
+  ggtitle("Visualizing comparison for paired t-test on the differences")
+```
+
+Stats: 
+
+```{r}
+# Step 3: run the paired t-test on the difference
+t.test(part_three_total_diff_40um$log_diff, part_three_total_diff.22um$log_diff, paired = TRUE)
+```
+
+Same trend, yay!
+
+**Note: df = 7? It should be 8, look into any NaN's that may have been produced during log transformation**
+
+# Part IV Comparing across all treatments
+
+- 1: susbet out only nine sites
+- 2: subset out by treatment
+- 2: calculate the percent Bd lost from day 1 to day 7 per site AND the rate of loss
+- 3: add column for treatment
+- 4: transform as needed
+- 5: ANOVA and Tukey
+
+
+```{r}
+# data wrangling for comparisons across experiments
+
+pw_no_microbes <- partI_total_diff %>% 
+  # remove "other" 6 sites, not the 9 sites we are using
+  filter(site!="NORTH" & site!="BARN" & site!="PRPND002"  & site!="PRPND003" & site!="GDPND004"  & site!="GDPND008") %>% 
+  filter(filter == "0.22um_filter") %>% 
+  mutate(treatment = "PW 0.22um")
+
+pw_WITH_microbes <- partI_total_diff %>%
+  # remove "other" 6 sites, not the 9 sites we are using
+  filter(site!="NORTH" & site!="BARN" & site!="PRPND002"  & site!="PRPND003" & site!="GDPND004"  & site!="GDPND008") %>% 
+  filter(filter != "0.22um_filter") %>% 
+  mutate(treatment = "PW 40um")
+
+fieldbf_no_microbes <- part_two_bf_only %>%
+   subset(select = -c(bd_location, log_qty)) %>% 
+  filter(day != "Day_0") %>% 
+# calculate the difference in raw amount of Bd
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+  mutate(diff = Day_1 - Day_7) %>% 
+# calculate the rate loss by taking the log of each before subtracting
+  mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
+  mutate(treatment = "Field bf 0.22") %>% 
+  mutate(filter = "0.22um_filter")
+
+monolayer_WITH_microbes <- part_three_total_diff %>% 
+  filter(filter != "0.22um_filter") %>% 
+  mutate(treatment = "Monolayer 40um")
+
+monolayer_NO_microbes <- part_three_total_diff %>% 
+  filter(filter == "0.22um_filter") %>% 
+  mutate(treatment = "Monolayer 0.22um")
+  
+all_parts<- bind_rows(pw_WITH_microbes, pw_no_microbes, fieldbf_no_microbes, monolayer_WITH_microbes, monolayer_NO_microbes) %>% 
+  mutate(percent_loss = (diff/Day_1) * 100) 
+
+# set PW 40 um as the intercept, comparing back to that one
+all_parts$treatment <- factor(all_parts$treatment,
+                          levels = c("PW 40um", "PW 0.22um", "Field bf 0.22", "Monolayer 40um", "Monolayer 0.22um"))
+  
+```
+
+
+## Rate loss
+
+```{r}
+all_parts %>% 
+  ggplot(aes(y= rate_loss, x = treatment, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+    theme_classic() +
+   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 7 Days")
+
+```
+
+```{r}
+mod3 <- aov(rate_loss~treatment, data=all_parts)
+plot(mod3) # not terrible!
+anova(mod3)
+summary(mod3) # sig!
+post_hoc_rateloss <- glht(mod3, # with your ANOVA model
+                 linfct = mcp(treatment = "Tukey"))
+summary(post_hoc_rateloss)
+cld(post_hoc_rateloss) 
+
+# export cld results as a dataframe
+cld_results_rateloss <- cld(post_hoc_rateloss)
+labels_rl <- cld_results_rateloss$mcletters$Letters
+treatments_rl <- names(labels_rl)
+labels_rl <- as.character(labels_rl)
+
+sig_data_rl <- tibble(
+  treatment = treatments_rl,
+  y_position = c(6.5,1.5,6.5,2.5,4),
+  label = labels_rl)
+```
+
+
+Plot rate loss
+
+```{r}
+all_parts$filter <- factor(all_parts$filter)
+ap <- all_parts %>% 
+  ggplot(aes(y= rate_loss, x = treatment, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+    theme_classic() +
+   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+      ylab("Death rate of Bd over 7 Days")
+
+ap + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label), inherit.aes = FALSE) 
+```
+### So what are my takeaways here?
+
+Key comparison: PW 40 um vs Monolayer 40 um: "The addition of a monolayer Bd to pond water leads to a significantly slower death rate of Bd; in other works, the addition of a monolayer Bd to pondwater protects the Bd from microbes"!
+
+Key comparison: Field bf vs pw 0.22: "A natural biofilm increases the Bd death rate compared to not having anything present, AND it increases the Bd death rate as much as the microbes in pond water!
+
+Key comparison: Field bf vs monolayer 0.22: "A monolayer Bd in the absence of microbes has a lower Bd death rate than a field biofilm, in other words, a Bd monolayer is more protective than a natural biofilm!
+
+### another way to organize th same vis
+
+```{r}
+ab <- all_parts %>% 
+  mutate(medium = case_when(
+    grepl("PW", treatment) ~ "PW",
+    grepl("Field bf", treatment) ~ "Field bf",
+    grepl("Monolayer", treatment) ~ "Monolayer"
+  )) %>% 
+   ggplot(aes(y= rate_loss, x = medium, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+    theme_classic() +
+  facet_wrap(~filter, scales = "free_x", labeller = labeller(filter = c("0.22um_filter" = "No Microbes",
+                                                    "40um_filter" = "With Microbes"))) +
+   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Medium") +
+      ylab("Death rate of Bd over 7 Days") + 
+  scale_x_discrete (labels= c("PW" = "Pond Water", "Field bf" = "Aquatic \nEnvironmental Biofilm", "Monolayer" = "Bd-Monolayer\nBiofilm"))
+
+sig_data_rl <- sig_data_rl %>% 
+mutate(filter = case_when(
+    grepl("40um", treatment) ~ "40um_filter",
+    grepl("0.22", treatment) ~ "0.22um_filter")) %>% 
+mutate(medium = case_when(
+    grepl("PW", treatment) ~ "PW",
+    grepl("Field bf", treatment) ~ "Field bf",
+    grepl("Monolayer", treatment) ~ "Monolayer"))
+
+ab + geom_text(data = sig_data_rl, aes(x = medium, y = y_position, label = label, group = filter), inherit.aes = FALSE) 
+```
+
+# Appendix and ramblings
+
+I'm also thinking a 2 way anova may be more appropriate since we have 2 aspects of "treatments" here, the filter and the monolayer vs pond water vs field biofilm. Or, we can just look at the "no microbes" across the treatments? But the comparisons with the monolayer are also interesting...
+
+## two way anova cause why not?
+
+Well, we don't have each pair to compare, and I think we may be messing with the power of the test, so perhaps this wasn't wise, but I will leave it here and think on it!
+
+```{r}
+all_parts_with_medium <- all_parts %>% 
+  mutate(medium = case_when(
+    grepl("PW", treatment) ~ "PW",
+    grepl("Field bf", treatment) ~ "Field bf",
+    grepl("Monolayer", treatment) ~ "Monolayer"
+  ))
+
+all_parts_with_medium$medium <- as.factor(all_parts_with_medium$medium)
+all_parts_with_medium$filter <- as.factor(all_parts_with_medium$filter)
+
+
+mod4 <- aov(rate_loss~medium*filter, data=all_parts_with_medium)
+plot(mod4) # not bad
+anova(mod4)
+summary(mod4) # sig!
+TukeyHSD(mod4)
+
+```
+
+
+## Percent reduction?
+
+```{r}
+all_box <- all_parts %>% 
+  ggplot(aes(y= percent_loss, x = treatment, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+    theme_classic() +
+   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+   theme(
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Treatment") +
+    ylab("Percent Reduction of Bd over 7 Days")
+
+```
+
+## Arcsin square root percent loss
+
+Assumptions testing and stats
+
+```{r}
+# Is my raw data normal?
+mod <- aov(percent_loss~treatment, data=all_parts)
+plot(mod) # nope! gotta transform or try rate
+
+all_parts <- all_parts %>%
+  mutate(prop_loss = percent_loss/100) %>% 
+  mutate(transformed_percent = asin(sqrt(prop_loss)))
+
+mod2 <- aov(transformed_percent~treatment, data=all_parts)
+plot(mod2) # better! 
+
+summary(mod2) # sig
+anova(mod2)
+post_hoc2 <- glht(mod2, # with your ANOVA model
+                 linfct = mcp(treatment = "Tukey"))
+summary(post_hoc2)
+cld(post_hoc2)
+
+# export cld results as a dataframe
+cld_results_acp <- cld(post_hoc2)
+labels_acp <- cld_results_acp$mcletters$Letters
+treatments_acp <- names(labels_acp)
+labels_acp <- as.character(labels_acp)
+
+significance_labels_acp <- data.frame(
+  treatment = treatments_acp,
+  label = labels_acp,
+  stringsAsFactors = FALSE)
+
+# ajust label position
+highest_values <- aggregate(transformed_percent ~ treatment, data = all_parts, max)
+significance_labels_acp <- merge(significance_labels_acp, highest_values, by = "treatment")
+significance_labels_acp$y_position <- significance_labels_acp$transformed_percent * 1.05  # 5% above the max value
+```
+
+Plot arcsinsqrt transformed percent reduction
+
+```{r}
+arcsine_withlabels <- all_parts %>% 
+  ggplot(aes(y= transformed_percent, x = treatment, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+    geom_text(data = significance_labels_acp, aes(x = treatment, y = y_position, label = label),inherit.aes = FALSE) +
+    theme_classic() +
+     scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+      ylab("Percent Reduction of Bd over 7 Days\n(arcsine squareroot transformed)")
+
+arcsine_withlabels
+```
+
