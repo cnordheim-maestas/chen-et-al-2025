@@ -76,17 +76,18 @@ fig2b_summary %>%
   geom_errorbar(aes(ymin = mean - se, # plot the standard error
                     ymax = mean + se),
                 width = 0.1) +
-    geom_line(aes(linetype = line_type)) + 
-  scale_y_log10() +
+    geom_line(aes(linetype = line_type), show.legend = FALSE) + 
+  scale_y_log10(limits = c(1e3, 1e8), 
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
   # vibes
   labs(x = "Day",
        y = "Bd Quantity per sample (ZE/well)") +
   scale_color_manual(values = c("1%TB" = "goldenrod", 
                                 "MQ" = "blue", 
-                                "1%TB+PW+microorganism" = "#63BE7B", 
+                                "1%TB+PW+microorganism" = "darkolivegreen3", 
                                 "PW+microorganism" = "magenta", 
-                                "1%TB+PW-microorganism" = "#63BE7B", 
-                                "PW-microorganism" = "magenta",
+                                "1%TB+PW-microorganism" = "palegreen4", 
+                                "PW-microorganism" = "palevioletred1",
                                 "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
   scale_linetype_manual(values = c("dotted" = "dashed", 
                                    "solid" = "solid")) +
@@ -96,3 +97,7 @@ fig2b_summary %>%
     panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
+
+
+
+
