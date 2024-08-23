@@ -122,10 +122,11 @@ fig2b_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
+# EDA
 
 ## boxplot match East Bay experiment
 
-Remove "MQ" and add it as an X for our control here
+Interesting, in NCOS, by day 1, there was alreadya decline in the amount of Bd in the microbes treatment, unlike in the Bay, where the decline took more time
 
 ```{r}
 fig_2b %>% 
@@ -178,9 +179,37 @@ fig_2b %>%
          strip.text = element_text(face="bold"),
          axis.title = element_text(face = "bold"))
 ```
+### visualize y var: bd load
+
+```{r}
+# partI_total_diff_40um %>% 
+#  ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # good enough
+# shapiro.test(partI_total_diff_40um$rate_loss) # normal, yay!
+# hist(partI_total_diff_40um$rate_loss) # good enough
+# 
+# partI_total_diff.22um%>% 
+#  ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # gorgeous
+# shapiro.test(partI_total_diff.22um$rate_loss) # normal, yay!
+# hist(partI_total_diff.22um$rate_loss) # good enough
+# 
+# # visualize the comparison I am making
+# partI_total_diff %>%
+# ggplot(aes(y= rate_loss, x = filter)) + 
+#     geom_boxplot() +
+#   geom_jitter() +
+#   ggtitle("Visualizing comparison for paired t-test on the rate_loss")
+```
 
 
-EDA
+# Stats
+
+y var: amount of Bd
+
+x vars: day, treatment
+
+Or, can try day, microbes y/n, pw y/n, tb y/n instead of treatment and see if there is a different outcome
+
+NOTE: do I want to do the difference between days like in the east bay part? or the measured Bd? maybe try both?
 
 
 ```{r}
