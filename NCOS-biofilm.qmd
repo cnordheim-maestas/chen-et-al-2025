@@ -28,9 +28,47 @@ library(nlme)
 fig_2b <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
 fig_3b <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
 fig_4b <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
+
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
 ```
 
 # Data reformatting and cleaning
+
+```{r}
+# add column for microbes or no
+fig_2b <- fig_2b %>% 
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microorganism") ~ "y",
+    TRUE ~ "n"
+  )) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(
+    str_detect(sample_ID, "TB") ~ "y",
+    TRUE ~ "n"
+  )) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(
+    str_detect(sample_ID, "PW") ~ "y",
+    TRUE ~ "n"
+  ))
+```
+
+
+
+# Fig 2b
+
+I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure.
+
+It looks like solid lines are with microbes and dashed lines are without microbes
+
+## Over time
+
+### Renwei's figure
+
+![](data/fig_2b_Renweiexcelversion.jpg){fig-align="left" width="4in"}
+
+### ggplot version
 
 ```{r}
 fig2b_summary <- fig_2b %>% 
@@ -40,34 +78,18 @@ fig2b_summary <- fig_2b %>%
             df = n - 1, # calculate the degrees of freedom
             sd = sd(adh_plus_sup), # calculate the standard deviation
             se = sd/sqrt(n), # calculate the standard error
-          )
-```
+          ) %>% 
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microorganism") ~ "y",TRUE ~ "n")) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
 
-# Fig 2b
-
-I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure!
-
-Renwei's figure:
-
-![](data/fig_2b_Renweiexcelversion.jpg){fig-align="left" width="4in"}
-
-ggplot version:
-
-```{r}
 fig2b_summary %>% 
   # reorder to match Renwei's plot
   mutate(sample_ID = factor(sample_ID, 
                             levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
-    mutate(line_type = case_when(
-    sample_ID == "1%TB" ~ "dotted",
-    sample_ID == "MQ" ~ "dotted",
-    sample_ID == "1%TB+PW+microorganism" ~ "solid",
-    sample_ID == "PW+microorganism" ~ "solid",
-    sample_ID == "1%TB+PW-microorganism" ~ "dotted",
-    sample_ID == "PW-microorganism" ~ "dotted",
-    sample_ID == "Added Bd" ~ "solid",
-    TRUE ~ "solid"  # Default case, if any
-  )) %>% 
 
   ggplot(aes(x = day, 
            y = mean, 
@@ -76,12 +98,14 @@ fig2b_summary %>%
   geom_errorbar(aes(ymin = mean - se, # plot the standard error
                     ymax = mean + se),
                 width = 0.1) +
-    geom_line(aes(linetype = line_type), show.legend = FALSE) + 
+    geom_line(aes(linetype = microbes)) + 
   scale_y_log10(limits = c(1e3, 1e8), 
                 breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
   # vibes
   labs(x = "Day",
-       y = "Bd Quantity per sample (ZE/well)") +
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "NCOS data from tab called fig 2b",
+       caption = "supernatant plus adherent visualized here") +
   scale_color_manual(values = c("1%TB" = "goldenrod", 
                                 "MQ" = "blue", 
                                 "1%TB+PW+microorganism" = "darkolivegreen3", 
@@ -89,8 +113,8 @@ fig2b_summary %>%
                                 "1%TB+PW-microorganism" = "palegreen4", 
                                 "PW-microorganism" = "palevioletred1",
                                 "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
-  scale_linetype_manual(values = c("dotted" = "dashed", 
-                                   "solid" = "solid")) +
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid")) +
   theme_minimal() +
   theme(
     panel.grid.major.x = element_blank(), # Remove major vertical grid lines
@@ -98,6 +122,55 @@ fig2b_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
+## boxplot
+
+```{r}
+fig_2b %>% 
+  filter(day != 0) %>% 
+  
+  ggplot(aes(y= adh_plus_sup, x = sample_ID, fill = microbes)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+  scale_y_log10() + 
+   facet_wrap(~day, nrow = 1) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+```
+## boxplot match East Bay experiment
+
+Remove "MQ" and add it as an X for our control here
+
+```{r}
+fig2b_controls <- fig_2b %>% 
+  filter(sample_ID =="MQ") %>% 
+   filter(day != 0 & day != 3 & day != 5) %>%
+   filter(TB != "y")
+
+fig_2b %>% 
+  filter(day != 0 & day != 3 & day != 5) %>%
+  filter(TB != "y") %>% # remove all treatments with TB broth
+  
+  
+  ggplot(aes(y= adh_plus_sup, x = sample_ID, fill = sample_ID)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+  scale_y_log10() + 
+   facet_wrap(~day, labeller = labeller(day = c("1" = "Day 1",
+                                                    "7" = "Day 7"))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    scale_fill_manual(values = c("PW+microorganism" = with_microbes_40_color, 
+                                "PW-microorganism" = no_microbes_.22_color,
+                                "MQ" = "darkgrey"))
+
+```
+
+
+EDA
+
+
+```{r}
+
+```
 
 
 
