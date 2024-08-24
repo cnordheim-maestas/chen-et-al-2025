@@ -54,8 +54,6 @@ fig_2b <- fig_2b %>%
   ))
 ```
 
-
-
 # Fig 2b
 
 I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure.
@@ -153,6 +151,7 @@ fig_2b %>%
          strip.text = element_text(face="bold"),
          axis.title = element_text(face = "bold"))
 ```
+
 ### just days 1 and 7
 
 ```{r}
@@ -179,27 +178,24 @@ fig_2b %>%
          strip.text = element_text(face="bold"),
          axis.title = element_text(face = "bold"))
 ```
+
 ### visualize y var: bd load
 
 ```{r}
-# partI_total_diff_40um %>% 
-#  ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # good enough
-# shapiro.test(partI_total_diff_40um$rate_loss) # normal, yay!
-# hist(partI_total_diff_40um$rate_loss) # good enough
-# 
-# partI_total_diff.22um%>% 
-#  ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # gorgeous
-# shapiro.test(partI_total_diff.22um$rate_loss) # normal, yay!
-# hist(partI_total_diff.22um$rate_loss) # good enough
-# 
-# # visualize the comparison I am making
-# partI_total_diff %>%
-# ggplot(aes(y= rate_loss, x = filter)) + 
-#     geom_boxplot() +
-#   geom_jitter() +
-#   ggtitle("Visualizing comparison for paired t-test on the rate_loss")
-```
+# untransformed
+fig_2b_noday0 <- fig_2b %>% 
+  filter(day != 0) %>% 
+  mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
+ggqqplot(fig_2b_noday0, "adh_plus_sup", title = "untransformed")
+shapiro.test(fig_2b_noday0$adh_plus_sup) # nope
+hist(fig_2b_noday0$adh_plus_sup) # note
 
+# transformed
+ggqqplot(fig_2b_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
+hist(fig_2b_noday0$log_adh_plus_sup) # better
+shapiro.test(fig_2b_noday0$log_adh_plus_sup) # p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended <50 samples
+
+```
 
 # Stats
 
@@ -211,10 +207,94 @@ Or, can try day, microbes y/n, pw y/n, tb y/n instead of treatment and see if th
 
 NOTE: do I want to do the difference between days like in the east bay part? or the measured Bd? maybe try both?
 
+## null
 
 ```{r}
+null <- lm(log_adh_plus_sup ~ 1,
+  data = fig_2b_noday0)
+AIC(null) #326.4356
 
 ```
 
 
+## Bd ~ day + treatment
+
+```{r}
+# quick check: we want day as a FACTOR
+fig_2b_noday0 <- fig_2b_noday0 %>% 
+  mutate(day = as.factor(day))
+str(fig_2b_noday0$day)
+
+# set MQ as reference
+fig_2b_noday0$sample_ID <- factor(fig_2b_noday0$sample_ID)
+fig_2b_noday0$sample_ID <- relevel(fig_2b_noday0$sample_ID, ref = "MQ")
+
+# build model
+mod <- lm(log_adh_plus_sup ~ day + sample_ID,
+  data = fig_2b_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod)
+
+# look at results
+summary(mod)
+anova(mod) # day is significant, sample id is too
+AIC(mod) # 237.1393
+
+# comparisons by day
+emmeans::emmeans(mod, pairwise ~ day) # pairwise comparisons
+
+# comparisons by treatment
+emmeans::emmeans(mod, pairwise ~ sample_ID) # pairwise comparisons
+```
+
+```{r}
+# build model
+mod2 <- lm(log_adh_plus_sup ~ day + microbes + PW + TB,
+  data = fig_2b_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod2) # looks better tbh
+
+# look at results
+summary(mod2)
+anova(mod2) # day, microbes, tb are all significant
+AIC(mod2) # 233.1865 better model!
+
+# comparisons
+emmeans::emmeans(mod2, pairwise ~ day) # same pattern as previous model, day 1-7 and 3-7
+emmeans::emmeans(mod2, pairwise ~ microbes) # microbes p <.0001, no microbes sig more
+emmeans::emmeans(mod2, pairwise ~ TB) # TB p = 0.0002, with TB is sig more
+
+```
+
+## Best model: Bd ~ day\*microbes\*TB
+
+Q: is it more appropriate to also do random effect of treatment? We can try it
+
+```{r}
+library(emmeans)
+# build model
+mod3 <- lm(log_adh_plus_sup ~ day*microbes*TB,
+  data = fig_2b_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod3) # looks good
+
+# look at results
+summary(mod3)
+anova(mod3) # day, microbes, tb are all significant, interactions: day:TB, day:microbes, day:microbes:TB, NOT microbes:TB 
+AIC(mod3) # 161.4887 BEST MODEL
+
+# comparisons
+em <- emmeans(mod3, ~ day * microbes * TB)
+# Perform the Tukey test for pairwise comparisons
+tukey_results <- contrast(em, method = "tukey")
+# View the results
+summary(tukey_results)
+
+```
 
