@@ -82,7 +82,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#goal-re-create-renweis-visualizations-in-r-and-run-stats-across-treatments-and-time" id="toc-goal-re-create-renweis-visualizations-in-r-and-run-stats-across-treatments-and-time" class="nav-link active" data-scroll-target="#goal-re-create-renweis-visualizations-in-r-and-run-stats-across-treatments-and-time">Goal: Re-create Renwei’s visualizations in R and run stats across treatments and time</a></li>
   <li><a href="#data-reformatting-and-cleaning" id="toc-data-reformatting-and-cleaning" class="nav-link" data-scroll-target="#data-reformatting-and-cleaning">Data reformatting and cleaning</a></li>
-  <li><a href="#fig-2b" id="toc-fig-2b" class="nav-link" data-scroll-target="#fig-2b">Fig 2b</a>
+  <li><a href="#b-pond-water" id="toc-b-pond-water" class="nav-link" data-scroll-target="#b-pond-water">2b: Pond water</a>
   <ul class="collapse">
   <li><a href="#over-time" id="toc-over-time" class="nav-link" data-scroll-target="#over-time">Over time</a>
   <ul class="collapse">
@@ -90,20 +90,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#ggplot-version-replicating-renweis" id="toc-ggplot-version-replicating-renweis" class="nav-link" data-scroll-target="#ggplot-version-replicating-renweis">ggplot version: replicating Renwei’s</a></li>
   </ul></li>
   <li><a href="#caitlins-version" id="toc-caitlins-version" class="nav-link" data-scroll-target="#caitlins-version">Caitlin’s version</a></li>
-  </ul></li>
-  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda">EDA</a>
-  <ul class="collapse">
+  <li><a href="#b-eda" id="toc-b-eda" class="nav-link" data-scroll-target="#b-eda">2b EDA</a></li>
   <li><a href="#boxplot-match-east-bay-experiment-lets-remove-tb-for-now" id="toc-boxplot-match-east-bay-experiment-lets-remove-tb-for-now" class="nav-link" data-scroll-target="#boxplot-match-east-bay-experiment-lets-remove-tb-for-now">boxplot match East Bay experiment, let’s remove TB for now</a>
   <ul class="collapse">
   <li><a href="#visualize-y-var-bd-load" id="toc-visualize-y-var-bd-load" class="nav-link" data-scroll-target="#visualize-y-var-bd-load">visualize y var: bd load</a></li>
   </ul></li>
-  </ul></li>
-  <li><a href="#stats" id="toc-stats" class="nav-link" data-scroll-target="#stats">Stats</a>
-  <ul class="collapse">
+  <li><a href="#b-stats" id="toc-b-stats" class="nav-link" data-scroll-target="#b-stats">2b Stats</a></li>
   <li><a href="#null" id="toc-null" class="nav-link" data-scroll-target="#null">null</a></li>
   <li><a href="#best-model-bd-daymicrobestb" id="toc-best-model-bd-daymicrobestb" class="nav-link" data-scroll-target="#best-model-bd-daymicrobestb">Best model: Bd ~ day*microbes*TB</a></li>
   <li><a href="#bd-day-treatment" id="toc-bd-day-treatment" class="nav-link" data-scroll-target="#bd-day-treatment">Bd ~ day + treatment</a></li>
   <li><a href="#no-interactions-bd-day-microbes-pw-tb" id="toc-no-interactions-bd-day-microbes-pw-tb" class="nav-link" data-scroll-target="#no-interactions-bd-day-microbes-pw-tb">No interactions: Bd ~ day + microbes + PW + TB</a></li>
+  </ul></li>
+  <li><a href="#b-aquatic-environmental-biofilm-on-bd-growth-previously-mislabeled-as-4b" id="toc-b-aquatic-environmental-biofilm-on-bd-growth-previously-mislabeled-as-4b" class="nav-link" data-scroll-target="#b-aquatic-environmental-biofilm-on-bd-growth-previously-mislabeled-as-4b">3b Aquatic environmental biofilm on Bd growth (previously mislabeled as 4b):</a>
+  <ul class="collapse">
+  <li><a href="#renweis-figure-1" id="toc-renweis-figure-1" class="nav-link" data-scroll-target="#renweis-figure-1">Renwei’s figure</a></li>
+  <li><a href="#ggplot-version-replicating-renweis-1" id="toc-ggplot-version-replicating-renweis-1" class="nav-link" data-scroll-target="#ggplot-version-replicating-renweis-1">ggplot version: replicating Renwei’s</a></li>
+  </ul></li>
+  <li><a href="#b-monolayer-biofilm-on-bd-growth-previously-mislabeled-as-3b" id="toc-b-monolayer-biofilm-on-bd-growth-previously-mislabeled-as-3b" class="nav-link" data-scroll-target="#b-monolayer-biofilm-on-bd-growth-previously-mislabeled-as-3b">4b Monolayer biofilm on Bd growth (previously mislabeled as 3b):</a>
+  <ul class="collapse">
+  <li><a href="#renweis-figure-2" id="toc-renweis-figure-2" class="nav-link" data-scroll-target="#renweis-figure-2">Renwei’s figure</a></li>
+  <li><a href="#ggplot-version-replicating-renweis-2" id="toc-ggplot-version-replicating-renweis-2" class="nav-link" data-scroll-target="#ggplot-version-replicating-renweis-2">ggplot version: replicating Renwei’s</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -152,9 +158,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nlme)</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(emmeans)</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>fig_2b <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"</span>))</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>fig_3b <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"</span>))</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>fig_4b <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"</span>))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>fig_2b_raw <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"</span>))</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>fig_3b_raw <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"</span>))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>fig_4b_raw <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"</span>))</span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>with_microbes_40_color <span class="ot">&lt;-</span> <span class="st">"#999933"</span></span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>no_microbes_<span class="fl">.22</span>_color <span class="ot">&lt;-</span> <span class="st">"#88ccee"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -166,27 +172,70 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># add column for microbes or no</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>fig_2b <span class="ot">&lt;-</span> fig_2b <span class="sc">%&gt;%</span> </span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">microbes =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"</span><span class="sc">\\</span><span class="st">+microorganism"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 2B</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># add column for microbes or no</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>pw <span class="ot">&lt;-</span> fig_2b_raw <span class="sc">%&gt;%</span> </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">microbes =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"</span><span class="sc">\\</span><span class="st">+microorganism"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="do">## aquatic environmental biofilm (4b but I think its supposed to be 3b)</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># add column for microbes or no</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>ae <span class="ot">&lt;-</span> fig_4b_raw <span class="sc">%&gt;%</span> </span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">sample_ID =</span> Adherent.sample.ID) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add columns for components y/n</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="do">## Monolayer (3b but I think its supposed tobe 4b)</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co"># add column for microbes or no</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>monolayer <span class="ot">&lt;-</span> fig_3b_raw <span class="sc">%&gt;%</span> </span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">sample_ID =</span> sample.ID) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">adh_plus_sup =</span> ahd_plus_sup) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># rename sample_id to only include treatment, not day</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_ID =</span> <span class="fu">str_replace</span>(sample_ID, <span class="st">"-D[0-9]+$"</span>, <span class="st">""</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add columns for components y/n</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">microbes =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"</span><span class="sc">\\</span><span class="st">+microbes"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>,</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
-<section id="fig-2b" class="level1">
-<h1>Fig 2b</h1>
+<section id="b-pond-water" class="level1">
+<h1>2b: Pond water</h1>
 <p>I am not sure what the experimental set up is, but here is a re-creation of Renwei’s excel figure.</p>
 <p>It looks like solid lines are with microbes and dashed lines are without microbes</p>
 <section id="over-time" class="level2">
@@ -204,7 +253,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fig2b_summary <span class="ot">&lt;-</span> fig_2b <span class="sc">%&gt;%</span> </span>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>pw_summary <span class="ot">&lt;-</span> pw <span class="sc">%&gt;%</span> </span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day, sample_ID) <span class="sc">%&gt;%</span> </span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="at">mean =</span> <span class="fu">mean</span>(adh_plus_sup), <span class="co"># calculate the mean</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="fu">length</span>(adh_plus_sup), <span class="co"># count the number of observations</span></span>
@@ -219,7 +268,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) </span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>fig2b_summary <span class="sc">%&gt;%</span> </span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>pw_summary <span class="sc">%&gt;%</span> </span>
 <span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># reorder to match Renwei's plot</span></span>
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_ID =</span> <span class="fu">factor</span>(sample_ID, </span>
 <span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                            <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"1%TB"</span>, <span class="st">"MQ"</span>, <span class="st">"1%TB+PW+microorganism"</span>, <span class="st">"PW+microorganism"</span>, <span class="st">"1%TB+PW-microorganism"</span>, <span class="st">"PW-microorganism"</span>, <span class="st">"Added Bd"</span>))) <span class="sc">%&gt;%</span> </span>
@@ -266,7 +315,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig2b_summary <span class="ot">&lt;-</span> fig_2b <span class="sc">%&gt;%</span> </span>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>pw_summary <span class="ot">&lt;-</span> pw <span class="sc">%&gt;%</span> </span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day, sample_ID) <span class="sc">%&gt;%</span> </span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="at">mean =</span> <span class="fu">mean</span>(adh_plus_sup), <span class="co"># calculate the mean</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="fu">length</span>(adh_plus_sup), <span class="co"># count the number of observations</span></span>
@@ -281,7 +330,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) </span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>fig2b_summary <span class="sc">%&gt;%</span> </span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>pw_summary <span class="sc">%&gt;%</span> </span>
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># reorder to match Renwei's plot</span></span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_ID =</span> <span class="fu">factor</span>(sample_ID, </span>
 <span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>                            <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"1%TB"</span>, <span class="st">"MQ"</span>, <span class="st">"1%TB+PW+microorganism"</span>, <span class="st">"PW+microorganism"</span>, <span class="st">"1%TB+PW-microorganism"</span>, <span class="st">"PW-microorganism"</span>, <span class="st">"Added Bd"</span>))) <span class="sc">%&gt;%</span> </span>
@@ -321,16 +370,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
+<section id="b-eda" class="level2">
+<h2 class="anchored" data-anchor-id="b-eda">2b EDA</h2>
 </section>
-<section id="eda" class="level1">
-<h1>EDA</h1>
 <section id="boxplot-match-east-bay-experiment-lets-remove-tb-for-now" class="level2">
 <h2 class="anchored" data-anchor-id="boxplot-match-east-bay-experiment-lets-remove-tb-for-now">boxplot match East Bay experiment, let’s remove TB for now</h2>
 <p>Interesting, in NCOS, by day 1, there was alreadya decline in the amount of Bd in the microbes treatment, unlike in the Bay, where the decline took more time</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fig_2b <span class="sc">%&gt;%</span> </span>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>pw <span class="sc">%&gt;%</span> </span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">!=</span> <span class="dv">0</span> ) <span class="sc">%&gt;%</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(TB <span class="sc">!=</span> <span class="st">"y"</span>) <span class="sc">%&gt;%</span> <span class="co"># remove all treatments with TB broth</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a> <span class="co"># filter(day != 3 &amp; day != 5) %&gt;% </span></span>
@@ -366,28 +415,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># untransformed</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>fig_2b_noday0 <span class="ot">&lt;-</span> fig_2b <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>pw_noday0 <span class="ot">&lt;-</span> pw <span class="sc">%&gt;%</span> </span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">!=</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_adh_plus_sup =</span> <span class="fu">log</span>(adh_plus_sup)) <span class="co"># note: no zeroes so not log + 1</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(fig_2b_noday0, <span class="st">"adh_plus_sup"</span>, <span class="at">title =</span> <span class="st">"untransformed"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(pw_noday0, <span class="st">"adh_plus_sup"</span>, <span class="at">title =</span> <span class="st">"untransformed"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
 </div>
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(fig_2b_noday0<span class="sc">$</span>adh_plus_sup) <span class="co"># nope</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(pw_noday0<span class="sc">$</span>adh_plus_sup) <span class="co"># nope</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
     Shapiro-Wilk normality test
 
-data:  fig_2b_noday0$adh_plus_sup
+data:  pw_noday0$adh_plus_sup
 W = 0.49498, p-value = 2.434e-14</code></pre>
 </div>
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(fig_2b_noday0<span class="sc">$</span>adh_plus_sup) <span class="co"># note</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pw_noday0<span class="sc">$</span>adh_plus_sup) <span class="co"># note</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-6-2.png" class="img-fluid" width="672"></p>
@@ -395,35 +444,34 @@ W = 0.49498, p-value = 2.434e-14</code></pre>
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># transformed</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(fig_2b_noday0, <span class="st">"log_adh_plus_sup"</span>, <span class="at">title =</span> <span class="st">"log transformed"</span>) <span class="co"># gorgeous</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(pw_noday0, <span class="st">"log_adh_plus_sup"</span>, <span class="at">title =</span> <span class="st">"log transformed"</span>) <span class="co"># gorgeous</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-6-3.png" class="img-fluid" width="672"></p>
 </div>
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(fig_2b_noday0<span class="sc">$</span>log_adh_plus_sup) <span class="co"># better</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pw_noday0<span class="sc">$</span>log_adh_plus_sup) <span class="co"># better</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-6-4.png" class="img-fluid" width="672"></p>
 </div>
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(fig_2b_noday0<span class="sc">$</span>log_adh_plus_sup) <span class="co"># p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended &lt;50 samples</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(pw_noday0<span class="sc">$</span>log_adh_plus_sup) <span class="co"># p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended &lt;50 samples</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
     Shapiro-Wilk normality test
 
-data:  fig_2b_noday0$log_adh_plus_sup
+data:  pw_noday0$log_adh_plus_sup
 W = 0.95623, p-value = 0.01361</code></pre>
 </div>
 </div>
 </section>
 </section>
-</section>
-<section id="stats" class="level1">
-<h1>Stats</h1>
+<section id="b-stats" class="level2">
+<h2 class="anchored" data-anchor-id="b-stats">2b Stats</h2>
 <p>y var: amount of Bd</p>
 <p>x vars: day, treatment, microbes y/n, pw y/n, tb y/n</p>
 <p>Best model: Bd ~ day*microbes*TB</p>
@@ -437,9 +485,9 @@ W = 0.95623, p-value = 0.01361</code></pre>
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># quick check: we want day as a FACTOR</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>fig_2b_noday0 <span class="ot">&lt;-</span> fig_2b_noday0 <span class="sc">%&gt;%</span> </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>pw_noday0 <span class="ot">&lt;-</span> pw_noday0 <span class="sc">%&gt;%</span> </span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">day =</span> <span class="fu">as.factor</span>(day))</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(fig_2b_noday0<span class="sc">$</span>day)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(pw_noday0<span class="sc">$</span>day)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code> Factor w/ 4 levels "1","3","5","7": 1 2 3 4 1 2 3 4 1 2 ...</code></pre>
@@ -447,17 +495,18 @@ W = 0.95623, p-value = 0.01361</code></pre>
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set MQ as reference</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>fig_2b_noday0<span class="sc">$</span>sample_ID <span class="ot">&lt;-</span> <span class="fu">factor</span>(fig_2b_noday0<span class="sc">$</span>sample_ID)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>fig_2b_noday0<span class="sc">$</span>sample_ID <span class="ot">&lt;-</span> <span class="fu">relevel</span>(fig_2b_noday0<span class="sc">$</span>sample_ID, <span class="at">ref =</span> <span class="st">"MQ"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>pw_noday0<span class="sc">$</span>sample_ID <span class="ot">&lt;-</span> <span class="fu">factor</span>(pw_noday0<span class="sc">$</span>sample_ID)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>pw_noday0<span class="sc">$</span>sample_ID <span class="ot">&lt;-</span> <span class="fu">relevel</span>(pw_noday0<span class="sc">$</span>sample_ID, <span class="at">ref =</span> <span class="st">"MQ"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
+</section>
 <section id="null" class="level2">
 <h2 class="anchored" data-anchor-id="null">null</h2>
 <div class="cell">
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>null <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_adh_plus_sup <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> fig_2b_noday0)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> pw_noday0)</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">AIC</span>(null) <span class="co">#326.4356</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
@@ -473,7 +522,7 @@ W = 0.95623, p-value = 0.01361</code></pre>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build model</span></span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>mod3 <span class="ot">&lt;-</span> <span class="fu">aov</span>(log_adh_plus_sup <span class="sc">~</span> day<span class="sc">*</span>microbes<span class="sc">*</span>TB,</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> fig_2b_noday0)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> pw_noday0)</span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># diagnostic plot</span></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
@@ -535,7 +584,7 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <pre><code>  Tukey multiple comparisons of means
     95% family-wise confidence level
 
-Fit: aov(formula = log_adh_plus_sup ~ day * microbes * TB, data = fig_2b_noday0)
+Fit: aov(formula = log_adh_plus_sup ~ day * microbes * TB, data = pw_noday0)
 
 $day
           diff        lwr        upr     p adj
@@ -913,7 +962,7 @@ P value adjustment: tukey method for comparing a family of 16 estimates </code><
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build model</span></span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_adh_plus_sup <span class="sc">~</span> day <span class="sc">+</span> sample_ID,</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> fig_2b_noday0)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> pw_noday0)</span>
 <span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co"># diagnostic plot</span></span>
 <span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
@@ -930,7 +979,7 @@ P value adjustment: tukey method for comparing a family of 16 estimates </code><
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Call:
-lm(formula = log_adh_plus_sup ~ day + sample_ID, data = fig_2b_noday0)
+lm(formula = log_adh_plus_sup ~ day + sample_ID, data = pw_noday0)
 
 Residuals:
     Min      1Q  Median      3Q     Max 
@@ -1069,7 +1118,7 @@ P value adjustment: tukey method for comparing a family of 6 estimates </code></
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build model</span></span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>mod2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_adh_plus_sup <span class="sc">~</span> day <span class="sc">+</span> microbes <span class="sc">+</span> PW <span class="sc">+</span> TB,</span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> fig_2b_noday0)</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> pw_noday0)</span>
 <span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="co"># diagnostic plot</span></span>
 <span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
@@ -1086,7 +1135,7 @@ P value adjustment: tukey method for comparing a family of 6 estimates </code></
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Call:
-lm(formula = log_adh_plus_sup ~ day + microbes + PW + TB, data = fig_2b_noday0)
+lm(formula = log_adh_plus_sup ~ day + microbes + PW + TB, data = pw_noday0)
 
 Residuals:
     Min      1Q  Median      3Q     Max 
@@ -1197,6 +1246,189 @@ $contrasts
  n - y       -1.08 0.271 65  -3.981  0.0002
 
 Results are averaged over the levels of: day, microbes, PW </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="b-aquatic-environmental-biofilm-on-bd-growth-previously-mislabeled-as-4b" class="level1">
+<h1>3b Aquatic environmental biofilm on Bd growth (previously mislabeled as 4b):</h1>
+<p>All microbe-depleted, NO microbe+ treatment (from 3b figure legend)</p>
+<section id="renweis-figure-1" class="level3">
+<h3 class="anchored" data-anchor-id="renweis-figure-1">Renwei’s figure</h3>
+<p><img src="data/3bRenwei.jpg" class="img-fluid" style="width:4in"></p>
+</section>
+<section id="ggplot-version-replicating-renweis-1" class="level3">
+<h3 class="anchored" data-anchor-id="ggplot-version-replicating-renweis-1">ggplot version: replicating Renwei’s</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>ae_summary <span class="ot">&lt;-</span> ae <span class="sc">%&gt;%</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day, sample_ID) <span class="sc">%&gt;%</span></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="at">mean =</span> <span class="fu">mean</span>(adh), <span class="co"># calculate the mean</span></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="fu">length</span>(adh), <span class="co"># count the number of observations</span></span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">df =</span> n <span class="sc">-</span> <span class="dv">1</span>, <span class="co"># calculate the degrees of freedom</span></span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">sd =</span> <span class="fu">sd</span>(adh), <span class="co"># calculate the standard deviation</span></span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">se =</span> sd<span class="sc">/</span><span class="fu">sqrt</span>(n), <span class="co"># calculate the standard error</span></span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%&gt;%</span></span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
+<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>))</span>
+<span id="cb54-13"><a href="#cb54-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-14"><a href="#cb54-14" aria-hidden="true" tabindex="-1"></a>ae_summary <span class="sc">%&gt;%</span></span>
+<span id="cb54-15"><a href="#cb54-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># reorder to match Renwei's plot</span></span>
+<span id="cb54-16"><a href="#cb54-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_ID =</span> <span class="fu">factor</span>(sample_ID,</span>
+<span id="cb54-17"><a href="#cb54-17" aria-hidden="true" tabindex="-1"></a>                            <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"1%TB+AEbiofilm"</span>, <span class="st">"MQ+AEbiofilm"</span>,</span>
+<span id="cb54-18"><a href="#cb54-18" aria-hidden="true" tabindex="-1"></a>                                       <span class="st">"PW+AEBiofilm"</span>,   <span class="st">"Added Bd"</span>  ))) <span class="sc">%&gt;%</span></span>
+<span id="cb54-19"><a href="#cb54-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-20"><a href="#cb54-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> day,</span>
+<span id="cb54-21"><a href="#cb54-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> mean,</span>
+<span id="cb54-22"><a href="#cb54-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> sample_ID)) <span class="sc">+</span></span>
+<span id="cb54-23"><a href="#cb54-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb54-24"><a href="#cb54-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> mean <span class="sc">-</span> se, <span class="co"># plot the standard error</span></span>
+<span id="cb54-25"><a href="#cb54-25" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ymax =</span> mean <span class="sc">+</span> se),</span>
+<span id="cb54-26"><a href="#cb54-26" aria-hidden="true" tabindex="-1"></a>                <span class="at">width =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb54-27"><a href="#cb54-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> </span>
+<span id="cb54-28"><a href="#cb54-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="fl">1e3</span>, <span class="fl">1e7</span>),</span>
+<span id="cb54-29"><a href="#cb54-29" aria-hidden="true" tabindex="-1"></a>                <span class="at">breaks =</span> <span class="fu">c</span>(<span class="fl">1e3</span>, <span class="fl">1e4</span>, <span class="fl">1e5</span>, <span class="fl">1e6</span>, <span class="fl">1e7</span>)) <span class="sc">+</span></span>
+<span id="cb54-30"><a href="#cb54-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># vibes</span></span>
+<span id="cb54-31"><a href="#cb54-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Day"</span>,</span>
+<span id="cb54-32"><a href="#cb54-32" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Bd Quantity per sample (ZE/well)"</span>,</span>
+<span id="cb54-33"><a href="#cb54-33" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Environmental Biofilm"</span>,</span>
+<span id="cb54-34"><a href="#cb54-34" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"only adherent Bd visualized here (the only data we have)</span><span class="sc">\n</span><span class="st">NCOS data from tab called fig 4b"</span>) <span class="sc">+</span></span>
+<span id="cb54-35"><a href="#cb54-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"1%TB+AEbiofilm"</span><span class="ot">=</span> <span class="st">"orange"</span>,</span>
+<span id="cb54-36"><a href="#cb54-36" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"MQ+AEbiofilm"</span> <span class="ot">=</span> <span class="st">"blue"</span>,</span>
+<span id="cb54-37"><a href="#cb54-37" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"PW+AEBiofilm"</span> <span class="ot">=</span> <span class="st">"magenta"</span>,</span>
+<span id="cb54-38"><a href="#cb54-38" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"Added Bd"</span> <span class="ot">=</span> <span class="st">"darkgrey"</span>)) <span class="sc">+</span> <span class="co"># Assign specific colors to match RC's plot</span></span>
+<span id="cb54-39"><a href="#cb54-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb54-40"><a href="#cb54-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb54-41"><a href="#cb54-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major.x =</span> <span class="fu">element_blank</span>(), <span class="co"># Remove major vertical grid lines</span></span>
+<span id="cb54-42"><a href="#cb54-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor.x =</span> <span class="fu">element_blank</span>()) <span class="sc">+</span> <span class="co"># Remove minor vertical grid lines</span></span>
+<span id="cb54-43"><a href="#cb54-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="b-monolayer-biofilm-on-bd-growth-previously-mislabeled-as-3b" class="level1">
+<h1>4b Monolayer biofilm on Bd growth (previously mislabeled as 3b):</h1>
+<p>I am not sure what the experimental set up is, but here is a re-creation of Renwei’s excel figure.</p>
+<p>It looks like solid lines are with microbes and dashed lines are without microbes</p>
+<section id="renweis-figure-2" class="level3">
+<h3 class="anchored" data-anchor-id="renweis-figure-2">Renwei’s figure</h3>
+<p><img src="data/4b_monolayer.jpg" class="img-fluid" style="width:4in"></p>
+</section>
+<section id="ggplot-version-replicating-renweis-2" class="level3">
+<h3 class="anchored" data-anchor-id="ggplot-version-replicating-renweis-2">ggplot version: replicating Renwei’s</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>monolayer_summary <span class="ot">&lt;-</span> monolayer <span class="sc">%&gt;%</span> </span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day, sample_ID) <span class="sc">%&gt;%</span> </span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="at">mean =</span> <span class="fu">mean</span>(adh_plus_sup), <span class="co"># calculate the mean</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="fu">length</span>(adh_plus_sup), <span class="co"># count the number of observations</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">df =</span> n <span class="sc">-</span> <span class="dv">1</span>, <span class="co"># calculate the degrees of freedom</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">sd =</span> <span class="fu">sd</span>(adh_plus_sup), <span class="co"># calculate the standard deviation</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">se =</span> sd<span class="sc">/</span><span class="fu">sqrt</span>(n), <span class="co"># calculate the standard error</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%&gt;%</span> </span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">microbes =</span> <span class="fu">case_when</span>(</span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"</span><span class="sc">\\</span><span class="st">+microbes"</span>) <span class="sc">~</span> <span class="st">"y"</span>,<span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) </span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a>monolayer_summary <span class="sc">%&gt;%</span> </span>
+<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># reorder to match Renwei's plot</span></span>
+<span id="cb55-18"><a href="#cb55-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_ID =</span> <span class="fu">factor</span>(sample_ID, </span>
+<span id="cb55-19"><a href="#cb55-19" aria-hidden="true" tabindex="-1"></a>                            <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"TB+PW+microbes"</span>,<span class="st">"PW+microbes"</span>,</span>
+<span id="cb55-20"><a href="#cb55-20" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">"TB+PW-microbes"</span>, <span class="st">"PW-microbes"</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb55-21"><a href="#cb55-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> day, </span>
+<span id="cb55-22"><a href="#cb55-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> mean, </span>
+<span id="cb55-23"><a href="#cb55-23" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> sample_ID)) <span class="sc">+</span></span>
+<span id="cb55-24"><a href="#cb55-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb55-25"><a href="#cb55-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> mean <span class="sc">-</span> se, <span class="co"># plot the standard error</span></span>
+<span id="cb55-26"><a href="#cb55-26" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ymax =</span> mean <span class="sc">+</span> se),</span>
+<span id="cb55-27"><a href="#cb55-27" aria-hidden="true" tabindex="-1"></a>                <span class="at">width =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb55-28"><a href="#cb55-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">linetype =</span> microbes)) <span class="sc">+</span> </span>
+<span id="cb55-29"><a href="#cb55-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="fl">1e4</span>, <span class="fl">1e8</span>), </span>
+<span id="cb55-30"><a href="#cb55-30" aria-hidden="true" tabindex="-1"></a>                <span class="at">breaks =</span> <span class="fu">c</span>(<span class="fl">1e4</span>, <span class="fl">1e5</span>, <span class="fl">1e6</span>, <span class="fl">1e7</span>, <span class="fl">1e8</span>)) <span class="sc">+</span></span>
+<span id="cb55-31"><a href="#cb55-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># vibes</span></span>
+<span id="cb55-32"><a href="#cb55-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Day"</span>,</span>
+<span id="cb55-33"><a href="#cb55-33" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Bd Quantity per sample (ZE/well)"</span>,</span>
+<span id="cb55-34"><a href="#cb55-34" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Monolayer"</span>,</span>
+<span id="cb55-35"><a href="#cb55-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"supernatant plus adherent visualized here"</span>) <span class="sc">+</span></span>
+<span id="cb55-36"><a href="#cb55-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"TB+PW+microbes"</span> <span class="ot">=</span> <span class="st">"palegreen4"</span>, </span>
+<span id="cb55-37"><a href="#cb55-37" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"PW+microbes"</span> <span class="ot">=</span> <span class="st">"magenta"</span>, </span>
+<span id="cb55-38"><a href="#cb55-38" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"TB+PW-microbes"</span> <span class="ot">=</span> <span class="st">"chocolate4"</span>, </span>
+<span id="cb55-39"><a href="#cb55-39" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"PW-microbes"</span> <span class="ot">=</span> <span class="st">"purple"</span>)) <span class="sc">+</span> <span class="co"># Assign specific colors to match RC's plot</span></span>
+<span id="cb55-40"><a href="#cb55-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_linetype_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"n"</span> <span class="ot">=</span> <span class="st">"dashed"</span>, </span>
+<span id="cb55-41"><a href="#cb55-41" aria-hidden="true" tabindex="-1"></a>                                   <span class="st">"y"</span> <span class="ot">=</span> <span class="st">"solid"</span>)) <span class="sc">+</span></span>
+<span id="cb55-42"><a href="#cb55-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb55-43"><a href="#cb55-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb55-44"><a href="#cb55-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major.x =</span> <span class="fu">element_blank</span>(), <span class="co"># Remove major vertical grid lines</span></span>
+<span id="cb55-45"><a href="#cb55-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor.x =</span> <span class="fu">element_blank</span>()) <span class="sc">+</span> <span class="co"># Remove minor vertical grid lines</span></span>
+<span id="cb55-46"><a href="#cb55-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>monolayer_summary <span class="ot">&lt;-</span> monolayer <span class="sc">%&gt;%</span> </span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(day, sample_ID) <span class="sc">%&gt;%</span> </span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="at">mean =</span> <span class="fu">mean</span>(adh_plus_sup), <span class="co"># calculate the mean</span></span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="fu">length</span>(adh_plus_sup), <span class="co"># count the number of observations</span></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">df =</span> n <span class="sc">-</span> <span class="dv">1</span>, <span class="co"># calculate the degrees of freedom</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">sd =</span> <span class="fu">sd</span>(adh_plus_sup), <span class="co"># calculate the standard deviation</span></span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">se =</span> sd<span class="sc">/</span><span class="fu">sqrt</span>(n), <span class="co"># calculate the standard error</span></span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%&gt;%</span> </span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">microbes =</span> <span class="fu">case_when</span>(</span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(sample_ID, <span class="st">"</span><span class="sc">\\</span><span class="st">+microbes"</span>) <span class="sc">~</span> <span class="st">"y"</span>,<span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for TB or no</span></span>
+<span id="cb56-12"><a href="#cb56-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TB =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"TB"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb56-13"><a href="#cb56-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add column for PW or no</span></span>
+<span id="cb56-14"><a href="#cb56-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PW =</span> <span class="fu">case_when</span>(<span class="fu">str_detect</span>(sample_ID, <span class="st">"PW"</span>) <span class="sc">~</span> <span class="st">"y"</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"n"</span>)) </span>
+<span id="cb56-15"><a href="#cb56-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-16"><a href="#cb56-16" aria-hidden="true" tabindex="-1"></a>monolayer_summary <span class="sc">%&gt;%</span> </span>
+<span id="cb56-17"><a href="#cb56-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># reorder to match Renwei's plot</span></span>
+<span id="cb56-18"><a href="#cb56-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_ID =</span> <span class="fu">factor</span>(sample_ID, </span>
+<span id="cb56-19"><a href="#cb56-19" aria-hidden="true" tabindex="-1"></a>                            <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"TB+PW+microbes"</span>,<span class="st">"PW+microbes"</span>,</span>
+<span id="cb56-20"><a href="#cb56-20" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">"TB+PW-microbes"</span>, <span class="st">"PW-microbes"</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb56-21"><a href="#cb56-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> day, </span>
+<span id="cb56-22"><a href="#cb56-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> mean, </span>
+<span id="cb56-23"><a href="#cb56-23" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> sample_ID)) <span class="sc">+</span></span>
+<span id="cb56-24"><a href="#cb56-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb56-25"><a href="#cb56-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> mean <span class="sc">-</span> se, <span class="co"># plot the standard error</span></span>
+<span id="cb56-26"><a href="#cb56-26" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ymax =</span> mean <span class="sc">+</span> se),</span>
+<span id="cb56-27"><a href="#cb56-27" aria-hidden="true" tabindex="-1"></a>                <span class="at">width =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb56-28"><a href="#cb56-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">linetype =</span> microbes)) <span class="sc">+</span> </span>
+<span id="cb56-29"><a href="#cb56-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="fl">1e4</span>, <span class="fl">1e8</span>), </span>
+<span id="cb56-30"><a href="#cb56-30" aria-hidden="true" tabindex="-1"></a>                <span class="at">breaks =</span> <span class="fu">c</span>(<span class="fl">1e4</span>, <span class="fl">1e5</span>, <span class="fl">1e6</span>, <span class="fl">1e7</span>, <span class="fl">1e8</span>)) <span class="sc">+</span></span>
+<span id="cb56-31"><a href="#cb56-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb56-32"><a href="#cb56-32" aria-hidden="true" tabindex="-1"></a>  <span class="co"># vibes</span></span>
+<span id="cb56-33"><a href="#cb56-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Day"</span>,</span>
+<span id="cb56-34"><a href="#cb56-34" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Bd Quantity per sample (ZE/well)"</span>,</span>
+<span id="cb56-35"><a href="#cb56-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Monolayer Bd: colorblind friendly"</span>,</span>
+<span id="cb56-36"><a href="#cb56-36" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"supernatant plus adherent visualized here</span><span class="sc">\n</span><span class="st">NCOS data from tab called fig 3b but I think it was supposed to be 4b"</span>) <span class="sc">+</span></span>
+<span id="cb56-37"><a href="#cb56-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"TB+PW+microbes"</span> <span class="ot">=</span> <span class="st">"#4477AA"</span>, </span>
+<span id="cb56-38"><a href="#cb56-38" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"PW+microbes"</span> <span class="ot">=</span> <span class="st">"#EE6677"</span>, </span>
+<span id="cb56-39"><a href="#cb56-39" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"TB+PW-microbes"</span> <span class="ot">=</span> <span class="st">"#66CCEE"</span>, </span>
+<span id="cb56-40"><a href="#cb56-40" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"PW-microbes"</span> <span class="ot">=</span> <span class="st">"#AA3377"</span>)) <span class="sc">+</span> <span class="co"># Assign specific colors to match RC's plot</span></span>
+<span id="cb56-41"><a href="#cb56-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_linetype_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"n"</span> <span class="ot">=</span> <span class="st">"dashed"</span>, </span>
+<span id="cb56-42"><a href="#cb56-42" aria-hidden="true" tabindex="-1"></a>                                   <span class="st">"y"</span> <span class="ot">=</span> <span class="st">"solid"</span>)) <span class="sc">+</span></span>
+<span id="cb56-43"><a href="#cb56-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb56-44"><a href="#cb56-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb56-45"><a href="#cb56-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major.x =</span> <span class="fu">element_blank</span>(), <span class="co"># Remove major vertical grid lines</span></span>
+<span id="cb56-46"><a href="#cb56-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor.x =</span> <span class="fu">element_blank</span>()) <span class="sc">+</span> <span class="co"># Remove minor vertical grid lines</span></span>
+<span id="cb56-47"><a href="#cb56-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 </section>
