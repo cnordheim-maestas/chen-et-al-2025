@@ -106,10 +106,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#renweis-figure-1" id="toc-renweis-figure-1" class="nav-link" data-scroll-target="#renweis-figure-1">Renwei’s figure</a></li>
   <li><a href="#ggplot-version-replicating-renweis-ae" id="toc-ggplot-version-replicating-renweis-ae" class="nav-link" data-scroll-target="#ggplot-version-replicating-renweis-ae">ggplot version: replicating Renwei’s AE</a></li>
   <li><a href="#caitlins-version-ae" id="toc-caitlins-version-ae" class="nav-link" data-scroll-target="#caitlins-version-ae">Caitlin’s version AE</a></li>
-  </ul></li>
   <li><a href="#b-eda-1" id="toc-b-eda-1" class="nav-link" data-scroll-target="#b-eda-1">3b EDA</a>
   <ul class="collapse">
   <li><a href="#visualize-y-var-bd-load-1" id="toc-visualize-y-var-bd-load-1" class="nav-link" data-scroll-target="#visualize-y-var-bd-load-1">visualize y var: bd load</a></li>
+  </ul></li>
   <li><a href="#b-stats-1" id="toc-b-stats-1" class="nav-link" data-scroll-target="#b-stats-1">3b Stats</a></li>
   <li><a href="#null-1" id="toc-null-1" class="nav-link" data-scroll-target="#null-1">null</a></li>
   <li><a href="#bd-daymedium" id="toc-bd-daymedium" class="nav-link" data-scroll-target="#bd-daymedium">Bd ~ day*medium</a></li>
@@ -123,6 +123,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#b-eda-2" id="toc-b-eda-2" class="nav-link" data-scroll-target="#b-eda-2">4b EDA</a>
   <ul class="collapse">
   <li><a href="#visualize-y-var-bd-load-2" id="toc-visualize-y-var-bd-load-2" class="nav-link" data-scroll-target="#visualize-y-var-bd-load-2">visualize y var: bd load</a></li>
+  <li><a href="#b-stats-2" id="toc-b-stats-2" class="nav-link" data-scroll-target="#b-stats-2">4b Stats</a></li>
+  <li><a href="#null-2" id="toc-null-2" class="nav-link" data-scroll-target="#null-2">null</a></li>
+  <li><a href="#best-model-bd-daymicrobestb-1" id="toc-best-model-bd-daymicrobestb-1" class="nav-link" data-scroll-target="#best-model-bd-daymicrobestb-1">Best model: Bd ~ day*microbes*TB</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -1379,9 +1382,8 @@ Results are averaged over the levels of: day, microbes, PW </code></pre>
 </div>
 </div>
 </section>
-</section>
-<section id="b-eda-1" class="level1">
-<h1>3b EDA</h1>
+<section id="b-eda-1" class="level2">
+<h2 class="anchored" data-anchor-id="b-eda-1">3b EDA</h2>
 <section id="visualize-y-var-bd-load-1" class="level3">
 <h3 class="anchored" data-anchor-id="visualize-y-var-bd-load-1">visualize y var: bd load</h3>
 <div class="cell">
@@ -1441,6 +1443,7 @@ data:  ae_noday0$log_adh
 W = 0.95671, p-value = 0.1699</code></pre>
 </div>
 </div>
+</section>
 </section>
 <section id="b-stats-1" class="level2">
 <h2 class="anchored" data-anchor-id="b-stats-1">3b Stats</h2>
@@ -1841,6 +1844,330 @@ W = 0.70581, p-value = 1.684e-08</code></pre>
 
 data:  ml_noday0$log_adh_plus_sup
 W = 0.93767, p-value = 0.01321</code></pre>
+</div>
+</div>
+</section>
+<section id="b-stats-2" class="level2">
+<h2 class="anchored" data-anchor-id="b-stats-2">4b Stats</h2>
+<p>y var: amount of Bd</p>
+<p>x vars: day, treatment, microbes y/n, pw y/n, tb y/n</p>
+<p>Best model: Bd ~ day*microbes*TB</p>
+<p>Question: Does the amount of Bd in the sample differ across the treatments of presence of microbes, TB, and day?</p>
+<p>Model: 3-way ANOVA</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="co"># quick check: we want day as a FACTOR</span></span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>ml_noday0 <span class="ot">&lt;-</span> ml_noday0 <span class="sc">%&gt;%</span> </span>
+<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">day =</span> <span class="fu">as.factor</span>(day))</span>
+<span id="cb89-4"><a href="#cb89-4" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(ml_noday0<span class="sc">$</span>day)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> Factor w/ 4 levels "1","3","5","7": 1 2 3 4 1 2 3 4 1 2 ...</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set PW-microbes as reference (no milliQ here)</span></span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>ml_noday0<span class="sc">$</span>sample_ID <span class="ot">&lt;-</span> <span class="fu">factor</span>(ml_noday0<span class="sc">$</span>sample_ID)</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>ml_noday0<span class="sc">$</span>sample_ID <span class="ot">&lt;-</span> <span class="fu">relevel</span>(ml_noday0<span class="sc">$</span>sample_ID, <span class="at">ref =</span> <span class="st">"PW-microbes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="null-2" class="level2">
+<h2 class="anchored" data-anchor-id="null-2">null</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>null <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_adh_plus_sup <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> ml_noday0)</span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a><span class="fu">AIC</span>(null) <span class="co">#205.8778</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 205.8778</code></pre>
+</div>
+</div>
+</section>
+<section id="best-model-bd-daymicrobestb-1" class="level2">
+<h2 class="anchored" data-anchor-id="best-model-bd-daymicrobestb-1">Best model: Bd ~ day*microbes*TB</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build model</span></span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>mod3 <span class="ot">&lt;-</span> <span class="fu">aov</span>(log_adh_plus_sup <span class="sc">~</span> day<span class="sc">*</span>microbes<span class="sc">*</span>TB,</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> ml_noday0)</span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a><span class="co"># diagnostic plot</span></span>
+<span id="cb94-6"><a href="#cb94-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb94-7"><a href="#cb94-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mod3) <span class="co"># not bad</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="co"># look at results</span></span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Df Sum Sq Mean Sq F value   Pr(&gt;F)    
+day              3  87.73   29.24  51.956 2.12e-12 ***
+microbes         1  45.11   45.11  80.150 3.16e-10 ***
+TB               1   0.14    0.14   0.244 0.624668    
+day:microbes     3  14.09    4.70   8.343 0.000306 ***
+day:TB           3   0.43    0.14   0.258 0.855388    
+microbes:TB      1  21.95   21.95  38.994 5.36e-07 ***
+day:microbes:TB  3   1.03    0.34   0.612 0.612365    
+Residuals       32  18.01    0.56                     
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(mod3) <span class="co"># day, microbes, tb are all significant, interactions: day:TB, day:microbes, day:microbes:TB, NOT microbes:TB </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Variance Table
+
+Response: log_adh_plus_sup
+                Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+day              3 87.734  29.245 51.9556 2.125e-12 ***
+microbes         1 45.114  45.114 80.1497 3.159e-10 ***
+TB               1  0.137   0.137  0.2441 0.6246676    
+day:microbes     3 14.088   4.696  8.3430 0.0003062 ***
+day:TB           3  0.435   0.145  0.2575 0.8553879    
+microbes:TB      1 21.949  21.949 38.9944 5.357e-07 ***
+day:microbes:TB  3  1.033   0.344  0.6117 0.6123649    
+Residuals       32 18.012   0.563                      
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="fu">AIC</span>(mod3) <span class="co"># 123.1704 better than null</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 123.1704</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TukeyHSD</span>(mod3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = log_adh_plus_sup ~ day * microbes * TB, data = ml_noday0)
+
+$day
+          diff       lwr        upr     p adj
+3-1 -1.1794120 -2.009259 -0.3495653 0.0028472
+5-1 -2.7740393 -3.603886 -1.9441926 0.0000000
+7-1 -3.4578367 -4.287683 -2.6279900 0.0000000
+5-3 -1.5946273 -2.424474 -0.7647806 0.0000621
+7-3 -2.2784247 -3.108271 -1.4485780 0.0000001
+7-5 -0.6837974 -1.513644  0.1460493 0.1361563
+
+$microbes
+         diff       lwr       upr p adj
+y-n -1.938951 -2.380108 -1.497795     0
+
+$TB
+          diff        lwr       upr     p adj
+y-n -0.1069938 -0.5481504 0.3341627 0.6246676
+
+$`day:microbes`
+                diff        lwr         upr     p adj
+3:n-1:n -0.009980032 -1.4131066  1.39314653 1.0000000
+5:n-1:n -1.434808205 -2.8379348 -0.03168164 0.0421262
+7:n-1:n -3.005806163 -4.4089327 -1.60267960 0.0000019
+1:y-1:n -0.458604465 -1.8617310  0.94452210 0.9607786
+3:y-1:n -2.807448522 -4.2105751 -1.40432196 0.0000070
+5:y-1:n -4.571874907 -5.9750015 -3.16874835 0.0000000
+7:y-1:n -4.368471773 -5.7715983 -2.96534521 0.0000000
+5:n-3:n -1.424828172 -2.8279547 -0.02170161 0.0444766
+7:n-3:n -2.995826131 -4.3989527 -1.59269957 0.0000021
+1:y-3:n -0.448624433 -1.8517510  0.95450213 0.9650948
+3:y-3:n -2.797468489 -4.2005951 -1.39434193 0.0000075
+5:y-3:n -4.561894875 -5.9650214 -3.15876831 0.0000000
+7:y-3:n -4.358491741 -5.7616183 -2.95536518 0.0000000
+7:n-5:n -1.570997958 -2.9741245 -0.16787140 0.0195621
+1:y-5:n  0.976203739 -0.4269228  2.37933030 0.3488075
+3:y-5:n -1.372640317 -2.7757669  0.03048624 0.0587961
+5:y-5:n -3.137066703 -4.5401933 -1.73394014 0.0000008
+7:y-5:n -2.933663568 -4.3367901 -1.53053701 0.0000031
+1:y-7:n  2.547201698  1.1440751  3.95032826 0.0000387
+3:y-7:n  0.198357641 -1.2047689  1.60148420 0.9997660
+5:y-7:n -1.566068744 -2.9691953 -0.16294218 0.0201286
+7:y-7:n -1.362665610 -2.7657922  0.04046095 0.0619588
+3:y-1:y -2.348844056 -3.7519706 -0.94571749 0.0001432
+5:y-1:y -4.113270442 -5.5163970 -2.71014388 0.0000000
+7:y-1:y -3.909867307 -5.3129939 -2.50674075 0.0000000
+5:y-3:y -1.764426386 -3.1675529 -0.36129982 0.0061460
+7:y-3:y -1.561023251 -2.9641498 -0.15789669 0.0207242
+7:y-5:y  0.203403134 -1.1997234  1.60652970 0.9997236
+
+$`day:TB`
+                diff         lwr         upr     p adj
+3:n-1:n -1.164819894 -2.56794646  0.23830667 0.1628028
+5:n-1:n -2.917254332 -4.32038089 -1.51412777 0.0000034
+7:n-1:n -3.668172706 -5.07129927 -2.26504614 0.0000000
+1:y-1:n -0.276473262 -1.67959982  1.12665330 0.9979801
+3:y-1:n -1.470477455 -2.87360402 -0.06735089 0.0346174
+5:y-1:n -2.907297576 -4.31042414 -1.50417101 0.0000036
+7:y-1:n -3.523974026 -4.92710059 -2.12084746 0.0000001
+5:n-3:n -1.752434437 -3.15556100 -0.34930788 0.0066158
+7:n-3:n -2.503352812 -3.90647937 -1.10022625 0.0000517
+1:y-3:n  0.888346633 -0.51477993  2.29147319 0.4659960
+3:y-3:n -0.305657561 -1.70878412  1.09746900 0.9962207
+5:y-3:n -1.742477682 -3.14560424 -0.33935112 0.0070319
+7:y-3:n -2.359154131 -3.76228069 -0.95602757 0.0001338
+7:n-5:n -0.750918374 -2.15404494  0.65220819 0.6663829
+1:y-5:n  2.640781070  1.23765451  4.04390763 0.0000209
+3:y-5:n  1.446776876  0.04365031  2.84990344 0.0394561
+5:y-5:n  0.009956756 -1.39316981  1.41308332 1.0000000
+7:y-5:n -0.606719694 -2.00984626  0.79640687 0.8502642
+1:y-7:n  3.391699445  1.98857288  4.79482601 0.0000002
+3:y-7:n  2.197695251  0.79456869  3.60082181 0.0003863
+5:y-7:n  0.760875130 -0.64225143  2.16400169 0.6519995
+7:y-7:n  0.144198680 -1.25892788  1.54732524 0.9999726
+3:y-1:y -1.194004194 -2.59713076  0.20912237 0.1425437
+5:y-1:y -2.630824314 -4.03395088 -1.22769775 0.0000223
+7:y-1:y -3.247500764 -4.65062733 -1.84437420 0.0000004
+5:y-3:y -1.436820121 -2.83994668 -0.03369356 0.0416663
+7:y-3:y -2.053496570 -3.45662313 -0.65037001 0.0009873
+7:y-5:y -0.616676450 -2.01980301  0.78645011 0.8396394
+
+$`microbes:TB`
+              diff        lwr        upr     p adj
+y:n-n:n -0.5865137 -1.4163604  0.2433330 0.2421005
+n:y-n:n  1.2454438  0.4155971  2.0752905 0.0015788
+y:y-n:n -2.0459452 -2.8757919 -1.2160985 0.0000009
+n:y-y:n  1.8319575  1.0021108  2.6618042 0.0000066
+y:y-y:n -1.4594315 -2.2892782 -0.6295848 0.0002207
+y:y-n:y -3.2913889 -4.1212356 -2.4615422 0.0000000
+
+$`day:microbes:TB`
+                   diff         lwr         upr     p adj
+3:n:n-1:n:n -0.40497983 -2.67646851  1.86650884 0.9999976
+5:n:n-1:n:n -1.81006602 -4.08155469  0.46142266 0.2435488
+7:n:n-1:n:n -3.47764654 -5.74913521 -1.20615786 0.0002644
+1:y:n-1:n:n  0.44226358 -1.82922509  2.71375225 0.9999923
+3:y:n-1:n:n -1.48239638 -3.75388505  0.78909230 0.5473382
+5:y:n-1:n:n -3.58217907 -5.85366774 -1.31069039 0.0001636
+7:y:n-1:n:n -3.41643530 -5.68792397 -1.14494662 0.0003501
+1:n:y-1:n:n  0.62439478 -1.64709389  2.89588346 0.9994665
+3:n:y-1:n:n  1.00941455 -1.26207412  3.28090323 0.9458515
+5:n:y-1:n:n -0.43515561 -2.70664428  1.83633306 0.9999938
+7:n:y-1:n:n -1.90957101 -4.18105968  0.36191767 0.1796386
+1:y:y-1:n:n -0.73507773 -3.00656640  1.53641095 0.9968576
+3:y:y-1:n:n -3.50810588 -5.77959456 -1.23661721 0.0002299
+5:y:y-1:n:n -4.93717596 -7.20866464 -2.66568729 0.0000004
+7:y:y-1:n:n -4.69611347 -6.96760214 -2.42462479 0.0000010
+5:n:n-3:n:n -1.40508618 -3.67657486  0.86640249 0.6304295
+7:n:n-3:n:n -3.07266670 -5.34415538 -0.80117803 0.0016723
+1:y:n-3:n:n  0.84724341 -1.42424526  3.11873209 0.9874697
+3:y:n-3:n:n -1.07741654 -3.34890522  1.19407213 0.9134438
+5:y:n-3:n:n -3.17719924 -5.44868791 -0.90571056 0.0010427
+7:y:n-3:n:n -3.01145546 -5.28294414 -0.73996679 0.0022011
+1:n:y-3:n:n  1.02937462 -1.24211406  3.30086329 0.9373783
+3:n:y-3:n:n  1.41439438 -0.85709429  3.68588306 0.6204680
+5:n:y-3:n:n -0.03017578 -2.30166445  2.24131290 1.0000000
+7:n:y-3:n:n -1.50459117 -3.77607985  0.76689750 0.5236064
+1:y:y-3:n:n -0.33009789 -2.60158657  1.94139078 0.9999999
+3:y:y-3:n:n -3.10312605 -5.37461472 -0.83163738 0.0014578
+5:y:y-3:n:n -4.53219613 -6.80368480 -2.26070746 0.0000022
+7:y:y-3:n:n -4.29113363 -6.56262231 -2.01964496 0.0000064
+7:n:n-5:n:n -1.66758052 -3.93906919  0.60390815 0.3601767
+1:y:n-5:n:n  2.25232960 -0.01915908  4.52381827 0.0538031
+3:y:n-5:n:n  0.32766964 -1.94381904  2.59915831 0.9999999
+5:y:n-5:n:n -1.77211305 -4.04360173  0.49937562 0.2717594
+7:y:n-5:n:n -1.60636928 -3.87785796  0.66511939 0.4185706
+1:n:y-5:n:n  2.43446080  0.16297212  4.70594947 0.0262719
+3:n:y-5:n:n  2.81948057  0.54799189  5.09096924 0.0051530
+5:n:y-5:n:n  1.37491041 -0.89657827  3.64639908 0.6624604
+7:n:y-5:n:n -0.09950499 -2.37099367  2.17198368 1.0000000
+1:y:y-5:n:n  1.07498829 -1.19650039  3.34647696 0.9147761
+3:y:y-5:n:n -1.69803987 -3.96952854  0.57344881 0.3328500
+5:y:y-5:n:n -3.12710995 -5.39859862 -0.85562127 0.0013082
+7:y:y-5:n:n -2.88604745 -5.15753612 -0.61455878 0.0038451
+1:y:n-7:n:n  3.91991012  1.64842144  6.19139879 0.0000347
+3:y:n-7:n:n  1.99525016 -0.27623852  4.26673883 0.1357359
+5:y:n-7:n:n -0.10453253 -2.37602121  2.16695614 1.0000000
+7:y:n-7:n:n  0.06121124 -2.21027744  2.33269991 1.0000000
+1:n:y-7:n:n  4.10204132  1.83055264  6.37352999 0.0000151
+3:n:y-7:n:n  4.48706109  2.21557241  6.75854976 0.0000026
+5:n:y-7:n:n  3.04249093  0.77100225  5.31397960 0.0019152
+7:n:y-7:n:n  1.56807553 -0.70341315  3.83956420 0.4571371
+1:y:y-7:n:n  2.74256881  0.47108013  5.01405748 0.0072027
+3:y:y-7:n:n -0.03045935 -2.30194802  2.24102933 1.0000000
+5:y:y-7:n:n -1.45952943 -3.73101810  0.81195925 0.5719209
+7:y:y-7:n:n -1.21846693 -3.48995560  1.05302174 0.8139107
+3:y:n-1:y:n -1.92465996 -4.19614863  0.34682872 0.1711876
+5:y:n-1:y:n -4.02444265 -6.29593132 -1.75295397 0.0000215
+7:y:n-1:y:n -3.85869888 -6.13018755 -1.58721020 0.0000459
+1:n:y-1:y:n  0.18213120 -2.08935747  2.45361988 1.0000000
+3:n:y-1:y:n  0.56715097 -1.70433770  2.83863965 0.9998264
+5:n:y-1:y:n -0.87741919 -3.14890786  1.39406948 0.9828302
+7:n:y-1:y:n -2.35183459 -4.62332326 -0.08034591 0.0365623
+1:y:y-1:y:n -1.17734131 -3.44882998  1.09414737 0.8472747
+3:y:y-1:y:n -3.95036946 -6.22185814 -1.67888079 0.0000302
+5:y:y-1:y:n -5.37943954 -7.65092822 -3.10795087 0.0000001
+7:y:y-1:y:n -5.13837705 -7.40986572 -2.86688837 0.0000002
+5:y:n-3:y:n -2.09978269 -4.37127137  0.17170598 0.0944936
+7:y:n-3:y:n -1.93403892 -4.20552759  0.33744975 0.1660935
+1:n:y-3:y:n  2.10679116 -0.16469751  4.37827983 0.0921590
+3:n:y-3:y:n  2.49181093  0.22032225  4.76329960 0.0207899
+5:n:y-3:y:n  1.04724077 -1.22424791  3.31872944 0.9290698
+7:n:y-3:y:n -0.42717463 -2.69866330  1.84431404 0.9999951
+1:y:y-3:y:n  0.74731865 -1.52417002  3.01880732 0.9962789
+3:y:y-3:y:n -2.02570951 -4.29719818  0.24577917 0.1224092
+5:y:y-3:y:n -3.45477959 -5.72626826 -1.18329091 0.0002937
+7:y:y-3:y:n -3.21371709 -5.48520576 -0.94222841 0.0008835
+7:y:n-5:y:n  0.16574377 -2.10574490  2.43723245 1.0000000
+1:n:y-5:y:n  4.20657385  1.93508518  6.47806253 0.0000094
+3:n:y-5:y:n  4.59159362  2.32010495  6.86308229 0.0000017
+5:n:y-5:y:n  3.14702346  0.87553478  5.41851213 0.0011955
+7:n:y-5:y:n  1.67260806 -0.59888061  3.94409674 0.3555823
+1:y:y-5:y:n  2.84710134  0.57561267  5.11859002 0.0045649
+3:y:y-5:y:n  0.07407319 -2.19741549  2.34556186 1.0000000
+5:y:y-5:y:n -1.35499689 -3.62648557  0.91649178 0.6832914
+7:y:y-5:y:n -1.11393440 -3.38542307  1.15755428 0.8918163
+1:n:y-7:y:n  4.04083008  1.76934141  6.31231875 0.0000199
+3:n:y-7:y:n  4.42584985  2.15436117  6.69733852 0.0000035
+5:n:y-7:y:n  2.98127969  0.70979101  5.25276836 0.0025190
+7:n:y-7:y:n  1.50686429 -0.76462438  3.77835296 0.5211863
+1:y:y-7:y:n  2.68135757  0.40986890  4.95284624 0.0093750
+3:y:y-7:y:n -0.09167059 -2.36315926  2.17981809 1.0000000
+5:y:y-7:y:n -1.52074067 -3.79222934  0.75074801 0.5064654
+7:y:y-7:y:n -1.27967817 -3.55116684  0.99181051 0.7585760
+3:n:y-1:n:y  0.38501977 -1.88646891  2.65650844 0.9999988
+5:n:y-1:n:y -1.05955039 -3.33103907  1.21193828 0.9229392
+7:n:y-1:n:y -2.53396579 -4.80545446 -0.26247712 0.0174656
+1:y:y-1:n:y -1.35947251 -3.63096119  0.91201616 0.6786354
+3:y:y-1:n:y -4.13250067 -6.40398934 -1.86101199 0.0000131
+5:y:y-1:n:y -5.56157075 -7.83305942 -3.29008207 0.0000000
+7:y:y-1:n:y -5.32050825 -7.59199692 -3.04901957 0.0000001
+5:n:y-3:n:y -1.44457016 -3.71605884  0.82691851 0.5880307
+7:n:y-3:n:y -2.91898556 -5.19047423 -0.64749688 0.0033235
+1:y:y-3:n:y -1.74449228 -4.01598095  0.52699640 0.2936207
+3:y:y-3:n:y -4.51752043 -6.78900911 -2.24603176 0.0000023
+5:y:y-3:n:y -5.94659051 -8.21807919 -3.67510184 0.0000000
+7:y:y-3:n:y -5.70552802 -7.97701669 -3.43403934 0.0000000
+7:n:y-5:n:y -1.47441540 -3.74590407  0.79707328 0.5559074
+1:y:y-5:n:y -0.29992212 -2.57141079  1.97156656 1.0000000
+3:y:y-5:n:y -3.07295027 -5.34443895 -0.80146160 0.0016701
+5:y:y-5:n:y -4.50202035 -6.77350903 -2.23053168 0.0000025
+7:y:y-5:n:y -4.26095786 -6.53244653 -1.98946918 0.0000073
+1:y:y-7:n:y  1.17449328 -1.09699539  3.44598195 0.8494597
+3:y:y-7:n:y -1.59853488 -3.87002355  0.67295380 0.4263460
+5:y:y-7:n:y -3.02760496 -5.29909363 -0.75611628 0.0020475
+7:y:y-7:n:y -2.78654246 -5.05803113 -0.51505378 0.0059504
+3:y:y-1:y:y -2.77302816 -5.04451683 -0.50153948 0.0063110
+5:y:y-1:y:y -4.20209823 -6.47358691 -1.93060956 0.0000096
+7:y:y-1:y:y -3.96103574 -6.23252441 -1.68954706 0.0000287
+5:y:y-3:y:y -1.42907008 -3.70055875  0.84241859 0.6047120
+7:y:y-3:y:y -1.18800758 -3.45949626  1.08348109 0.8389439
+7:y:y-5:y:y  0.24106250 -2.03042618  2.51255117 1.0000000</code></pre>
 </div>
 </div>
 </section>

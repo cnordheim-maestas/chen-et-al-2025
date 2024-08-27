@@ -520,7 +520,7 @@ ae_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
-# 3b EDA
+## 3b EDA
 
 ### visualize y var: bd load
 
@@ -750,3 +750,57 @@ ggqqplot(ml_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
 hist(ml_noday0$log_adh_plus_sup) # better
 shapiro.test(ml_noday0$log_adh_plus_sup) # p-value = 0.01321 not quite normal
 ```
+
+## 4b Stats
+
+y var: amount of Bd
+
+x vars: day, treatment, microbes y/n, pw y/n, tb y/n
+
+Best model: Bd \~ day\*microbes\*TB
+
+Question: Does the amount of Bd in the sample differ across the treatments of presence of microbes, TB, and day?
+
+Model: 3-way ANOVA
+
+```{r}
+# quick check: we want day as a FACTOR
+ml_noday0 <- ml_noday0 %>% 
+  mutate(day = as.factor(day))
+str(ml_noday0$day)
+
+# set PW-microbes as reference (no milliQ here)
+ml_noday0$sample_ID <- factor(ml_noday0$sample_ID)
+ml_noday0$sample_ID <- relevel(ml_noday0$sample_ID, ref = "PW-microbes")
+```
+
+## null
+
+```{r}
+null <- lm(log_adh_plus_sup ~ 1,
+  data = ml_noday0)
+AIC(null) #205.8778
+
+```
+
+## Best model: Bd \~ day\*microbes\*TB
+
+```{r}
+# build model
+mod3 <- aov(log_adh_plus_sup ~ day*microbes*TB,
+  data = ml_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod3) # not bad
+
+# look at results
+summary(mod3)
+anova(mod3) # day, microbes, tb are all significant, interactions: day:TB, day:microbes, day:microbes:TB, NOT microbes:TB 
+AIC(mod3) # 123.1704 better than null
+
+TukeyHSD(mod3)
+
+```
+
+
