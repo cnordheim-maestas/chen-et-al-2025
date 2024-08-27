@@ -120,6 +120,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#ggplot-version-replicating-renweis-ml" id="toc-ggplot-version-replicating-renweis-ml" class="nav-link" data-scroll-target="#ggplot-version-replicating-renweis-ml">ggplot version: replicating Renwei’s ML</a></li>
   <li><a href="#caitlins-version-ml" id="toc-caitlins-version-ml" class="nav-link" data-scroll-target="#caitlins-version-ml">Caitlin’s version ML</a></li>
   </ul></li>
+  <li><a href="#b-eda-2" id="toc-b-eda-2" class="nav-link" data-scroll-target="#b-eda-2">4b EDA</a>
+  <ul class="collapse">
+  <li><a href="#visualize-y-var-bd-load-2" id="toc-visualize-y-var-bd-load-2" class="nav-link" data-scroll-target="#visualize-y-var-bd-load-2">visualize y var: bd load</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -1774,6 +1778,69 @@ $`day:medium`
 </details>
 <div class="cell-output-display">
 <p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="b-eda-2" class="level1">
+<h1>4b EDA</h1>
+<section id="visualize-y-var-bd-load-2" class="level3">
+<h3 class="anchored" data-anchor-id="visualize-y-var-bd-load-2">visualize y var: bd load</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># untransformed</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>ml_noday0 <span class="ot">&lt;-</span> monolayer <span class="sc">%&gt;%</span> </span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(day <span class="sc">!=</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_adh_plus_sup =</span> <span class="fu">log</span>(adh_plus_sup)) <span class="co"># note: no zeroes so not log + 1</span></span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(ml_noday0, <span class="st">"adh_plus_sup"</span>, <span class="at">title =</span> <span class="st">"untransformed"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(ml_noday0<span class="sc">$</span>adh_plus_sup) <span class="co"># nope</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Shapiro-Wilk normality test
+
+data:  ml_noday0$adh_plus_sup
+W = 0.70581, p-value = 1.684e-08</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(ml_noday0<span class="sc">$</span>adh_plus_sup) <span class="co"># note</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-21-2.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="co"># transformed</span></span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggqqplot</span>(ml_noday0, <span class="st">"log_adh_plus_sup"</span>, <span class="at">title =</span> <span class="st">"log transformed"</span>) <span class="co"># gorgeous</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-21-3.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(ml_noday0<span class="sc">$</span>log_adh_plus_sup) <span class="co"># better</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="NCOS-biofilm_files/figure-html/unnamed-chunk-21-4.png" class="img-fluid" width="672"></p>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(ml_noday0<span class="sc">$</span>log_adh_plus_sup) <span class="co"># p-value = 0.01321 not quite normal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Shapiro-Wilk normality test
+
+data:  ml_noday0$log_adh_plus_sup
+W = 0.93767, p-value = 0.01321</code></pre>
 </div>
 </div>
 </section>

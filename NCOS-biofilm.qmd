@@ -732,3 +732,21 @@ monolayer_summary %>%
     panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
+# 4b EDA
+
+### visualize y var: bd load
+
+```{r}
+# untransformed
+ml_noday0 <- monolayer %>% 
+  filter(day != 0) %>% 
+  mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
+ggqqplot(ml_noday0, "adh_plus_sup", title = "untransformed")
+shapiro.test(ml_noday0$adh_plus_sup) # nope
+hist(ml_noday0$adh_plus_sup) # note
+
+# transformed
+ggqqplot(ml_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
+hist(ml_noday0$log_adh_plus_sup) # better
+shapiro.test(ml_noday0$log_adh_plus_sup) # p-value = 0.01321 not quite normal
+```
