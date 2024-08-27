@@ -26,9 +26,9 @@ library(multcomp)
 library(nlme)
 library(emmeans)
 
-fig_2b <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
-fig_3b <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
-fig_4b <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
+fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
+fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
+fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
 
 with_microbes_40_color <- "#999933"
 no_microbes_.22_color <- "#88ccee"
@@ -37,8 +37,9 @@ no_microbes_.22_color <- "#88ccee"
 # Data reformatting and cleaning
 
 ```{r}
+## 2B
 # add column for microbes or no
-fig_2b <- fig_2b %>% 
+pw <- fig_2b_raw %>% 
   mutate(microbes = case_when(
     str_detect(sample_ID, "\\+microorganism") ~ "y",
     TRUE ~ "n"
@@ -53,9 +54,35 @@ fig_2b <- fig_2b %>%
     str_detect(sample_ID, "PW") ~ "y",
     TRUE ~ "n"
   ))
+
+## 4B
+# add column for microbes or no
+monolayer <- fig_3b_raw %>% 
+  rename(sample_ID = sample.ID) %>% 
+  rename(adh_plus_sup = ahd_plus_sup) %>% 
+  # rename sample_id to only include treatment, not day
+  mutate(sample_ID = str_replace(sample_ID, "-D[0-9]+$", "")) %>% 
+
+  # add columns for components y/n
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microbes") ~ "y",
+    TRUE ~ "n"
+  )) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(
+    str_detect(sample_ID, "TB") ~ "y",
+    TRUE ~ "n"
+  )) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(
+    str_detect(sample_ID, "PW") ~ "y",
+    TRUE ~ "n"
+  ))
+
+
 ```
 
-# Fig 2b
+# 2b: Pond water
 
 I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure.
 
@@ -70,7 +97,7 @@ It looks like solid lines are with microbes and dashed lines are without microbe
 ### ggplot version: replicating Renwei's
 
 ```{r}
-fig2b_summary <- fig_2b %>% 
+pw_summary <- pw %>% 
   group_by(day, sample_ID) %>% 
   reframe(mean = mean(adh_plus_sup), # calculate the mean
             n = length(adh_plus_sup), # count the number of observations
@@ -85,7 +112,7 @@ fig2b_summary <- fig_2b %>%
   # add column for PW or no
   mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
 
-fig2b_summary %>% 
+pw_summary %>% 
   # reorder to match Renwei's plot
   mutate(sample_ID = factor(sample_ID, 
                             levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
@@ -126,7 +153,7 @@ fig2b_summary %>%
 Used colorblind friendly palette
 
 ```{r}
-fig2b_summary <- fig_2b %>% 
+pw_summary <- pw %>% 
   group_by(day, sample_ID) %>% 
   reframe(mean = mean(adh_plus_sup), # calculate the mean
             n = length(adh_plus_sup), # count the number of observations
@@ -141,7 +168,7 @@ fig2b_summary <- fig_2b %>%
   # add column for PW or no
   mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
 
-fig2b_summary %>% 
+pw_summary %>% 
   # reorder to match Renwei's plot
   mutate(sample_ID = factor(sample_ID, 
                             levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
@@ -177,14 +204,14 @@ fig2b_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
-# EDA
+## 2b EDA
 
 ## boxplot match East Bay experiment, let's remove TB for now
 
 Interesting, in NCOS, by day 1, there was alreadya decline in the amount of Bd in the microbes treatment, unlike in the Bay, where the decline took more time
 
 ```{r}
-fig_2b %>% 
+pw %>% 
   filter(day != 0 ) %>%
   filter(TB != "y") %>% # remove all treatments with TB broth
  # filter(day != 3 & day != 5) %>% 
@@ -216,27 +243,27 @@ This will allow for the p-values differentiating days and microbe presence absen
 
 ```{r}
 # untransformed
-fig_2b_noday0 <- fig_2b %>% 
+pw_noday0 <- pw %>% 
   filter(day != 0) %>% 
   mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
-ggqqplot(fig_2b_noday0, "adh_plus_sup", title = "untransformed")
-shapiro.test(fig_2b_noday0$adh_plus_sup) # nope
-hist(fig_2b_noday0$adh_plus_sup) # note
+ggqqplot(pw_noday0, "adh_plus_sup", title = "untransformed")
+shapiro.test(pw_noday0$adh_plus_sup) # nope
+hist(pw_noday0$adh_plus_sup) # note
 
 # transformed
-ggqqplot(fig_2b_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
-hist(fig_2b_noday0$log_adh_plus_sup) # better
-shapiro.test(fig_2b_noday0$log_adh_plus_sup) # p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended <50 samples
+ggqqplot(pw_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
+hist(pw_noday0$log_adh_plus_sup) # better
+shapiro.test(pw_noday0$log_adh_plus_sup) # p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended <50 samples
 
 ```
 
-# Stats
+## 2b Stats
 
 y var: amount of Bd
 
 x vars: day, treatment, microbes y/n, pw y/n, tb y/n
 
-Best model: Bd ~ day\*microbes\*TB
+Best model: Bd \~ day\*microbes\*TB
 
 Question: Does the amount of Bd in the sample differ across the treatments of presence of microbes, TB, and day?
 
@@ -246,42 +273,38 @@ Answer: Yes, there is a significant effect of day, presence of microbes, presenc
 
 First-order comparisons:
 
-Samples with: 
-the presence of microbes are associated with lower Bd
-with TB have higher Bd
-days 1-7 and 3-7 are different, with day 1 having higher Bd than day 3 and day 3 having higher bd than day 7
+Samples with: the presence of microbes are associated with lower Bd with TB have higher Bd days 1-7 and 3-7 are different, with day 1 having higher Bd than day 3 and day 3 having higher bd than day 7
 
-I dont recommend writing out all second-order and third-order comparisons, but you can say something like there is an influence of the interaction of microbes and the day, and TB and the day. 
+I dont recommend writing out all second-order and third-order comparisons, but you can say something like there is an influence of the interaction of microbes and the day, and TB and the day.
 
 ```{r}
 # quick check: we want day as a FACTOR
-fig_2b_noday0 <- fig_2b_noday0 %>% 
+pw_noday0 <- pw_noday0 %>% 
   mutate(day = as.factor(day))
-str(fig_2b_noday0$day)
+str(pw_noday0$day)
 
 # set MQ as reference
-fig_2b_noday0$sample_ID <- factor(fig_2b_noday0$sample_ID)
-fig_2b_noday0$sample_ID <- relevel(fig_2b_noday0$sample_ID, ref = "MQ")
+pw_noday0$sample_ID <- factor(pw_noday0$sample_ID)
+pw_noday0$sample_ID <- relevel(pw_noday0$sample_ID, ref = "MQ")
 ```
-
 
 ## null
 
 ```{r}
 null <- lm(log_adh_plus_sup ~ 1,
-  data = fig_2b_noday0)
+  data = pw_noday0)
 AIC(null) #326.4356
 
 ```
 
-## Best model: Bd ~ day\*microbes\*TB
+## Best model: Bd \~ day\*microbes\*TB
 
 Q: is it more appropriate to also do random effect of treatment? We can try it
 
 ```{r}
 # build model
 mod3 <- aov(log_adh_plus_sup ~ day*microbes*TB,
-  data = fig_2b_noday0)
+  data = pw_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
@@ -303,35 +326,35 @@ summary(tukey_results)
 
 ```
 
-## Bd ~ day + treatment
+## Bd \~ day + treatment
 
 If it is important to you to have p-values comparing at the treatment level, you can use this instead, but I think it provides less information than the model above, and it has a higher aic value
 
-Significant Contrasts (p-value < 0.05):
+Significant Contrasts (p-value \< 0.05):
 
-1. **MQ - (1%TB+PW+microorganism)**: p-value = `<.0001`
-2. **MQ - (PW+microorganism)**: p-value = `<.0001`
-3. **1%TB - (1%TB+PW+microorganism)**: p-value = `<.0001`
-4. **1%TB - (PW+microorganism)**: p-value = `<.0001`
-5. **(1%TB+PW-microorganism) - (1%TB+PW+microorganism)**: p-value = `<.0001`
-6. **(1%TB+PW-microorganism) - (PW+microorganism)**: p-value = `<.0001`
-7. **(1%TB+PW+microorganism) - (PW-microorganism)**: p-value = `<.0001`
-8. **(PW-microorganism) - (PW+microorganism)**: p-value = `<.0001`
+1.  **MQ - (1%TB+PW+microorganism)**: p-value = `<.0001`
+2.  **MQ - (PW+microorganism)**: p-value = `<.0001`
+3.  **1%TB - (1%TB+PW+microorganism)**: p-value = `<.0001`
+4.  **1%TB - (PW+microorganism)**: p-value = `<.0001`
+5.  **(1%TB+PW-microorganism) - (1%TB+PW+microorganism)**: p-value = `<.0001`
+6.  **(1%TB+PW-microorganism) - (PW+microorganism)**: p-value = `<.0001`
+7.  **(1%TB+PW+microorganism) - (PW-microorganism)**: p-value = `<.0001`
+8.  **(PW-microorganism) - (PW+microorganism)**: p-value = `<.0001`
 
 Non-Significant Contrasts (p-value ≥ 0.05):
 
-1. **MQ - 1%TB**: p-value = `0.3017`
-2. **MQ - (1%TB+PW-microorganism)**: p-value = `0.0500` (marginal significance)
-3. **MQ - (PW-microorganism)**: p-value = `0.9917`
-4. **1%TB - (1%TB+PW-microorganism)**: p-value = `0.9586`
-5. **1%TB - (PW-microorganism)**: p-value = `0.6577`
-6. **(1%TB+PW-microorganism) - (PW-microorganism)**: p-value = `0.1888`
-7. **(1%TB+PW+microorganism) - (PW-microorganism)**: p-value = `0.1940`
+1.  **MQ - 1%TB**: p-value = `0.3017`
+2.  **MQ - (1%TB+PW-microorganism)**: p-value = `0.0500` (marginal significance)
+3.  **MQ - (PW-microorganism)**: p-value = `0.9917`
+4.  **1%TB - (1%TB+PW-microorganism)**: p-value = `0.9586`
+5.  **1%TB - (PW-microorganism)**: p-value = `0.6577`
+6.  **(1%TB+PW-microorganism) - (PW-microorganism)**: p-value = `0.1888`
+7.  **(1%TB+PW+microorganism) - (PW-microorganism)**: p-value = `0.1940`
 
 ```{r}
 # build model
 mod <- lm(log_adh_plus_sup ~ day + sample_ID,
-  data = fig_2b_noday0)
+  data = pw_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
@@ -349,14 +372,14 @@ emmeans::emmeans(mod, pairwise ~ day) # pairwise comparisons
 emmeans::emmeans(mod, pairwise ~ sample_ID) # pairwise comparisons
 ```
 
-## No interactions: Bd ~ day + microbes + PW + TB
+## No interactions: Bd \~ day + microbes + PW + TB
 
 This is nt a great model, but I kept it for yall to see
 
 ```{r}
 # build model
 mod2 <- lm(log_adh_plus_sup ~ day + microbes + PW + TB,
-  data = fig_2b_noday0)
+  data = pw_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
@@ -373,3 +396,180 @@ emmeans::emmeans(mod2, pairwise ~ microbes) # microbes p <.0001, no microbes sig
 emmeans::emmeans(mod2, pairwise ~ TB) # TB p = 0.0002, with TB is sig more
 
 ```
+
+# 3b Aquatic environmental biofilm on Bd growth (previously mislabeled as 4b):
+
+I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure.
+
+It looks like solid lines are with microbes and dashed lines are without microbes
+
+### Renwei's figure
+
+![](data/3bRenwei.jpg){width="4in"}
+
+### ggplot version: replicating Renwei's
+
+```{r}
+ae_summary <- ae %>% 
+  group_by(day, sample_ID) %>% 
+  reframe(mean = mean(adh_plus_sup), # calculate the mean
+            n = length(adh_plus_sup), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh_plus_sup), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>% 
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microbes") ~ "y",TRUE ~ "n")) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
+
+fig3b_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("TB+PW+microbes","PW+microbes","PW-microbes",
+                                        "TB+PW-microbes"))) %>% 
+
+  ggplot(aes(x = day, 
+           y = mean, 
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+    geom_line(aes(linetype = microbes)) + 
+  scale_y_log10(limits = c(1e3, 1e8), 
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "NCOS data from tab called fig 2b",
+       caption = "supernatant plus adherent visualized here") +
+  scale_color_manual(values = c("1%TB" = "goldenrod", 
+                                "MQ" = "blue", 
+                                "1%TB+PW+microorganism" = "darkolivegreen3", 
+                                "PW+microorganism" = "magenta", 
+                                "1%TB+PW-microorganism" = "palegreen4", 
+                                "PW-microorganism" = "palevioletred1",
+                                "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid")) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
+```
+
+# 4b Monolayer biofilm on Bd growth (previously mislabeled as 3b):
+
+I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure.
+
+It looks like solid lines are with microbes and dashed lines are without microbes
+
+### Renwei's figure
+
+![](data/4b_monolayer.jpg){width="4in"}
+
+### ggplot version: replicating Renwei's
+
+```{r}
+monolayer_summary <- monolayer %>% 
+  group_by(day, sample_ID) %>% 
+  reframe(mean = mean(adh_plus_sup), # calculate the mean
+            n = length(adh_plus_sup), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh_plus_sup), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>% 
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microbes") ~ "y",TRUE ~ "n")) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
+
+monolayer_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("TB+PW+microbes","PW+microbes",
+                                        "TB+PW-microbes", "PW-microbes"))) %>% 
+  ggplot(aes(x = day, 
+           y = mean, 
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+    geom_line(aes(linetype = microbes)) + 
+  scale_y_log10(limits = c(1e4, 1e8), 
+                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "NCOS data from tab called fig 2b",
+       caption = "supernatant plus adherent visualized here") +
+  scale_color_manual(values = c("TB+PW+microbes" = "palegreen4", 
+                                "PW+microbes" = "magenta", 
+                                "TB+PW-microbes" = "chocolate4", 
+                                "PW-microbes" = "purple")) + # Assign specific colors to match RC's plot
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid")) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
+```
+
+```{r}
+monolayer_summary <- monolayer %>% 
+  group_by(day, sample_ID) %>% 
+  reframe(mean = mean(adh_plus_sup), # calculate the mean
+            n = length(adh_plus_sup), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh_plus_sup), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>% 
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microbes") ~ "y",TRUE ~ "n")) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
+
+monolayer_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("TB+PW+microbes","PW+microbes",
+                                        "TB+PW-microbes", "PW-microbes"))) %>% 
+  ggplot(aes(x = day, 
+           y = mean, 
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+    geom_line(aes(linetype = microbes)) + 
+  scale_y_log10(limits = c(1e4, 1e8), 
+                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8)) +
+  
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "Monolayer Bd: colorblind friendly",
+       caption = "supernatant plus adherent visualized here\nNCOS data from tab called fig 3b but I think it was supposed to be 4b") +
+  scale_color_manual(values = c("TB+PW+microbes" = "#4477AA", 
+                                "PW+microbes" = "#EE6677", 
+                                "TB+PW-microbes" = "#66CCEE", 
+                                "PW-microbes" = "#AA3377")) + # Assign specific colors to match RC's plot
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid")) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
+```
+
