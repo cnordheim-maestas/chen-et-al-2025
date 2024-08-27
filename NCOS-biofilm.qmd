@@ -58,7 +58,7 @@ pw <- fig_2b_raw %>%
 
 ## aquatic environmental biofilm (4b but I think its supposed to be 3b)
 # add column for microbes or no
-ae <- fig_4b_raw %>% 
+ae <- fig_3b_raw %>% 
   rename(sample_ID = Adherent.sample.ID) %>% 
   
   # add columns for components y/n
@@ -75,7 +75,7 @@ ae <- fig_4b_raw %>%
 
 ## Monolayer (3b but I think its supposed tobe 4b)
 # add column for microbes or no
-monolayer <- fig_3b_raw %>% 
+monolayer <- fig_4b_raw %>% 
   rename(sample_ID = sample.ID) %>% 
   rename(adh_plus_sup = ahd_plus_sup) %>% 
   # rename sample_id to only include treatment, not day
@@ -226,7 +226,7 @@ pw_summary %>%
 
 ## boxplot match East Bay experiment, let's remove TB for now
 
-Interesting, in NCOS, by day 1, there was alreadya decline in the amount of Bd in the microbes treatment, unlike in the Bay, where the decline took more time
+Interesting, in NCOS, by day 1, there was already decline in the amount of Bd in the microbes treatment, unlike in the Bay, where the decline took more time
 
 ```{r}
 pw %>% 
@@ -415,15 +415,15 @@ emmeans::emmeans(mod2, pairwise ~ TB) # TB p = 0.0002, with TB is sig more
 
 ```
 
-# 3b Aquatic environmental biofilm on Bd growth (previously mislabeled as 4b):
+# 3b Aquatic environmental biofilm on Bd growth:
 
-All microbe-depleted, NO microbe+ treatment (from 3b figure legend)
+All microbe-depleted, NO microbe+ treatment (from RC's 3b figure legend)
 
 ### Renwei's figure
 
 ![](data/3bRenwei.jpg){width="4in"}
 
-### ggplot version: replicating Renwei's
+### ggplot version: replicating Renwei's AE
 
 ```{r}
 ae_summary <- ae %>%
@@ -459,7 +459,7 @@ ae_summary %>%
   labs(x = "Day",
        y = "Bd Quantity per sample (ZE/well)",
        title = "Environmental Biofilm",
-       caption = "only adherent Bd visualized here (the only data we have)\nNCOS data from tab called fig 4b") +
+       caption = "only adherent Bd visualized here (the only data we have)") +
   scale_color_manual(values = c("1%TB+AEbiofilm"= "orange",
                                 "MQ+AEbiofilm" = "blue",
                                 "PW+AEBiofilm" = "magenta",
@@ -471,9 +471,158 @@ ae_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
-# 4b Monolayer biofilm on Bd growth (previously mislabeled as 3b):
+### Caitlin's version AE
 
-I am not sure what the experimental set up is, but here is a re-creation of Renwei's excel figure.
+```{r}
+ae_summary <- ae %>%
+  group_by(day, sample_ID) %>%
+  reframe(mean = mean(adh), # calculate the mean
+            n = length(adh), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>%
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>%
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n"))
+
+ae_summary %>%
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID,
+                            levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
+                                       "PW+AEBiofilm",   "Added Bd"  ))) %>%
+
+  ggplot(aes(x = day,
+           y = mean,
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+  geom_line() + 
+  scale_y_log10(limits = c(1e3, 1e7),
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "Environmental Biofilm",
+       caption = "only adherent Bd visualized here (the only data we have)") +
+  scale_color_manual(values = c("1%TB+AEbiofilm"= "#4477AA",
+                                "MQ+AEbiofilm" = "#228833",
+                                "PW+AEBiofilm" = "#AA3377",
+                                "Added Bd" = "darkgrey")) + 
+  
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
+```
+
+# 3b EDA
+
+### visualize y var: bd load
+
+```{r}
+# untransformed
+ae_noday0 <- ae %>% 
+  filter(day != 0) %>% 
+  mutate(log_adh = log(adh)) # note: no zeroes so not log + 1
+ggqqplot(ae_noday0, "adh", title = "untransformed")
+shapiro.test(ae_noday0$adh) # nope
+hist(ae_noday0$adh) # note
+
+# transformed
+ggqqplot(ae_noday0, "log_adh", title = "log transformed") # gorgeous
+hist(ae_noday0$log_adh) # better
+shapiro.test(ae_noday0$log_adh) # p-value = 0.1699 def normal
+```
+
+## 3b Stats
+
+y var: amount of Bd in adherent
+
+x vars: day & medium (MQ, TB, PW)
+
+Bd \~ day\*medium
+
+Question: Does the amount of Bd in the aquatic environmental biofilm differ across the media tested and across the days?
+
+Model: 2-way ANOVA
+
+Answer: Yes, there is a significant effect of day, presence of microbes, presence of TB as well as the interactions between day and microbes, day and TB, and a third-order interaction of day, microbes, and TB (three-way ANOVA, I recommend using a results table, it's a lot of p and f and df values to list)
+
+```{r}
+# quick check: we want day as a FACTOR
+ae_noday0 <- ae_noday0 %>% 
+  mutate(day = as.factor(day)) %>% 
+# column for medium
+mutate(medium = sample_ID)
+str(ae_noday0$day)
+
+
+# set MQ as reference
+ae_noday0$sample_ID <- factor(ae_noday0$sample_ID)
+ae_noday0$sample_ID <- relevel(ae_noday0$sample_ID, ref = "MQ+AEbiofilm")
+```
+
+## null
+
+```{r}
+null <- lm(log_adh ~ 1,
+  data = ae_noday0)
+AIC(null) #146.5865
+
+```
+
+## Bd \~ day\*medium
+
+```{r}
+# build model
+mod1 <- aov(log_adh ~ day*medium,
+  data = ae_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod1) # kinda not homoskedastic
+
+# look at results
+summary(mod1)
+anova(mod1) # all significant and interaction sig
+AIC(mod1) # 37.78083 better than null
+
+TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other, second order is a bit messy
+```
+
+Summary of results
+
+Day 1 > Day 3 > Day 5 > Day 7 (all p <0.005) in other words, Bd significantly reduced each day
+
+MQ+AEbiofilm > PW+AEBiofilm > 1%TB+AEbiofilm (TB plus biofilm has most Bd inhibition power, followed by pond water, then by milliQ with the least inhibition power)
+
+lets try Bd \~ day\*TB*PW
+
+This is nearly identical, same AIC, I think needlessly complex
+
+```{r}
+# # build model
+# mod2 <- aov(log_adh ~ day*TB*PW,
+#   data = ae_noday0)
+# 
+# # diagnostic plot
+# par(mfrow = c(2,2))
+# plot(mod2) # kinda not homoskedastic
+# 
+# # look at results
+# summary(mod2)
+# anova(mod2) # all significant and interaction sig
+# AIC(mod2) # 37.78083 same exact aic
+# 
+# TukeyHSD(mod2) # all days sig diff from each other, all media sig diff from each other, second order is a bit messy
+``` 
+
+# 4b Monolayer biofilm on Bd growth:
 
 It looks like solid lines are with microbes and dashed lines are without microbes
 
@@ -481,7 +630,7 @@ It looks like solid lines are with microbes and dashed lines are without microbe
 
 ![](data/4b_monolayer.jpg){width="4in"}
 
-### ggplot version: replicating Renwei's
+### ggplot version: replicating Renwei's ML
 
 ```{r}
 monolayer_summary <- monolayer %>% 
@@ -532,6 +681,8 @@ monolayer_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
+## Caitlin's version ML
+
 ```{r}
 monolayer_summary <- monolayer %>% 
   group_by(day, sample_ID) %>% 
@@ -568,7 +719,7 @@ monolayer_summary %>%
   labs(x = "Day",
        y = "Bd Quantity per sample (ZE/well)",
        title = "Monolayer Bd: colorblind friendly",
-       caption = "supernatant plus adherent visualized here\nNCOS data from tab called fig 3b but I think it was supposed to be 4b") +
+       caption = "supernatant plus adherent visualized here") +
   scale_color_manual(values = c("TB+PW+microbes" = "#4477AA", 
                                 "PW+microbes" = "#EE6677", 
                                 "TB+PW-microbes" = "#66CCEE", 
