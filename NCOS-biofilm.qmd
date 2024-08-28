@@ -526,18 +526,19 @@ ae_summary %>%
                 breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
   # vibes
   labs(x = "Day",
-       y = "Bd Quantity per sample (ZE/well)",
-       title = "Environmental Biofilm",
-       caption = "only adherent Bd visualized here (the only data we have)") +
+       y = "Bd Quantity in AE Biofilm (ZE/well)",
+        color = "Medium with\nAE Biofilm")+ # Title for color legend
+  
   scale_color_manual(values = c("1%TB+AEbiofilm"= "#4477AA",
                                 "MQ+AEbiofilm" = "#228833",
                                 "PW+AEBiofilm" = "#AA3377",
-                                "Added Bd" = "darkgrey")) + 
-  
-  theme_minimal() +
-  theme(
-    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+                                "Added Bd" = "darkgrey"),
+                    labels = c("1%TB+AEbiofilm" = "TB Broth",
+                               "MQ+AEbiofilm" = "MQ Water",
+                               "PW+AEBiofilm" = "Filtered\nPond Water",
+                                "Added Bd" = "Initial Bd")) + # Custom labels
+
+ myCustomTheme()+
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
@@ -618,11 +619,11 @@ TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each
 
 Summary of results
 
-Day 1 > Day 3 > Day 5 > Day 7 (all p <0.005) in other words, Bd significantly reduced each day
+Day 1 \> Day 3 \> Day 5 \> Day 7 (all p \<0.005) in other words, Bd significantly reduced each day
 
-MQ+AEbiofilm > PW+AEBiofilm > 1%TB+AEbiofilm (TB plus biofilm has most Bd inhibition power, followed by pond water, then by milliQ with the least inhibition power)
+MQ+AEbiofilm \> PW+AEBiofilm \> 1%TB+AEbiofilm (TB plus biofilm has most Bd inhibition power, followed by pond water, then by milliQ with the least inhibition power)
 
-lets try Bd \~ day\*TB*PW
+lets try Bd \~ day\*TB\*PW
 
 This is nearly identical, same AIC, I think needlessly complex
 
@@ -641,7 +642,7 @@ This is nearly identical, same AIC, I think needlessly complex
 # AIC(mod2) # 37.78083 same exact aic
 # 
 # TukeyHSD(mod2) # all days sig diff from each other, all media sig diff from each other, second order is a bit messy
-``` 
+```
 
 # 4b Monolayer biofilm on Bd growth:
 
@@ -738,21 +739,25 @@ monolayer_summary %>%
   
   # vibes
   labs(x = "Day",
-       y = "Bd Quantity per sample (ZE/well)",
-       title = "Monolayer Bd: colorblind friendly",
-       caption = "supernatant plus adherent visualized here") +
+       y = "Bd in mono-Bd biofilm (ZE/well)",
+       color = "Medium",       # Title for color legend
+       linetype = "Microbes Present") +
   scale_color_manual(values = c("TB+PW+microbes" = "#4477AA", 
                                 "PW+microbes" = "#EE6677", 
                                 "TB+PW-microbes" = "#66CCEE", 
-                                "PW-microbes" = "#AA3377")) + # Assign specific colors to match RC's plot
-  scale_linetype_manual(values = c("n" = "dashed", 
-                                   "y" = "solid")) +
-  theme_minimal() +
-  theme(
-    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+                                "PW-microbes" = "#AA3377"), 
+                    
+                     labels = c("TB+PW+microbes" = "TB + PW + MO",
+                               "PW+microbes" = "PW + MO",
+                               "TB+PW-microbes" = "TB + PW - MO",
+                                "PW-microbes" = "PW - MO")) + # Custom labels
+ myCustomTheme()+
+ scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid"),
+                        labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
+
 # 4b EDA
 
 ### visualize y var: bd load
@@ -823,5 +828,3 @@ AIC(mod3) # 123.1704 better than null
 TukeyHSD(mod3)
 
 ```
-
-
