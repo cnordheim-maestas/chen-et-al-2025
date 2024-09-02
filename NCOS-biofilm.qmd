@@ -48,20 +48,21 @@ myCustomTheme <- function() {
 
 ```{r}
 ## 2B
-# add column for microbes or no
 pw <- fig_2b_raw %>% 
+  # add column for microbes or no
   mutate(microbes = case_when(
     str_detect(sample_ID, "\\+microorganism") ~ "y",
     TRUE ~ "n"
   )) %>% 
+  # # add column for water_treatment
+  mutate(water_treatment = case_when(
+    sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water",
+    sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO",
+    sample_ID %in% c("1%TB+PW-microorganism", "PW-microorganism") ~ "PW-MO"
+  )) %>% 
   # add column for TB or no
   mutate(TB = case_when(
     str_detect(sample_ID, "TB") ~ "y",
-    TRUE ~ "n"
-  )) %>% 
-  # add column for PW or no
-  mutate(PW = case_when(
-    str_detect(sample_ID, "PW") ~ "y",
     TRUE ~ "n"
   ))
 
@@ -78,7 +79,11 @@ pw_summary <- pw %>%
   # add column for TB or no
   mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
   # add column for PW or no
-  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
+   mutate(water_treatment = case_when(
+    sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water",
+    sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO",
+    sample_ID %in% c("1%TB+PW-microorganism", "PW-microorganism") ~ "PW-MO"
+  ))
 
 
 ## aquatic environmental biofilm (4b but I think its supposed to be 3b)
@@ -121,6 +126,36 @@ monolayer <- fig_4b_raw %>%
     str_detect(sample_ID, "PW") ~ "y",
     TRUE ~ "n"
   ))
+```
+
+For stats: no "day 0" and relevel factors
+
+```{r}
+##### 2b #####
+pw_noday0 <- pw %>%
+  filter(day != 0) %>%
+  mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
+
+# quick check: we want day as a FACTOR
+pw_noday0 <- pw_noday0 %>% 
+  mutate(day = as.factor(day))
+str(pw_noday0$day)
+
+# set MQ as reference
+pw_noday0$sample_ID <- factor(pw_noday0$sample_ID)
+pw_noday0$sample_ID <- relevel(pw_noday0$sample_ID, ref = "MQ")
+
+# set sterile water as reference
+pw_noday0$water_treatment <- factor(pw_noday0$water_treatment)
+pw_noday0$water_treatment <- relevel(pw_noday0$water_treatment, ref = "sterile-water")
+
+# set no TB as reference
+pw_noday0$TB <- factor(pw_noday0$TB)
+pw_noday0$TB <- relevel(pw_noday0$TB, ref = "n")
+
+# set no microbes as reference
+pw_noday0$microbes <- factor(pw_noday0$microbes)
+pw_noday0$microbes <- relevel(pw_noday0$microbes, ref = "n")
 ```
 
 # 2b: Pond water
@@ -231,12 +266,6 @@ fig_2b
 
 Questions for group:
 
-Connect initial Bd lines to day 1? Not measured for each medium, just a count of the dosing stock
-
-Legend: diff color per treatment, or make the blues the same and the pinks the same color and differentiate between microbes with the dotted lines
-
-Legend: how important is it to you to have the dotted lines in the correct colors? I keep fighting and losing this battle
-
 ## 2b EDA
 
 visualize y var: bd load
@@ -244,62 +273,52 @@ visualize y var: bd load
 log transformed will get me closer to normal, note we only need to worry about the residuals normality though, so commented out the transformation of the data for space
 
 ```{r}
-# # untransformed
-# pw_noday0 <- pw %>% 
-#   filter(day != 0) %>% 
-#   mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
-# ggqqplot(pw_noday0, "adh_plus_sup", title = "untransformed")
-# shapiro.test(pw_noday0$adh_plus_sup) # nope
-# hist(pw_noday0$adh_plus_sup) # note
-# 
-# # transformed
-# ggqqplot(pw_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
-# hist(pw_noday0$log_adh_plus_sup) # better
-# shapiro.test(pw_noday0$log_adh_plus_sup) # p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended <50 samples
+# untransformed
+ggqqplot(pw_noday0, "adh_plus_sup", title = "untransformed")
+shapiro.test(pw_noday0$adh_plus_sup) # nope
+hist(pw_noday0$adh_plus_sup) # note
+
+hist(sqrt(pw_noday0$adh_plus_sup)) # nope
+hist(log10(pw_noday0$adh_plus_sup)) # much better...?
+shapiro.test(log10(pw_noday0$adh_plus_sup)) # not quite
+
+# transformed
+ggqqplot(pw_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
+hist(pw_noday0$log_adh_plus_sup) # better
+shapiro.test(pw_noday0$log_adh_plus_sup) # p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended <50 samples
+
+# visualize comparisons
+# TB y or n
+pw_noday0 %>% 
+    ggplot(aes(x = TB, 
+           y = log_adh_plus_sup)) +
+  geom_boxplot()
+# water_treat
+pw_noday0 %>% 
+    ggplot(aes(x = water_treatment, 
+           y = log_adh_plus_sup)) +
+  geom_boxplot()
+# day
+pw_noday0 %>% 
+    ggplot(aes(x = day, 
+           y = log_adh_plus_sup)) +
+  geom_boxplot()
+
 ```
 
 ## 2b Stats
-Most appropriate comaprison for study design: 
-day*microbes*water_treatment
+
+Most appropriate comaprison for study design: day*microbes*water_treatment
 
 -   y variable: amount of Bd
 
--   x vars: day, treatment, microbes y/n, pw y/n, tb y/n
+-   x vars: day, TB y/n, water_treatment (pw with microbes, pw without, sterile water)
 
-Note this analysis could be run 2 similar but different ways:
+Question: Does the amount of Bd in the sample differ across the treatments of presence of water type (pw with microbes, pw without, sterile water), TB, and day?
 
-1.  x vars: day and presence/absence of each medium (Bd \~ day\*microbes\*TB)
+Model: Linear model
 
-2.  x vars: day and treatment as a factor with varying levels (Bd \~ day\*treatment)
-
-Best model: Bd \~ day\*microbes\*TB
-
-Question: Does the amount of Bd in the sample differ across the treatments of presence of microbes, TB, and day?
-
-Model: 3-way ANOVA
-
-Answer: Yes, there is a significant effect of day, presence of microbes, presence of TB as well as the interactions between day and microbes, day and TB, and a third-order interaction of day, microbes, and TB (three-way ANOVA, I recommend using a results table, it's a lot of p and f and df values to list)
-
-First-order comparisons:
-
-Samples with: the presence of microbes are associated with lower Bd with TB have higher Bd days 1-7 and 3-7 are different, with day 1 having higher Bd than day 3 and day 3 having higher bd than day 7
-
-I dont recommend writing out all second-order and third-order comparisons, but you can say something like there is an influence of the interaction of microbes and the day, and TB and the day.
-
-```{r}
-pw_noday0 <- pw %>%
-  filter(day != 0) %>%
-  mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
-
-# quick check: we want day as a FACTOR
-pw_noday0 <- pw_noday0 %>% 
-  mutate(day = as.factor(day))
-str(pw_noday0$day)
-
-# set MQ as reference
-pw_noday0$sample_ID <- factor(pw_noday0$sample_ID)
-pw_noday0$sample_ID <- relevel(pw_noday0$sample_ID, ref = "MQ")
-```
+Note: anovas, lm's and glm's are all linear models!
 
 ## null
 
@@ -310,168 +329,192 @@ AIC(null) #326.4356
 
 ```
 
-## Best model: Bd \~ day\*microbes\*TB
+## Try ANOVA with interactions: Bd \~ day\*TB\*water_treatment
 
-day*microbes*water_treatment
+**important: does not pass anova assumption that resids are normally distributed**
 
--   day (p\<0.05)
+I tried different transformations with no luck either :(
 
-    -   All differ from each other except 1 and 5 (Tukey)
-
-        -   Day 3 (highest Bd)
-
-        -   Day 1 and Day 5 (no significant difference between them Bd)
-
-        -   Day 7 (lowest Bd)
-
--   microbes (p\<0.05)
-
-    -   presence microbes has less Bd (Tukey)
-
--   TB (p\<0.05)
-
-    -   presence of TB had less Bd (Tukey)
-
--   day:microbes (p\<0.05)
-
-    -   significant interactions, in order of Bd qty (Tukey)
-
-        -   **Day 3, No Microbes** (highest Bd)
-
-        -   **Day 1, No Microbes**
-
-        -   **Day 5, No Microbes**
-
-        -   **Day 7, No Microbes**
-
-        -   **Day 1, Yes Microbes**
-
-        -   **Day 3, Yes Microbes**
-
-        -   **Day 5, Yes Microbes**
-
-        -   **Day 7, Yes Microbes** (lowest Bd)
-
--   day:TB (p\<0.05)
-
-    -   sig interactions
-
-        -   **Day 3, Yes TB** (highest)
-
-        -   **Day 3, No TB**
-
-        -   **Day 1, Yes TB**
-
-        -   **Day 5, Yes TB**
-
-        -   **Day 1, No TB**
-
-        -   **Day 5, No TB**
-
-        -   **Day 7, Yes TB**
-
-        -   **Day 7, No TB** (lowest)
-
--   microbes:TB (NOT SIG)
-
--   day:microbes:TB (p\<0.05)
-
-    -   significant interactions, but won't list them all here
+Note: Kruskall wallace isn't the best move here because I want interactions, if I cut the interactions, a normal anova works, so no need for a KW
 
 ```{r}
 # build model
-mod3 <- aov(log_adh_plus_sup ~ day*microbes*water_treatment,
+# all interactions
+mod3 <- aov(log_adh_plus_sup ~ day*TB*water_treatment,
   data = pw_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
-plot(mod3) # looks good
+plot(mod3) # NOT normal...
 
-# look at results
-summary(mod3)
-anova(mod3) 
-AIC(mod3) # 225.4478
+# #look at results
+# summary(mod3)
+# anova(mod3)
+# AIC(mod3) # 127.7922
 
-TukeyHSD(mod3)
+# STOP: not normally distributed resids so can't interpret
 
-# comparisons
-em <- emmeans(mod3, ~ day * microbes * TB * PW)
-# Perform the Tukey test for pairwise comparisons
-tukey_results <- contrast(em, method = "tukey")
-# View the results
-summary(tukey_results)
+# TukeyHSD(mod3)
+# 
+# #
+# # # comparisons
+# em <- emmeans(mod3, ~ day * TB * water_treatment)
+# # Perform the Tukey test for pairwise comparisons
+# tukey_results <- contrast(em, method = "tukey")
+# # View the results
+# summary(tukey_results)
+# 
+# # day:TB
+# pairwise_day_TB <- emmeans(mod3, pairwise ~ TB | day, adjust = "tukey")
+# pairwise_day_TB
+# plot(pairwise_day_TB)
+# 
+# # day:water_treatment
+# pairwise_water_treatment_day <- emmeans(mod3, pairwise ~ water_treatment | day, adjust = "tukey")
+# pairwise_water_treatment_day
+# plot(pairwise_water_treatment_day)
 
 ```
 
-## Bd \~ day + treatment
+Stop! Do not use these following trends, I am interpreting an anova that did not pass assumptions, use the GLM interpretations, but I am interpreting so see if there are any differences (there are not)
 
-Note: no interaction here because day\*treatment did not meet assumptions of normality
+Day: same trend as glm (day 3 \> 1 = 5 \> 7)
 
-If it is important to you to have p-values comparing at the treatment level, you can use this instead, but I think it provides less information than the model above, and it has a higher aic value
+TB: same trend as glm (with TB = more Bd)
 
-Can give letter values easily across the lines in the line graph Renwei wants, though:
+water_treat: same trend as glm (MQ = pw no microbes \> pw with microbes)
 
--   **1%TB**: **A**
+`day:TB`: same trend as glm (after day 1, the presence of TB gives more Bd)
 
--   **1%TB+PW-microorganism**: **A**
+`water_treat:day`: same trend as glm (across all days, the water treatment trend holds that presence of MO will have lower Bd than without. However, there are nuances between the sterile water and the filtered pond water)
 
--   **PW-microorganism**: **A**
+## GLM Bd \~ day\*TB\*water_treatment
 
--   **MQ**: **A**
+Normal distribution GLM
 
--   **1%TB+PW+microorganism**: **B**
+Note this statistical setup is similar to above anova, we are comparing the same things, but the glm uses a different method to look at these differences, and I found the glm has a much better normality of residuals than the "lm" function did.
 
--   **PW+microorganism**: **C**
+**Results**
 
-Significant Contrasts (p-value \< 0.05):
+1.  Day : Day 3 \> Day 1 = Day 5 \> Day 7
 
-1.  **MQ - (1%TB+PW+microorganism)**: p-value = `<.0001`
-2.  **MQ - (PW+microorganism)**: p-value = `<.0001`
-3.  **1%TB - (1%TB+PW+microorganism)**: p-value = `<.0001`
-4.  **1%TB - (PW+microorganism)**: p-value = `<.0001`
-5.  **(1%TB+PW-microorganism) - (1%TB+PW+microorganism)**: p-value = `<.0001`
-6.  **(1%TB+PW-microorganism) - (PW+microorganism)**: p-value = `<.0001`
-7.  **(1%TB+PW+microorganism) - (PW-microorganism)**: p-value = `<.0001`
-8.  **(PW-microorganism) - (PW+microorganism)**: p-value = `<.0001`
+    1.  Why would Day 3 be highest? Looks like the treatments without microbes are leading this trend, which show stark increases on day 3
 
-Non-Significant Contrasts (p-value ≥ 0.05):
+2.  TB: With TB = more Bd than no TB (p \<.0001)
 
-1.  **MQ - 1%TB**: p-value = `0.3017`
-2.  **MQ - (1%TB+PW-microorganism)**: p-value = `0.0500` (marginal significance)
-3.  **MQ - (PW-microorganism)**: p-value = `0.9917`
-4.  **1%TB - (1%TB+PW-microorganism)**: p-value = `0.9586`
-5.  **1%TB - (PW-microorganism)**: p-value = `0.6577`
-6.  **(1%TB+PW-microorganism) - (PW-microorganism)**: p-value = `0.1888`
-7.  **(1%TB+PW+microorganism) - (PW-microorganism)**: p-value = `0.1940`
+3.  Water treatment: any treatment with MO has lower Bd, sterile water and microbe free pond water are the same (p = 0.0629), pond water with microorganisms has less Bd than sterile water (p \< 0.001), and pond water with MO has less Bd than pond water without (p \< 0.001)
 
-Comparing across days:
+4.  Interactions are all significant, except TB:water_treatment. I recommend putting these in a table, rather than listing them here, but 5 & 6 summarize them
 
--   **Day 7**: **A** (significantly different from both Day 1 and Day 3)
+5.  Day and presence of TB: After day 1, there was less Bd in treatments without TB, but on day 1, there was no difference
 
--   **Day 3**: **B**
+6.  Day and water treatment: across all days, the water treatment trend holds that presence of MO will have lower Bd than without. However, there are nuances between the sterile water and the filtered pond water.
 
--   **Day 1**: **B**
+    1.  on days 5&7 sterile water had more Bd than pond water without microbes, but on day 1, sterile water had more Bd than pond water with no microbes, but on day 3, there was no difference.
 
--   **Day 5**: **B**
+
+```{r}
+# normal distribution, should be relatively the same as the anova
+mod3_glm <- glm(log_adh_plus_sup ~ day * TB * water_treatment,
+                data = pw_noday0,
+                family = gaussian(link = "identity"))
+
+par(mfrow = c(2,2))
+plot(mod3_glm) # better...!
+
+summary(mod3_glm)
+anova(mod3_glm, test="F") # all interactions are sig except TB:water_treatment
+# source for use of anova function on a glm: https://dshizuka.github.io/RCourse/05.1.Stats_LinearModels.html#:~:text=Since%20ANOVA%20is%20a%20linear,to%20get%20the%20F%20statistic.
+
+# all comparisons
+em <- emmeans(mod3_glm, ~ day * TB * water_treatment)
+# Perform the Tukey test for pairwise comparisons
+pairwise_comparisons <- contrast(em, method = "pairwise", adjust = "tukey")
+summary(pairwise_comparisons)
+
+## First order comparisons
+
+# Pairwise comparisons for 'day'
+# Day 3 > Day 1 = Day 5 > Day 7
+pairwise_day <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey")
+pairwise_day
+plot(pairwise_day)
+
+# Pairwise comparisons for 'TB'
+pairwise_TB <- emmeans(mod3_glm, pairwise ~ TB, adjust = "tukey")
+pairwise_TB
+plot(pairwise_TB)
+
+# Pairwise comparisons for 'water_treatment'
+pairwise_water_treatment <- emmeans(mod3_glm, pairwise ~ water_treatment, adjust = "tukey")
+pairwise_water_treatment
+plot(pairwise_water_treatment)
+
+## second order comparisons
+
+# day:TB
+pairwise_day_TB <- emmeans(mod3_glm, pairwise ~ TB | day, adjust = "tukey")
+pairwise_day_TB
+plot(pairwise_day_TB)
+
+# day:water_treatment
+pairwise_water_treatment_day <- emmeans(mod3_glm, pairwise ~ water_treatment | day, adjust = "tukey")
+pairwise_water_treatment_day
+plot(pairwise_water_treatment_day)
+
+```
+
+## ANOVA No interactions, Bd \~ day + TB + water_treatment
+
+**Results**
+
+Let's interpret, this is similar to the GLM for the first order (since no interactions) but the results for **day** differ slightly
+
+1.  Day shows day 7 is the only difference: Day 1 = Day 3 = Day 5 \> Day 7 (note day 5 and day 7 p = 0.0504 so do with that what you will)
+
+2.  TB: With TB = more Bd than no TB (p = 0.0001755)
+
+3.  Water treatment: any treatment with MO has lower Bd, sterile water and microbe free pond water are the same (0.5643192), pond water with microorganisms has less Bd than sterile water (p \< 0.001), and pond water with MO has less Bd than pond water without (p \< 0.001)
 
 ```{r}
 # build model
-mod <- lm(log_adh_plus_sup ~ day + sample_ID,
+# no interactions
+mod_pw_nointeractions <- aov(log_adh_plus_sup ~ day + TB + water_treatment,
   data = pw_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
-plot(mod)
+plot(mod_pw_nointeractions) # much more normal
 
 # look at results
-anova(mod) # day is significant, sample id is too
-AIC(mod) # 237.1393
+summary(mod_pw_nointeractions) # all sig does
+AIC(mod_pw_nointeractions) # 233.1865
 
-# comparisons by day
-emmeans::emmeans(mod, pairwise ~ day) # pairwise comparisons
+TukeyHSD(mod_pw_nointeractions) 
+```
 
-# comparisons by treatment
-# emmeans::emmeans(mod, pairwise ~ sample_ID) # pairwise comparisons
+## (not best for experimental design) Bd \~ day + treatment
+
+Can use this to get the comparisons per treatment, but it doesnt analyze the experimental setup as well as the previous one, commented out here
+
+```{r}
+# # build model
+# mod <- lm(log_adh_plus_sup ~ day + sample_ID,
+#   data = pw_noday0)
+# 
+# # diagnostic plot
+# par(mfrow = c(2,2))
+# plot(mod)
+# 
+# # look at results
+# anova(mod) # day is significant, sample id is too
+# AIC(mod) # 237.1393
+# 
+# # comparisons by day
+# emmeans::emmeans(mod, pairwise ~ day) # pairwise comparisons
+# 
+# # comparisons by treatment
+# # emmeans::emmeans(mod, pairwise ~ sample_ID) # pairwise comparisons
 ```
 
 # 3b Aquatic environmental biofilm on Bd growth:
@@ -580,6 +623,7 @@ ae_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
                    labels = c("Initial\nBd", "1", "3", "5", "7"))
 ```
+
 Show the underlying data!!
 
 ## 3b EDA
@@ -607,7 +651,7 @@ Keep interaction, skedasticity isn't "too bad", and will show underlying data in
 
 y var: amount of Bd in adherent
 
-x vars: day & medium (MQ, TB, PW)
+x vars: day & medium with the AE biofilm and Bd (MQ, TB, PW)
 
 Bd \~ day\*medium
 
@@ -615,7 +659,7 @@ Question: Does the amount of Bd in the aquatic environmental biofilm differ acro
 
 Model: 2-way ANOVA
 
-Summary of results
+**Summary of results**
 
 Bd qty Day 1 \> Day 3 \> Day 5 \> Day 7 (all p \<0.005) in other words, Bd significantly reduced each day
 
@@ -641,12 +685,11 @@ ae_noday0$sample_ID <- relevel(ae_noday0$sample_ID, ref = "MQ+AEbiofilm")
 null <- lm(log_adh ~ 1,
   data = ae_noday0)
 AIC(null) #146.5865
-
 ```
 
 ## Bd \~ day\*medium
 
-Note: Not perfectly homoskedstic...
+Note: Not perfectly homoskedstic but "good enough"
 
 ```{r}
 # build model
@@ -667,34 +710,15 @@ TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each
 
 ## Bd \~ day + medium
 
+Commented out here, we want the interactions and the homogeneity of var aboveis "good enough"
+
 Better homogeneity of var, but no interaction, AIC is worse
 
 Same first order results except days 5 and 7 no longer differ and PW+AEBiofilm-MQ+AEbiofilm no longer differ
 
 ```{r}
-# build model
-mod2 <- aov(log_adh ~ day + medium,
-  data = ae_noday0)
-
-# diagnostic plot
-par(mfrow = c(2,2))
-plot(mod2) # kinda not homoskedastic
-
-# look at results
-summary(mod2)
-anova(mod2) # all significant and interaction sig
-AIC(mod2) # 71.25093
-
-TukeyHSD(mod2) # all days sig diff from each other, all media sig diff from each other, second order is a bit messy
-```
-
-lets try Bd \~ day\*TB\*PW
-
-This is nearly identical, same AIC, I think needlessly complex, might be kinda the same model??
-
-```{r}
 # # build model
-# mod2 <- aov(log_adh ~ day*TB*PW,
+# mod2 <- aov(log_adh ~ day + medium,
 #   data = ae_noday0)
 # 
 # # diagnostic plot
@@ -704,7 +728,7 @@ This is nearly identical, same AIC, I think needlessly complex, might be kinda t
 # # look at results
 # summary(mod2)
 # anova(mod2) # all significant and interaction sig
-# AIC(mod2) # 37.78083 same exact aic
+# AIC(mod2) # 71.25093
 # 
 # TukeyHSD(mod2) # all days sig diff from each other, all media sig diff from each other, second order is a bit messy
 ```
@@ -857,6 +881,31 @@ Question: Does the amount of Bd in the sample differ across the treatments of pr
 
 Model: 3-way ANOVA
 
+**results**
+
+Results summary
+
+-   day (p\<0.05)
+
+    -   All differ from each other except 5 and 7 (Tukey)
+
+        -   Day 1 \> Day 3 \> Day 5 = Day 7
+
+-   microbes (p\<0.05)
+
+    -   presence microbes has less Bd (Tukey)
+
+-   TB (NOT SIG)
+
+-   day:microbes (p\<0.05)
+
+-   day:TB (NOT SIG)
+
+-   microbes:TB (p\<0.05)
+
+-   day:microbes:TB (NOT SIG)
+
+
 ```{r}
 ml_noday0 <- monolayer %>%
   filter(day != 0) %>%
@@ -882,28 +931,6 @@ AIC(null) #205.8778
 ```
 
 ## Bd \~ day\*microbes\*TB
-
-Results summary
-
--   day (p\<0.05)
-
-    -   All differ from each other except 5 and 7 (Tukey)
-
-        -   Day 1 \> Day 3 \> Day 5 = Day 7
-
--   microbes (p\<0.05)
-
-    -   presence microbes has less Bd (Tukey)
-
--   TB (NOT SIG)
-
--   day:microbes (p\<0.05)
-
--   day:TB (NOT SIG)
-
--   microbes:TB (p\<0.05)
-
--   day:microbes:TB (NOT SIG)
 
 ```{r}
 # build model
