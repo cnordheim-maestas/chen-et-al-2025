@@ -887,3 +887,6 @@ t.test(part_three_total_diff_40um$log_diff, part_three_total_diff.22um$log_diff,
 Same trend, yay!
 
 **Note: df = 7? It should be 8, look into any NaN's that may have been produced during log transformation**
+
+
+
