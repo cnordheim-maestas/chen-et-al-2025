@@ -24,7 +24,7 @@ library(nlme)
 ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
 fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
 ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv")) %>% 
-  filter(site != "NORTH")
+  filter(site != "NORTH") # why did we remove north??
 
 ```
 
@@ -502,6 +502,62 @@ t.test(part_three_total_diff_40um$rate_loss, part_three_total_diff.22um$rate_los
 ```
 
 When monolayer Bd biofilm is exposed to pond water without microbes has a significantly greater loss of Bd between day 1 to day 7 than pond water with microbes (t = -5.4, df = 8, p = 0.0006825). The t-value is negative, which shows that the first item entered (with microbes) has a smaller loss of Bd than the second item entered (no microbes).
+
+## Second stats Q: qty ~ factor(day) + microbe_treatment, random = ~1|factor(site)
+
+Question: does the quantity of Bd differ across days and treatment while controlling for the paired site?
+
+This will be a lme since it is a mixed effects model!
+
+Data wrangling
+
+```{r}
+p3 <- part_three %>% 
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+ mutate(combined_bd = adherent + supernatant) %>% 
+mutate(log_total = log(combined_bd))
+
+p3 %>% 
+ ggqqplot("log_total") # gorgeous
+hist(p3$log_total) # good enough
+
+p3 %>% 
+  ggplot(aes(y= log_total, x = filter)) + 
+    geom_boxplot() +
+  geom_jitter()
+
+p3 %>% 
+  ggplot(aes(y= log_total, x = day)) + 
+    geom_boxplot() +
+  geom_jitter()
+
+
+```
+
+Assumptions testing
+
+```{r}
+library(nlme)
+par(mfrow = c(2,2))
+# qty ~ factor(day) + microbe_treatment, random = ~1|factor(site)
+mod6 <- lme(log_total~day+ factor(filter), random = ~1|site, data=p3)
+plot(mod6) # not terrible!
+
+library(car)
+qqPlot(resid(mod6), main="QQ Plot of Residuals")
+```
+
+Interpret
+
+```{r}
+summary(mod6)
+anova(mod6)
+
+emmeans::emmeans(mod6, pairwise ~ day) # pairwise comparisons
+emmeans::emmeans(mod6, pairwise ~ filter) # pairwise comparisons
+
+```
 
 # Part IV Comparing across all treatments
 
