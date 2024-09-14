@@ -1340,21 +1340,11 @@ TukeyHSD(mod3)
 
 # COMBINE PW AND AE FOR ALL
 
--   1: susbet out only nine sites
--   2: subset out by treatment
--   2: calculate the percent Bd lost from day 1 to day 7 per site AND the rate of loss
--   3: add column for treatment
--   4: transform as needed
--   5: ANOVA and Tukey (or glm if needed)
-
-## PIV Data wrangling
+## Fig 5 Data wrangling
 
 ```{r}
 # data wrangling for comparisons across experiments
-partI_total_diff
 pw_no_microbes <- partI_total_diff %>% 
-  # remove "other" 6 sites, not the 9 sites we are using
-  # filter(site!="NORTH" & site!="BARN" & site!="PRPND002"  & site!="PRPND003" & site!="GDPND004"  & site!="GDPND008") %>% 
   filter(filter == "0.22um_filter") %>% 
   mutate(treatment = "PW 0.22um") %>% 
   rename(sample_ID = site) %>% 
@@ -1376,8 +1366,6 @@ ncos_pw_no_microbes <- pw_noday0 %>%
   dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
 
 pw_WITH_microbes <- partI_total_diff %>%
-  # remove "other" 6 sites, not the 9 sites we are using
-  # filter(site!="NORTH" & site!="BARN" & site!="PRPND002"  & site!="PRPND003" & site!="GDPND004"  & site!="GDPND008") %>% 
   filter(filter != "0.22um_filter") %>% 
   mutate(treatment = "PW 40um") %>% 
   rename(sample_ID = site) %>% 
@@ -1423,50 +1411,67 @@ ncos_ae_no_microbes <- ae_noday0 %>%
     mutate(treatment = "NCOS AE 0.22um") %>% 
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
   dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
-# Note: NCOS AE with pond water and microbes does not exist!
   
-all_parts<- bind_rows(pw_WITH_microbes, pw_no_microbes, fieldbf_no_microbes, ncos_pw_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes) %>% #, monolayer_WITH_microbes, monolayer_NO_microbes
-  mutate(percent_loss = (diff/Day_1) * 100) 
-
-all_parts2 <- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes) %>% #, monolayer_WITH_microbes, monolayer_NO_microbes
-  mutate(percent_loss = (diff/Day_1) * 100) 
+all_parts<- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes)
 
 # set PW 40 um as the intercept, comparing back to that one
 all_parts$treatment <- factor(all_parts$treatment,
-                          levels = c("PW 0.22um", "NCOS PW 0.22um", "PW 40um", "NCOS PW 40 um", "Field bf 0.22", "NCOS AE 0.22um" )) #, "Monolayer 40um", "Monolayer 0.22um"
-
-all_parts2$treatment <- factor(all_parts2$treatment,
                           levels = c("PW 40um", "NCOS PW 40 um", "Field bf 0.22", "NCOS AE 0.22um")) 
 ```
 
-## PIV Stats and assumption testing
+## 5A: Biofilm vs pond water with sites combined
 
-Question:
+t-test
 
-$H0:$
+```{r}
+# make a column for medium
+all_parts <- all_parts %>% 
+  mutate(medium = case_when(
+    grepl("PW", treatment) ~ "PW",
+    grepl("Field bf", treatment) ~ "Field bf",
+    grepl("AE", treatment) ~ "Field bf"
+  ))
 
-Assumptions:
+# assumptions testing
+leveneTest(rate_loss ~ treatment, data = all_parts)
 
-### Test:
+# assumptions testing
+all_parts %>% 
+ ggqqplot("rate_loss") # good
+shapiro.test(all_parts$rate_loss) # normal, yay!
+hist(all_parts$rate_loss)
 
-### Stats results:
+t.test(rate_loss ~ medium, data = all_parts, var.equal = TRUE)
+```
+
+## 5B Stats and assumption testing
+
+Exploratory viz:
+
+```{r}
+exploratory_viz <- all_parts %>% 
+  ggplot(aes(y= rate_loss, x = treatment)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.1) +
+    theme_classic() +
+   theme(legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 7 Days") + 
+  ggtitle("Exploratory visualization, not final plot")
+
+exploratory_viz
+```
 
 Assumptions testing
 
 ```{r}
-# with microbe depleted
 par(mfrow = c(2,2))
 mod3 <- aov(rate_loss~treatment, data=all_parts)
 plot(mod3)
-
-# without microbe depleted
-par(mfrow = c(2,2))
-mod4 <- aov(rate_loss~treatment, data=all_parts2)
-plot(mod4)
-
 ```
-
-Stats
+interpret
 
 ```{r}
 # with microbe depleted
@@ -1486,145 +1491,16 @@ labels_rl <- as.character(labels_rl)
 
 sig_data_rl <- tibble(
   treatment = treatments_rl,
-  y_position = c(1.5,2.5,6.5,4, 6.5,4),
+  y_position = c(1.5,2.5,6.5,4),
   label = labels_rl)
-
-# without microbe depleted ###
-summary(mod4) # sig effect of treatment
-TukeyHSD(mod4)
-
-post_hoc_rateloss2 <- glht(mod4, # with your ANOVA model
-                 linfct = mcp(treatment = "Tukey"))
-summary(post_hoc_rateloss2)
-cld(post_hoc_rateloss2) 
-
-# export cld results as a dataframe
-cld_results_rateloss2 <- cld(post_hoc_rateloss2)
-labels_rl2 <- cld_results_rateloss2$mcletters$Letters
-treatments_rl2 <- names(labels_rl2)
-labels_rl2 <- as.character(labels_rl2)
-
-sig_data_rl2 <- tibble(
-  treatment = treatments_rl2,
-  y_position = c(7,4,6.5,4),
-  label = labels_rl2)
-
 ```
 
-## PIV Data visualization
-
-Exploratory:
+Better vis 
 
 ```{r}
-exploratory_viz <- all_parts %>% 
-  ggplot(aes(y= rate_loss, x = treatment)) + 
-    geom_boxplot() +
-  geom_jitter(alpha = 0.5, width = 0.1) +
-    theme_classic() +
-   theme(legend.position = "bottom",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
-    xlab("Treatment") +
-    ylab("Rate of Loss of Bd over 7 Days") + 
-  ggtitle("Exploratory visualization, not final plot")
-
-exploratory_viz
-
-```
-
-Final plot:
-
-```{r}
-ab <- all_parts %>% 
-  mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("Field bf", treatment) ~ "Field bf",
-    grepl("AE", treatment) ~ "Field bf"
-  )) %>% 
-    mutate(filter = case_when(
-    grepl("0.22", treatment) ~ "no microbe",
-    grepl("40", treatment) ~ "microbes"
-  )) %>% 
-   ggplot(aes(y= rate_loss, x = treatment, fill = filter)) + 
-    geom_boxplot() +
-  geom_point(alpha = 0.5) +
-    theme_classic() +
-   scale_fill_manual(values = c("microbes" = with_microbes_40_color, 
-                                  "no microbe" = no_microbes_.22_color)) +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
-  xlab("Medium") +
-  ylab("Rate loss of Bd over 6 Days") + 
-  scale_x_discrete (labels= c("PW 0.22um" = "EB PW - MO"
-                              , "NCOS PW 0.22um" = "SB PW - MO",
-                              "PW 40um" = "EB PW + MO", 
-                              "NCOS PW 40 um" = "SB PW + MO",                              
-                              "Field bf 0.22" = "EB Biofilm",
-                              "NCOS AE 0.22um" = "SB Biofilm"))
-ab
-
-sig_data_rl <- sig_data_rl %>% 
-mutate(filter = case_when(
-    grepl("40", treatment) ~ "40um_filter",
-    grepl("0.22", treatment) ~ "0.22um_filter")) %>% 
-mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("Field bf", treatment) ~ "Field bf",
-    grepl("AE", treatment) ~ "Field bf"))
-
-ab + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label), inherit.aes = FALSE) 
-```
-
-```{r}
-all_parts2$treatment <- factor(all_parts2$treatment,
-                          levels = c("PW 40um", "Field bf 0.22", "NCOS PW 40 um", "NCOS AE 0.22um")) 
-
-ab2 <- all_parts2 %>% 
-  mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("Field bf", treatment) ~ "Field bf",
-    grepl("AE", treatment) ~ "Field bf"
-  )) %>% 
-    mutate(filter = case_when(
-    grepl("0.22", treatment) ~ "no microbe",
-    grepl("40", treatment) ~ "microbes"
-  )) %>% 
-   ggplot(aes(y= rate_loss, x = treatment)) + #, fill = medium
-    geom_boxplot(fill = "darkgrey") +
-  geom_jitter(alpha = 0.5, width = 0.05) +
-    theme_classic() +
-   # scale_fill_manual(values = c("PW" = "pink", 
-   #                                "Field bf" = "orange")) +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
-  xlab("Medium") +
-  ylab("Rate loss of Bd over 6 Days") + 
-  scale_x_discrete (labels= c("PW 0.22um" = "EB PW - MO"
-                              , "NCOS PW 0.22um" = "SB PW - MO",
-                              "PW 40um" = "EB PW + MO", 
-                              "NCOS PW 40 um" = "SB PW + MO",                              
-                              "Field bf 0.22" = "EB Biofilm",
-                              "NCOS AE 0.22um" = "SB Biofilm")) +
-  ggtitle("Option 4: reordered, with no color, no facet")
-
-sig_data_rl2 <- sig_data_rl2 %>% 
-mutate(filter = case_when(
-    grepl("40", treatment) ~ "40um_filter",
-    grepl("0.22", treatment) ~ "0.22um_filter")) %>% 
-mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("Field bf", treatment) ~ "Field bf",
-    grepl("AE", treatment) ~ "Field bf"))
-
-ab2 + geom_text(data = sig_data_rl2, aes(x = treatment, y = y_position, label = label), inherit.aes = FALSE) 
-```
-
-```{r}
- all_parts2$treatment <- factor(all_parts2$treatment) 
+all_parts$treatment <- factor(all_parts$treatment) 
   
-ab2 <- all_parts2 %>% 
+fig5 <- all_parts %>% 
   mutate(medium = case_when(
     grepl("PW", treatment) ~ "PW",
     grepl("Field bf", treatment) ~ "Field bf",
@@ -1639,8 +1515,8 @@ ab2 <- all_parts2 %>%
   geom_jitter(alpha = 0.5, width = 0.05) +
     theme_classic() +
   # biofilm and pond water colors, both from paul tol colorblind palette
-   scale_fill_manual(values = c("PW" = "#eedd88",
-                                  "Field bf" = "#ee8866")) +
+   scale_fill_manual(values = c("PW" = "white",
+                                  "Field bf" = "darkgrey")) +
   facet_wrap(~site, scales = "free_x") +
    theme(legend.position = "none",
          strip.text = element_text(face="bold"),
@@ -1652,59 +1528,13 @@ ab2 <- all_parts2 %>%
                               "PW 40um" = "EB PW + MO",
                               "NCOS PW 40 um" = "SB PW + MO",
                               "Field bf 0.22" = "EB Biofilm",
-                              "NCOS AE 0.22um" = "SB Biofilm")) +
-  ggtitle("Option 3: colored by biofilm/pondwater, facet by site")
-
-sig_data_rl2 <- sig_data_rl2 %>% 
+                              "NCOS AE 0.22um" = "SB Biofilm"))
+sig_data_rl <- sig_data_rl %>% 
     mutate(site = case_when(
     grepl("NCOS", treatment) ~ "Santa Barbara",
     TRUE ~ "East Bay"  # Default to "east Bay"
   ))
 
-ab2 + geom_text(data = sig_data_rl2, aes(x = treatment, y = y_position, label = label, group = site), inherit.aes = FALSE) 
-
+fig5 + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label, group = site), inherit.aes = FALSE) 
 ```
 
-## STATSBONUS test broader biofilm
-
-anova
-
-```{r}
-ap3 <- all_parts2 %>% 
-  mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("Field bf", treatment) ~ "Field bf",
-    grepl("AE", treatment) ~ "Field bf"
-  )) %>% 
-    mutate(filter = case_when(
-    grepl("0.22", treatment) ~ "no microbe",
-    grepl("40", treatment) ~ "microbes"
-  )) %>% 
-    mutate(site = case_when(
-    grepl("NCOS", treatment) ~ "Santa Barbara",
-    TRUE ~ "East Bay"  # Default to "east Bay"
-  ))
-
-par(mfrow = c(2,2))
-mod5 <- aov(rate_loss~medium, data=ap3)
-plot(mod5)
-summary(mod5) # not sig
-```
-
-ttest
-
-```{r}
-library(car)
-
-# Perform Levene's test
-leveneTest(rate_loss ~ treatment, data = ap3)
-
-ap3 %>% 
- ggqqplot("rate_loss") # good
-shapiro.test(ap3$rate_loss) # normal, yay!
-hist(ap3$rate_loss)
-
-t.test(rate_loss ~ medium, data = ap3, var.equal = TRUE)
-```
-
-# Appendix
