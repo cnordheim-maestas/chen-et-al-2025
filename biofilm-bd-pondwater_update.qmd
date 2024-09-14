@@ -10,46 +10,14 @@ format:
 
 # Map of experiments
 
-| Nickname                  | Adherent, or adherent + supernatant? |
-|---------------------------|--------------------------------------|
-| EB Pond water - 2A        | adherent + supernatant               |
-| SB Pond water - 2B        | adherent + supernatant               |
-| EB AE Biofilm - 3A        | adherent only                        |
-| SB AE Biofilm  - 3B       | adherent only                        |
-| EB Monolayer Biofilm- 4A  | adherent only                        |
-| SB Monolayer Biofilm - 4B | adherent only                        |
-
-## East Bay Pondwater microbes (Fig2A)
-
-Effect of pond water microbes from the East Bay on Bd
-
-## Santa Barbara Pondwater microbes (Fig2B)
-
-Effect of pond water microbes from Santa Barbara on Bd over time, also looking at the addition of a food source (TB)
-
-## East Bay AE Biofilm (Fig3A)
-
-Effect of East Bay AE biofilm from the East Bay on Bd (incubated in microbe depleted water to isolate the microbes to only the AE biofiom)
-
-## Santa Barbara AE Biofilm (Fig3B)
-
-Effect over time of Santa Barbara AE biofilm on Bd, while looking at different incubation media (microbe depleted local pond water, MQ, and TB)
-
-## East Bay water with Monolayer-Bd Biofilm (Fig4A)
-
-Effect of East Bay pond water microbes on a monolayer-Bd biofilm
-
-## Santa Barbara pond water with Monolayer-Bd Biofilm (Fig4B)
-
-Effect of Santa Barbara pond water microbes on a monolayer-Bd biofilm
-
-# Data sources
-
-## East Bay Experiments
-
-File source: "[Biofilm PCR for R-studio](https://docs.google.com/spreadsheets/d/17QveSH4al14axf-cBsu4JEhgampQEU1E/edit?usp=sharing&ouid=116930126837996341679&rtpof=true&sd=true)" first tab called 15 sites PW on Bd
-
-## Santa Barbara Experiments
+| Nickname                  | Experiment                                                                                                                                      | Bd tested              |
+|-------------------|-------------------------------------|-----------------|
+| EB Pond water - 2A        | Effect of pond water microbes from the East Bay on Bd                                                                                           | adherent + supernatant |
+| SB Pond water - 2B        | Effect of pond water microbes from Santa Barbara on Bd over time, also looking at the addition of a food source (TB)                            | adherent + supernatant |
+| EB AE Biofilm - 3A        | Effect of East Bay AE biofilm from the East Bay on Bd (incubated in microbe depleted water to isolate the microbes to only the AE biofiom)      | adherent only          |
+| SB AE Biofilm - 3B        | Effect over time of Santa Barbara AE biofilm on Bd, while looking at different incubation media (microbe depleted local pond water, MQ, and TB) | adherent only          |
+| EB Monolayer Biofilm- 4A  | Effect of East Bay pond water microbes on a monolayer-Bd biofilm                                                                                | adherent only          |
+| SB Monolayer Biofilm - 4B | Effect over time of Santa Barbara Pond water on Bd in a monolayer, while looking at different incubation media (MQ, and TB)                     | adherent only          |
 
 # Load in data and libraries
 
@@ -63,7 +31,7 @@ library(car) # stats tests like Levene's
 library(multcomp) # stats
 library(nlme) # mixed effects models
 library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
-library(ggpubr) # for combining figures
+library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
 
 # load "East Bay" experiments data
@@ -75,21 +43,30 @@ fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fi
 fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
 fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
 
+# Colors: these are from Paul Tol's colorblind friendly palette
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
+
 # set up custom theme
 myCustomTheme <- function() {
-  theme_minimal() +
+  theme_light() +
     theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
-          axis.title = element_text(size = 14, face = "bold", family = "Times", color = "black"),
-          axis.title.y = element_text(margin = margin(r = 15), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
+          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
           title = element_text(size = 12, face = "bold", family = "Times"),
           plot.caption = element_text(size = 10, face = "italic", family = "Times"),
           legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
           panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-          panel.grid.minor.x = element_blank()) # Set axes ticks color to black
-}
+          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+          axis.ticks = element_blank() # Remove x and y axis ticks
+    )}
 ```
 
-# 2A: Effect of East Bay aquatic environmental microbes on Bd growth - 15 sites
+# 2A: East Bay pond water microbes
 
 Statistical question:
 
@@ -99,10 +76,10 @@ Is there a difference in the **gain or loss of Bd over 6 days** between the **fi
 
 ```{r}
 # remove controls
-partI <- fs_pw_bd %>% filter(site != "sterile MQ")
+eb_pw <- fs_pw_bd %>% filter(site != "sterile MQ")
 
 # keep control for labeling plot
-partI_controls <- fs_pw_bd %>% 
+eb_pw_controls <- fs_pw_bd %>% 
   filter(site =="sterile MQ") %>% 
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating) %>% 
@@ -111,16 +88,16 @@ partI_controls <- fs_pw_bd %>%
     day == 7 ~ "Day_7"))
 
 # data type cleaning
-partI$bd_location <- factor(partI$bd_location, levels = c("floating", "adherent"))
-partI$filter <- factor(partI$filter,
+eb_pw$bd_location <- factor(eb_pw$bd_location, levels = c("floating", "adherent"))
+eb_pw$filter <- factor(eb_pw$filter,
                           levels = c("40um_filter", "0.22um_filter"))
-partI$day <- factor(partI$day, levels = c("1", "7"),
+eb_pw$day <- factor(eb_pw$day, levels = c("1", "7"),
                             labels = c("Day_1", "Day_7"))
-partI$site <- factor(partI$site,
+eb_pw$site <- factor(eb_pw$site,
                           levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ"))
 
 # get the total difference across days by combining both locations of Bd then subtracting across days
-partI_total_diff <- partI %>%
+eb_pw_total_diff <- eb_pw %>%
   # combine floating and adherent for total_Bd
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating) %>% 
@@ -130,32 +107,20 @@ partI_total_diff <- partI %>%
   pivot_wider(names_from = day, values_from = combined_bd) %>%
 
   # calculate the rate loss by taking the log of each before subtracting
-  mutate(rate_loss = log(Day_1) - log(Day_7))  %>% 
-
-  # calculate the difference in raw amount of Bd
-  mutate(diff = Day_1 - Day_7)
+  mutate(rate_loss = log(Day_1) - log(Day_7))
 
 # Split into 2 data frames one for 40 and one for .22
-
-partI_total_diff_40um <- partI_total_diff %>% 
+eb_pw_total_diff_40um <- eb_pw_total_diff %>% 
   filter(filter =="40um_filter")
-partI_total_diff.22um <- partI_total_diff%>% 
+eb_pw_total_diff.22um <- eb_pw_total_diff%>% 
   filter(filter =="0.22um_filter")
-
 ```
 
-## 2A (East Bay Pond water) Data visualization
+## 2A EDA
 
 ```{r}
-# Colors: these are from Paul Tol's colorblind friendly palette
-with_microbes_40_color <- "#999933"
-no_microbes_.22_color <- "#88ccee"
-```
-
-### Renwei barplot remake
-
-```{r}
-partI %>%
+# Renwei barplot remake
+eb_pw %>%
   # combine floating and adherent for total_Bd
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
   mutate(combined_bd = adherent + floating) %>% 
@@ -176,40 +141,38 @@ ggplot(aes(y= combined_bd, x = site, fill = filter)) +
   guides(fill=guide_legend(title=""))
 ```
 
-## 2A Boxplot
+Boxplot
 
 ```{r}
-partI %>%
-  # combine floating and adherent for total_Bd
-  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-  mutate(combined_bd = adherent + floating) %>% 
-  
-  # create the plot
-  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
-    geom_boxplot() +
-  geom_jitter(width = 0.2, alpha = 0.3) +
-    scale_y_log10() +
-    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
-                                                    "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
-                                "0.22um_filter" = no_microbes_.22_color)) +
-    theme_classic() +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) + 
-  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
-    xlab("Presence of Microbes in Pond Water") +
-    ylab("Bd Quantity \n (zoospore equivalents)") +
-  
-  # add controls ad x's
-  geom_point(data = partI_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+# eb_pw %>%
+#   # combine floating and adherent for total_Bd
+#   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+#   mutate(combined_bd = adherent + floating) %>% 
+#   
+#   # create the plot
+#   ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+#     geom_boxplot() +
+#   geom_jitter(width = 0.2, alpha = 0.3) +
+#     scale_y_log10() +
+#     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+#                                                     "Day_7" = "Day 7")))+
+#   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+#                                 "0.22um_filter" = no_microbes_.22_color)) +
+#     theme_classic() +
+#    theme(legend.position = "none",
+#          strip.text = element_text(face="bold"),
+#          axis.title = element_text(face = "bold")) + 
+#   scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+#     xlab("Presence of Microbes in Pond Water") +
+#     ylab("Bd Quantity \n (zoospore equivalents)") +
+#   
+#   # add controls ad x's
+#   geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
 ```
 
 ## 2A Stats and assumption testing
 
-Question:
-
-Does the difference in Bd from day 1 to day 7 differ between the two filter types?
+Question: Does the difference in Bd from day 1 to day 7 differ between the two filter types?
 
 The samples are essentially paired by site, so a paired t-test is most appropriate
 
@@ -219,44 +182,61 @@ Assumptions:
 
 Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
 
-### 2A Test: Paired t-test on the difference in all of the Bd from day 1 to day 7 between the two filters
+Assumption testing:
+
+```{r}
+# check normality of the differences across groups
+
+# numeric check
+eb_pw_40um_shapiro.test <- shapiro.test(eb_pw_total_diff_40um$rate_loss) # normal, yay!
+eb_pw_0.22um_shapiro.test <- shapiro.test(eb_pw_total_diff.22um$rate_loss) # normal, yay!
+
+# visual check
+eb_pw_40um_qq <- eb_pw_total_diff_40um %>% 
+  ggqqplot("rate_loss", title = "40 um")
+
+# Histogram using ggplot2
+eb_pw_40um_hist <- eb_pw_total_diff_40um %>% 
+  ggplot(aes(x = rate_loss)) +
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "40 um")
+
+# visual check
+eb_pw_0.22um_qq <- eb_pw_total_diff.22um %>% 
+  ggqqplot("rate_loss", title = "0.22 um")
+
+# Histogram using ggplot2
+eb_pw_0.22um_hist <- eb_pw_total_diff.22um %>% 
+  ggplot(aes(x = rate_loss)) +
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "0.22 um")
+
+eb_pw_40um_qq + eb_pw_40um_hist + eb_pw_0.22um_qq + eb_pw_0.22um_hist
+
+eb_pw_40um_shapiro.test
+eb_pw_0.22um_shapiro.test
+```
+
+The data for the 40um filter is normally distributed (Shapiro-Wilk test, W = `r round(eb_pw_40um_shapiro.test$statistic, 5)`, p = `r round(eb_pw_40um_shapiro.test$p.value, 4)`), and so is the data for the 0.22 filter (Shapiro-Wilk test, W = `r round(eb_pw_0.22um_shapiro.test$statistic, 5)`, p = `r round(eb_pw_0.22um_shapiro.test$p.value, 4)`).
+
+# Stats
+
+```{r}
+# Run the paired t-test on the difference
+eb_pw_paired_ttest_result <- t.test(eb_pw_total_diff_40um$rate_loss, eb_pw_total_diff.22um$rate_loss, paired = TRUE)
+
+eb_pw_paired_ttest_result
+```
 
 ### 2A Stats results:
 
-**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = 4.7879, df = 14, p-value = 0.000289)**
+**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = `r eb_pw_paired_ttest_result$statistic`, df = `r eb_pw_paired_ttest_result$parameter`, p-value = `r eb_pw_paired_ttest_result$p.value`)**
 
-```{r}
-# check normality of the differences across groups: it's normal untransformed in both!
-partI_total_diff_40um %>% 
- ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # good enough
-shapiro.test(partI_total_diff_40um$rate_loss) # normal, yay!
-hist(partI_total_diff_40um$rate_loss) # good enough
-
-partI_total_diff.22um%>% 
- ggqqplot("rate_loss", title = "Untransformed Bd in both floating and floating rate_loss between day 1 and 7 qqPlot") # gorgeous
-shapiro.test(partI_total_diff.22um$rate_loss) # normal, yay!
-hist(partI_total_diff.22um$rate_loss) # good enough
-
-# visualize the comparison I am making
-partI_total_diff %>%
-ggplot(aes(y= rate_loss, x = filter)) + 
-    geom_boxplot() +
-  geom_jitter() +
-  ggtitle("Visualizing comparison for paired t-test on the rate_loss")
-```
-
-Pond water with microbes has a significantly greater loss of Bd between day 1 to day 7 than pond water without microbes (t = 4.8, df = 14, p = 0.000289). The t-value is positive, which shows that the first item entered (with microbes) has a larger loss of Bd than the second item entered (no microbes.) Df of 14 is expected, because it's 15 sites.
-
-Stats
-
-```{r}
-# Step 3: run the paired t-test on the difference
-t.test(partI_total_diff_40um$rate_loss, partI_total_diff.22um$rate_loss, paired = TRUE)
-```
+The t-value is positive, which shows that the first item entered (with microbes) has a larger loss of Bd than the second item entered (no microbes.) Df of 14 is expected, because it's 15 sites.
 
 # 3A: Effect of the East Bay aquatic environmental biofilm on Bd growth - "9 sites"
 
-Statistical question: Is there a difference in Bd quantity in the biofilm between day 1 & 7?
+Does the difference in Bd in the adherent AE biofilm from day 1 to day 7 differ between the two filter types?
 
 ## 3A Data Wrangling
 
@@ -381,7 +361,7 @@ t.test(day_one, day_seven, paired = TRUE)
 
 **There is significantly more Bd in the biofilm on Day 1 than on Day 7 (t = 10.094, df = 8, p-value \< 0.0001)**
 
-# 4A: Effect of microbes in pond water on the Bd-release from mono-strain Bd biofilm - "9 sites" and included biofilm
+# 4A: East Bay Monolayer
 
 Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
 
@@ -560,7 +540,6 @@ anova(mod6)
 
 emmeans::emmeans(mod6, pairwise ~ day * filter) # pairwise comparisons
 ```
-
 
 # Add in NCOS now
 
@@ -1137,7 +1116,7 @@ Note: only the ADHERENT Bd here!
 ```{r}
 monolayer_summary <- monolayer %>% 
   group_by(day, sample_ID) %>% 
-  reframe(mean = mean(adh), # calculate the mean
+  reframe(mean_adh = mean(adh), # calculate the mean
             n = length(adh), # count the number of observations
             df = n - 1, # calculate the degrees of freedom
             sd = sd(adh), # calculate the standard deviation
@@ -1156,11 +1135,11 @@ monolayer_summary %>%
                             levels = c("TB+PW+microbes","PW+microbes",
                                         "TB+PW-microbes", "PW-microbes"))) %>% 
   ggplot(aes(x = day, 
-           y = mean, 
+           y = mean_adh, 
            color = sample_ID)) +
   geom_point(size = 2) +
-  geom_errorbar(aes(ymin = mean - se, # plot the standard error
-                    ymax = mean + se),
+  geom_errorbar(aes(ymin = mean_adh - se, # plot the standard error
+                    ymax = mean_adh + se),
                 width = 0.1) +
     geom_line(aes(linetype = microbes)) + 
   scale_y_log10(limits = c(1e4, 1e8), 
@@ -1186,32 +1165,17 @@ monolayer_summary %>%
 ## Caitlin's version ML
 
 ```{r}
-monolayer_summary <- monolayer %>% 
-  group_by(day, sample_ID) %>% 
-  reframe(mean = mean(adh), # calculate the mean
-            n = length(adh), # count the number of observations
-            df = n - 1, # calculate the degrees of freedom
-            sd = sd(adh), # calculate the standard deviation
-            se = sd/sqrt(n), # calculate the standard error
-          ) %>% 
-  mutate(microbes = case_when(
-    str_detect(sample_ID, "\\+microbes") ~ "y",TRUE ~ "n")) %>% 
-  # add column for TB or no
-  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
-  # add column for PW or no
-  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) 
-
 monolayer_summary %>% 
   # reorder to match Renwei's plot
   mutate(sample_ID = factor(sample_ID, 
                             levels = c("TB+PW+microbes","PW+microbes",
                                         "TB+PW-microbes", "PW-microbes"))) %>% 
   ggplot(aes(x = day, 
-           y = mean, 
+           y = mean_adh, 
            color = sample_ID)) +
   geom_point(size = 2) +
-  geom_errorbar(aes(ymin = mean - se, # plot the standard error
-                    ymax = mean + se),
+  geom_errorbar(aes(ymin = mean_adh - se, # plot the standard error
+                    ymax = mean_adh + se),
                 width = 0.1) +
     geom_line(aes(linetype = microbes)) + 
   scale_y_log10(limits = c(1e4, 1e8), 
@@ -1344,32 +1308,11 @@ TukeyHSD(mod3)
 
 ```{r}
 # data wrangling for comparisons across experiments
-pw_no_microbes <- partI_total_diff %>% 
-  filter(filter == "0.22um_filter") %>% 
-  mutate(treatment = "PW 0.22um") %>% 
-  rename(sample_ID = site) %>% 
-  mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
-
-## NCOS version fig 2 PW - MO
-ncos_pw_no_microbes <- pw_noday0 %>% 
-  filter(sample_ID == "PW-microorganism") %>% 
-  filter(day != "3" & day != "5") %>%
-  dplyr::select(day, sample_ID, replicate, adh_plus_sup) %>% 
-  mutate(day = str_replace(as.character(day), "1", "Day_1"),
-         day = str_replace(day, "7", "Day_7")) %>% 
- pivot_wider(names_from = day, values_from = adh_plus_sup) %>%
-  mutate(diff = Day_1 - Day_7) %>% 
-# calculate the rate loss by taking the log of each before subtracting
-    mutate(treatment = "NCOS PW 0.22um") %>% 
-  mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
-
-pw_WITH_microbes <- partI_total_diff %>%
+pw_WITH_microbes <- eb_pw_total_diff %>%
   filter(filter != "0.22um_filter") %>% 
   mutate(treatment = "PW 40um") %>% 
   rename(sample_ID = site) %>% 
-  dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
 
 ## NCOS version fig 2 PW + MO
 ncos_pw_WITH_microbes <- pw_noday0 %>% 
@@ -1379,24 +1322,22 @@ ncos_pw_WITH_microbes <- pw_noday0 %>%
   mutate(day = str_replace(as.character(day), "1", "Day_1"),
          day = str_replace(day, "7", "Day_7")) %>% 
  pivot_wider(names_from = day, values_from = adh_plus_sup) %>%
-  mutate(diff = Day_1 - Day_7) %>% 
 # calculate the rate loss by taking the log of each before subtracting
     mutate(treatment = "NCOS PW 40 um") %>% 
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
 
 fieldbf_no_microbes <- part_two_bf_only %>%
    subset(select = -c(bd_location, log_qty)) %>% 
   filter(day != "Day_0") %>% 
 # calculate the difference in raw amount of Bd
   pivot_wider(names_from = day, values_from = bd_qty) %>%
-  mutate(diff = Day_1 - Day_7) %>% 
 # calculate the rate loss by taking the log of each before subtracting
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
   mutate(treatment = "Field bf 0.22") %>% 
   mutate(filter = "0.22um_filter") %>% 
   rename(sample_ID = site) %>% 
-  dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
 
 ## NCOS version fig 3B ae bf with no microbes
 ncos_ae_no_microbes <- ae_noday0 %>% 
@@ -1406,11 +1347,10 @@ ncos_ae_no_microbes <- ae_noday0 %>%
   mutate(day = str_replace(as.character(day), "1", "Day_1"),
          day = str_replace(day, "7", "Day_7")) %>% 
  pivot_wider(names_from = day, values_from = adh) %>%
-  mutate(diff = Day_1 - Day_7) %>% 
 # calculate the rate loss by taking the log of each before subtracting
     mutate(treatment = "NCOS AE 0.22um") %>% 
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  dplyr::select(sample_ID, diff, treatment, rate_loss, Day_1)
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
   
 all_parts<- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes)
 
@@ -1490,6 +1430,7 @@ par(mfrow = c(2,2))
 mod3 <- aov(rate_loss~treatment, data=all_parts)
 plot(mod3)
 ```
+
 interpret
 
 ```{r}
@@ -1514,7 +1455,7 @@ sig_data_rl <- tibble(
   label = labels_rl)
 ```
 
-Better vis 
+Better vis
 
 ```{r}
 all_parts$treatment <- factor(all_parts$treatment) 
@@ -1557,7 +1498,8 @@ f5b <- fig5 + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, l
 
 f5b
 ```
-Combine the figs
+
+# Combine the figs
 
 ```{r}
 # Combine fig_2a and fig_2b side by side
@@ -1570,3 +1512,81 @@ fig5ab
 ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
 ```
 
+# \*PUBLICATION FIGURES
+
+## Fig 4
+
+```{r}
+fig_4a <- eb_monolayer %>% 
+  # plot it
+  ggplot(aes(y= bd_qty, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+ myCustomTheme()+
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in PW with Monolayer") +
+    ylab("Bd Quantity (ZE)") +
+
+ # add controls ad x's
+geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size = 2)
+```
+
+```{r}
+fig_4b <- monolayer_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("TB+PW+microbes","PW+microbes",
+                                        "TB+PW-microbes", "PW-microbes"))) %>% 
+  ggplot(aes(x = day, 
+           y = mean_adh, 
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_adh - se, # plot the standard error
+                    ymax = mean_adh + se),
+                width = 0.1) +
+    geom_line(aes(linetype = microbes)) + 
+  scale_y_log10(limits = c(1e4, 1e8), 
+                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8)) +
+  
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity (ZE)",
+       color = "Medium",       # Title for color legend
+       linetype = "Microbes\nPresent") +
+  scale_color_manual(values = c("TB+PW+microbes" = "#4477AA", 
+                                "PW+microbes" = "#EE6677", 
+                                "TB+PW-microbes" = "#66CCEE", 
+                                "PW-microbes" = "#AA3377"), 
+                    
+                     labels = c("TB+PW+microbes" = "TB + PW + MO",
+                               "PW+microbes" = "PW + MO",
+                               "TB+PW-microbes" = "TB + PW - MO",
+                                "PW-microbes" = "PW - MO")) + # Custom labels
+ myCustomTheme()+
+ scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid"),
+                        labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+                   labels = c("Initial\nBd", "1", "3", "5", "7"))
+```
+
+# Fig 4 combined
+
+```{r}
+# Combine fig_2a and fig_2b side by side
+fig4 <- fig_4a + fig_4b + 
+  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
+  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
+
+fig4
+
+#ggsave("4a_4b.png", plot = fig4, width = 14, height = 5, dpi = 1000)
+```
