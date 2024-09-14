@@ -1444,7 +1444,28 @@ hist(all_parts$rate_loss)
 t.test(rate_loss ~ medium, data = all_parts, var.equal = TRUE)
 ```
 
-## 5B Stats and assumption testing
+```{r}
+f5a <- all_parts %>% 
+  mutate(medium = fct_relevel(medium, "PW", "Field bf")) %>% 
+  ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.05) +
+    theme_classic() +
+     scale_fill_manual(values = c("PW" = "white",
+                                  "Field bf" = "darkgrey")) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 6 Days") + 
+   scale_x_discrete (labels= c("PW" = "Pond water + MO",
+                              "Field bf" = "AE Biofilm"))
+f5a
+```
+
+## 5B pairwise comparisons across treatments
+
+Stats and assumption testing
 
 Exploratory viz:
 
@@ -1452,7 +1473,7 @@ Exploratory viz:
 exploratory_viz <- all_parts %>% 
   ggplot(aes(y= rate_loss, x = treatment)) + 
     geom_boxplot() +
-  geom_jitter(alpha = 0.5, width = 0.1) +
+  geom_jitter(alpha = 0.5, width = 0.05) +
     theme_classic() +
    theme(legend.position = "bottom",
          strip.text = element_text(face="bold"),
@@ -1460,8 +1481,6 @@ exploratory_viz <- all_parts %>%
     xlab("Treatment") +
     ylab("Rate of Loss of Bd over 7 Days") + 
   ggtitle("Exploratory visualization, not final plot")
-
-exploratory_viz
 ```
 
 Assumptions testing
@@ -1491,7 +1510,7 @@ labels_rl <- as.character(labels_rl)
 
 sig_data_rl <- tibble(
   treatment = treatments_rl,
-  y_position = c(1.5,2.5,6.5,4),
+  y_position = c(7,4,6.5,4),
   label = labels_rl)
 ```
 
@@ -1512,7 +1531,7 @@ fig5 <- all_parts %>%
   )) %>% 
    ggplot(aes(y= rate_loss, x = treatment, fill = medium)) +
     geom_boxplot() +
-  geom_jitter(alpha = 0.5, width = 0.05) +
+  geom_jitter(alpha = 0.3, width = 0.05) +
     theme_classic() +
   # biofilm and pond water colors, both from paul tol colorblind palette
    scale_fill_manual(values = c("PW" = "white",
@@ -1523,18 +1542,31 @@ fig5 <- all_parts %>%
          axis.title = element_text(face = "bold")) +
   xlab("Medium") +
   ylab("Rate loss of Bd over 6 Days") + 
-  scale_x_discrete (drop = TRUE, labels= c("PW 0.22um" = "EB PW - MO",
-                              "NCOS PW 0.22um" = "SB PW - MO",
-                              "PW 40um" = "EB PW + MO",
-                              "NCOS PW 40 um" = "SB PW + MO",
-                              "Field bf 0.22" = "EB Biofilm",
-                              "NCOS AE 0.22um" = "SB Biofilm"))
+  scale_x_discrete (drop = TRUE, labels= c(
+                              "PW 40um" = "East Bay\nPW + MO",
+                              "NCOS PW 40 um" = "SB \nPW + MO",
+                              "Field bf 0.22" = "East Bay\nBiofilm",
+                              "NCOS AE 0.22um" = "SB \nBiofilm"))
 sig_data_rl <- sig_data_rl %>% 
     mutate(site = case_when(
     grepl("NCOS", treatment) ~ "Santa Barbara",
     TRUE ~ "East Bay"  # Default to "east Bay"
   ))
 
-fig5 + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label, group = site), inherit.aes = FALSE) 
+f5b <- fig5 + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label, group = site), inherit.aes = FALSE) 
+
+f5b
+```
+Combine the figs
+
+```{r}
+# Combine fig_2a and fig_2b side by side
+fig5ab <- f5a + f5b + 
+  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
+  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
+
+fig5ab
+
+ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
 ```
 
