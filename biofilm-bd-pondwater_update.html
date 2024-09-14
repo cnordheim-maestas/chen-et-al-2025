@@ -3398,12 +3398,12 @@ Fit: aov(formula = rate_loss ~ treatment, data = all_parts)
 
 Linear Hypotheses:
                                     Estimate Std. Error t value Pr(&gt;|t|)   
-NCOS PW 40 um - PW 40um == 0         -2.5364     0.7413  -3.422  0.00982 **
+NCOS PW 40 um - PW 40um == 0         -2.5364     0.7413  -3.422  0.00974 **
 Field bf 0.22 - PW 40um == 0         -0.1544     0.4942  -0.312  0.98865   
-NCOS AE 0.22um - PW 40um == 0        -1.1303     0.7413  -1.525  0.42614   
-Field bf 0.22 - NCOS PW 40 um == 0    2.3820     0.7814   3.049  0.02363 * 
-NCOS AE 0.22um - NCOS PW 40 um == 0   1.4061     0.9570   1.469  0.45793   
-NCOS AE 0.22um - Field bf 0.22 == 0  -0.9759     0.7814  -1.249  0.59130   
+NCOS AE 0.22um - PW 40um == 0        -1.1303     0.7413  -1.525  0.42620   
+Field bf 0.22 - NCOS PW 40 um == 0    2.3820     0.7814   3.049  0.02400 * 
+NCOS AE 0.22um - NCOS PW 40 um == 0   1.4061     0.9570   1.469  0.45800   
+NCOS AE 0.22um - Field bf 0.22 == 0  -0.9759     0.7814  -1.249  0.59133   
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 (Adjusted p values reported -- single-step method)</code></pre>
@@ -3497,7 +3497,7 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 </div>
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb168"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb168-1"><a href="#cb168-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"5a_5b.png"</span>, <span class="at">plot =</span> fig5ab, <span class="at">width =</span> <span class="dv">10</span>, <span class="at">height =</span> <span class="dv">5</span>, <span class="at">dpi =</span> <span class="dv">1000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb168"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb168-1"><a href="#cb168-1" aria-hidden="true" tabindex="-1"></a><span class="co">#ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
