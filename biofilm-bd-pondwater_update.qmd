@@ -1108,6 +1108,11 @@ AIC(mod1) # 37.78083 better than null
 TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other
 ```
 
+# Results write up
+
+A two-way ANOVA revealed that there was a statistically significant difference in Bd load across days (F(3, 24) = 110.100, p = p <0.0001), across the media (F(2, 24) = 246.55, p <0.0001), and the interaction between the effects of day and medium were also significant (F(6, 24) = 10.145, p = p <0.0001). Bd was significantly lower with each day (Tukey test, p <0.005 for all) and TB plus biofilm has most Bd inhibition power, followed by pond water with no microbes, then by milliQ with the least inhibition power (Tukey test, p <0.05 for all).
+
+
 Let's make this a prettier table
 
 ```{r}

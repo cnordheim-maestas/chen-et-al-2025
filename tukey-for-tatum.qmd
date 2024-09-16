@@ -1,0 +1,281 @@
+---
+title: "Biofilm Bd Update"
+author: "Caitlin Nordheim-Maestas"
+format:
+  html:
+    toc: true
+    code-fold: true
+    toc-location: left
+---
+# Experiment:
+
+Bd was incubated with aquatic environmental biofilm collected from one pond at UCSB in a 12-well plate, incubated in one of three media (TB broth, MilliQ control water, and microbe depleted pond water filtered through a  0.22 micron filter) and the biofilm was destructively sampled and Bd was quantified the AE biofilm at day 1, 3, 5, 7.  
+
+# Statistical test
+
+Test: 2-way ANOVA with outcome variable of log-transformed Bd quantity and predictor variables of the day and medium with the AE biofilm and Bd and their interaction (logBd ~ day*medium). The log-transformed Bd quantity data pass the assumptions of an ANOVA.
+
+Predictors:
+
+Day: 1, 3, 5, 7 (as factors)
+
+Medium: medium incubated with Bd and aquatic environmental biofilm, either none (milliQ), adding TB proth, or adding filtered (aka microbe depleted) pond water. 
+
+# Load in data and libraries
+
+```{r}
+#| warning: false
+
+## read in and clean data
+library(tidyverse) # for cleaning and viewing data
+library(here) # for importing data
+library(car) # stats tests like Levene's
+library(multcomp)
+library(gt)
+library(modelsummary)
+library(emmeans)
+
+fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
+
+# set up custom theme
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 12, face = "bold", family = "Times"),
+          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
+          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
+          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+          axis.ticks = element_blank() # Remove x and y axis ticks
+    )}
+```
+
+# Data clean 
+
+```{r}
+# add column for microbes or no
+ae <- fig_3b_raw %>% 
+  rename(sample_ID = Adherent.sample.ID) %>% 
+  
+  # add columns for components y/n
+  # add column for TB or no
+  mutate(TB = case_when(
+    str_detect(sample_ID, "TB") ~ "y",
+    TRUE ~ "n"
+  )) %>% 
+  # add column for PW or no
+  mutate(PW = case_when(
+    str_detect(sample_ID, "PW") ~ "y",
+    TRUE ~ "n"
+  ))
+
+# control data for ae
+ae_control_data <- ae %>% 
+  filter(day == 0) %>% 
+  dplyr::select(day, adh)
+
+# no day 0 for stats
+ae_noday0 <- ae %>% 
+  filter(day != 0) %>% 
+  mutate(log_adh = log(adh)) # note: no zeroes so not log + 1
+
+# quick check: we want day as a FACTOR
+ae_noday0 <- ae_noday0 %>% 
+  mutate(day = as.factor(day)) %>% 
+# column for medium
+mutate(medium = sample_ID)
+str(ae_noday0$day)
+
+# set MQ as reference
+ae_noday0$sample_ID <- factor(ae_noday0$sample_ID)
+ae_noday0$sample_ID <- relevel(ae_noday0$sample_ID, ref = "MQ+AEbiofilm")
+```
+
+# EDA
+
+```{r}
+ae_summary <- ae %>%
+  group_by(day, sample_ID) %>%
+  reframe(mean = mean(adh), # calculate the mean
+            n = length(adh), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>%
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>%
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n"))
+
+ae_summary %>%
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID,
+                            levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
+                                       "PW+AEBiofilm",   "Added Bd"  ))) %>%
+
+  ggplot(aes(x = day,
+           y = mean,
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+  geom_line() + 
+  scale_y_log10(limits = c(1e3, 1e7),
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity in AE Biofilm (ZE/well)",
+        color = "Medium with\nAE Biofilm")+ # Title for color legend
+  
+  scale_color_manual(values = c("1%TB+AEbiofilm"= "#4477AA",
+                                "MQ+AEbiofilm" = "#228833",
+                                #"Added Bd" = "darkgrey",
+                                "PW+AEBiofilm" = "#AA3377"),
+                    labels = c("1%TB+AEbiofilm" = "TB Broth",
+                               "MQ+AEbiofilm" = "MQ Water",
+                               "PW+AEBiofilm" = "Filtered\nPond Water",
+                                "Added Bd" = "Initial Bd")) + # Custom labels
+
+ myCustomTheme()+
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+                   labels = c("Initial\nBd", "1", "3", "5", "7"))
+```
+
+**Current legend:**  Inhibitory effect of aquatic environmental biofilm on Bd growth. Bd was incubated with aquatic environmental biofilm collected from one pond at UCSB in a 12-well plate, incubated in one of three media (TB broth, MilliQ control water, and microbe depleted pond water filtered through a  0.22 micron filter) and the biofilm was destructively sampled and Bd was quantified the AE biofilm at day 1, 3, 5, 7. Scatterplot of Bd quantity in the aquatic environmental biofilm from UCSB. X-axis indicates the duration of Bd in the microorganism-depleted pond water (“Filtered pond water”), or 1%TB or MQ. Y-axis represents the mean Bd quantity of the triplicate data as zoospore equivalents per well, and the bar represents the standard error.
+
+
+# 2 way anova
+
+```{r}
+# build model
+mod1 <- aov(log_adh ~ day*medium,
+  data = ae_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod1) # kinda not homoskedastic but Cherie says it is good enough
+
+# look at results
+summary(mod1)
+AIC(mod1) # 37.78083 better than null
+
+TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other
+
+# use emmeans package to get the t value
+mod1 <- aov(log_adh ~ day*medium,
+  data = ae_noday0)
+em <- emmeans(mod1,  ~ day * medium) # pairwise comparisons
+em_tukey <- pairs(em, adjust = "tukey") # gives t ratio
+em_tukey
+```
+
+# Results write up
+
+A two-way ANOVA revealed that there was a statistically significant difference in Bd load across days (F(3, 24) = 110.100, p = p <0.0001), across the media (F(2, 24) = 246.55, p <0.0001), and the interaction between the effects of day and medium were also significant (F(6, 24) = 10.145, p = p <0.0001). Bd was significantly lower with each day (Tukey-Kramer with 95% family-wise confidence level, p <0.005 for all) and TB plus biofilm has most Bd inhibition power, followed by pond water with no microbes, then by milliQ with the least inhibition power (Tukey-Kramer with 95% family-wise confidence level, p <0.05 for all). **what do I even say for the interactions?**
+
+# Big ol' table `emmeans`
+
+```{r}
+tukey_df <- as.data.frame(em_tukey)
+
+tukey_df %>%
+  dplyr::select(contrast, estimate, SE, df, t.ratio, p.value) %>%
+  gt() %>%
+  cols_label(
+    contrast = "Comparison",
+    estimate = "Estimate",
+    SE = "Standard Error",
+    df = "Degrees of Freedom",
+    t.ratio = "t-Ratio",
+    p.value = "p-value"
+  ) %>%
+  tab_header(
+    title = "Tukey HSD Post-hoc Test Results"
+  ) %>%
+  fmt_number(
+    columns = vars(estimate, SE, t.ratio),
+    decimals = 2
+  ) %>%
+  fmt_number(
+    columns = vars(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  fmt_scientific(
+    columns = vars(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything())
+  )
+
+
+```
+
+
+# Big ol' table `TukeyHSD`
+
+```{r}
+tukey_results <- TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other
+
+# Convert Tukey HSD results to data frames
+tukey_day <- as.data.frame(tukey_results$day)
+tukey_day$comparison <- rownames(tukey_day)
+
+tukey_medium <- as.data.frame(tukey_results$medium)
+tukey_medium$comparison <- rownames(tukey_medium)
+
+tukey_interaction <- as.data.frame(tukey_results$`day:medium`)
+tukey_interaction$comparison <- rownames(tukey_interaction)
+
+# Combine all results into one data frame
+tukey_combined <- rbind(
+  data.frame(tukey_day, factor = "Day"),
+  data.frame(tukey_medium, factor = "Medium"),
+  data.frame(tukey_interaction, factor = "Interaction")
+)
+
+tukey_combined <- tukey_combined %>%
+  mutate(
+    diff = round(diff, 3),
+    lwr = round(lwr, 3),
+    upr = round(upr, 3)
+  )
+
+tukey_combined %>%
+  dplyr::select(factor, comparison, diff, lwr, upr, p.adj) %>%
+  gt() %>%
+  cols_label(
+    factor = "Comparison",
+    comparison = "Group Comparison",
+    diff = "Mean Diff",
+    lwr = "Lower CI",
+    upr = "Upper CI",
+    p.adj = "p-value"
+  ) %>%
+  tab_header(
+    title = "Tukey HSD Post-hoc Test Results for AE Biofilm"
+  ) %>% 
+  fmt_number(
+    columns = vars(p.adj),
+    decimals = 3,
+    rows = p.adj >= 0.001
+  ) %>%
+  fmt_scientific(
+    columns = vars(p.adj),
+    decimals = 1,
+    rows = p.adj < 0.001
+  )
+```
+
