@@ -1105,8 +1105,73 @@ summary(mod1)
 anova(mod1) # all significant and interaction sig
 AIC(mod1) # 37.78083 better than null
 
-TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other, second order is a bit messy
+TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other
 ```
+
+Let's make this a prettier table
+
+```{r}
+library(multcomp)
+library(gt)
+library(modelsummary)
+
+anova_model <- aov(log_adh ~ day * medium, data = ae_noday0)
+
+# Perform Tukey's HSD test
+tukey_results <- TukeyHSD(anova_model)
+
+# Convert Tukey HSD results to data frames
+tukey_day <- as.data.frame(tukey_results$day)
+tukey_day$comparison <- rownames(tukey_day)
+
+tukey_medium <- as.data.frame(tukey_results$medium)
+tukey_medium$comparison <- rownames(tukey_medium)
+
+tukey_interaction <- as.data.frame(tukey_results$`day:medium`)
+tukey_interaction$comparison <- rownames(tukey_interaction)
+
+# Combine all results into one data frame
+tukey_combined <- rbind(
+  data.frame(tukey_day, factor = "Day"),
+  data.frame(tukey_medium, factor = "Medium"),
+  data.frame(tukey_interaction, factor = "Interaction")
+)
+
+tukey_combined <- tukey_combined %>%
+  mutate(
+    significance = case_when(
+      p.adj < 0.001 ~ "***",
+      p.adj < 0.01 ~ "**",
+      p.adj < 0.05 ~ "*",
+      TRUE ~ ""
+    ),
+    p_value_with_significance = paste0(p.adj, significance)
+  )
+
+tukey_combined <- tukey_combined %>%
+  mutate(
+    diff = round(diff, 3),
+    lwr = round(lwr, 3),
+    upr = round(upr, 3)
+  )
+
+
+tukey_combined %>%
+  dplyr::select(factor, comparison, diff, lwr, upr, p_value_with_significance) %>%
+  gt() %>%
+  cols_label(
+    factor = "Comparison",
+    comparison = "Group Comparison",
+    diff = "Mean Diff",
+    lwr = "Lower CI",
+    upr = "Upper CI",
+    p_value_with_significance = "p-value"
+  ) %>%
+  tab_header(
+    title = "Tukey HSD Post-hoc Test Results for AE Biofilm"
+  ) 
+```
+
 
 # 4b NCOS Monolayer biofilm on Bd growth:
 
