@@ -1,11 +1,7 @@
 ---
-title: "Biofilm Bd Update"
+title: "Tukey Tatum"
 author: "Caitlin Nordheim-Maestas"
-format:
-  html:
-    toc: true
-    code-fold: true
-    toc-location: left
+format: docx
 ---
 # Experiment:
 
@@ -28,6 +24,7 @@ Medium: medium incubated with Bd and aquatic environmental biofilm, either none 
 
 ## read in and clean data
 library(tidyverse) # for cleaning and viewing data
+library(broom) # cleaning
 library(here) # for importing data
 library(car) # stats tests like Levene's
 library(multcomp)
@@ -153,6 +150,8 @@ ae_summary %>%
 
 # 2 way anova
 
+Note: Cherie says homoskedasticity is good enough
+
 ```{r}
 # build model
 mod1 <- aov(log_adh ~ day*medium,
@@ -165,16 +164,76 @@ plot(mod1) # kinda not homoskedastic but Cherie says it is good enough
 # look at results
 summary(mod1)
 AIC(mod1) # 37.78083 better than null
+```
 
+Prettier anova table
+
+```{r}
+anova_output <- tidy(mod1)
+
+anova_output %>%
+  dplyr::select(term, df, sumsq, meansq, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "ANOVA Table"
+  ) %>%
+  fmt_number(
+    columns = c(sumsq, meansq, statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "Term",
+    df = "Df",
+    sumsq = "Sum Sq",
+    meansq = "Mean Sq",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+
+```
+
+
+# Post Hoc using `TukeyHSD`
+
+```{r}
 TukeyHSD(mod1) # all days sig diff from each other, all media sig diff from each other
+```
 
+# Post hoc using `emmeans`
+
+```{r}
 # use emmeans package to get the t value
 mod1 <- aov(log_adh ~ day*medium,
   data = ae_noday0)
-em <- emmeans(mod1,  ~ day * medium) # pairwise comparisons
-em_tukey <- pairs(em, adjust = "tukey") # gives t ratio
-em_tukey
+
+# Perform pairwise comparisons for 'day'
+em_day <- emmeans(mod1, ~ day)
+tukey_day <- pairs(em_day, adjust = "tukey")
+
+# Perform pairwise comparisons for 'medium'
+em_medium <- emmeans(mod1, ~ medium)
+tukey_medium <- pairs(em_medium, adjust = "tukey")
+
+# Perform pairwise comparisons for 'day * medium' (interaction)
+em_interaction <- emmeans(mod1, ~ day * medium)
+tukey_interaction <- pairs(em_interaction, adjust = "tukey")
+
+tukey_day
+tukey_medium
+tukey_interaction
 ```
+
 
 # Results write up
 
@@ -183,44 +242,60 @@ A two-way ANOVA revealed that there was a statistically significant difference i
 # Big ol' table `emmeans`
 
 ```{r}
-tukey_df <- as.data.frame(em_tukey)
+# Convert Tukey emmeans results to data frames
+tukey_day_df <- as.data.frame(tukey_day)
+tukey_medium_df <- as.data.frame(tukey_medium)
+tukey_interaction_df <- as.data.frame(tukey_interaction)
 
-tukey_df %>%
-  dplyr::select(contrast, estimate, SE, df, t.ratio, p.value) %>%
+# Add labels to indicate which factor the comparison refers to
+tukey_day_df <- tukey_day_df %>% mutate(factor = "Day")
+tukey_medium_df <- tukey_medium_df %>% mutate(factor = "Medium")
+tukey_interaction_df <- tukey_interaction_df %>% mutate(factor = "Interaction")
+
+all_tukey_df <- bind_rows(tukey_day_df, tukey_medium_df, tukey_interaction_df)
+```
+
+```{r}
+all_tukey_df %>%
+  dplyr::select(factor, contrast, estimate, SE, df, t.ratio, p.value) %>%
   gt() %>%
+  # change column names
   cols_label(
-    contrast = "Comparison",
+    factor = "Comparison",
+    contrast = "Group Comparison",
     estimate = "Estimate",
     SE = "Standard Error",
     df = "Degrees of Freedom",
     t.ratio = "t-Ratio",
     p.value = "p-value"
   ) %>%
+  # update header for table
   tab_header(
-    title = "Tukey HSD Post-hoc Test Results"
+    title = "Emmeans Post-hoc Test Results"
   ) %>%
+  # 3 decimal places
   fmt_number(
-    columns = vars(estimate, SE, t.ratio),
-    decimals = 2
+    columns = c(estimate, SE, t.ratio),
+    decimals = 3
   ) %>%
-  fmt_number(
-    columns = vars(p.value),
-    decimals = 3,
-    rows = p.value >= 0.001
-  ) %>%
+  # scientific number format for values <0.001 in p values
   fmt_scientific(
-    columns = vars(p.value),
+    columns = c(p.value),
     decimals = 1,
     rows = p.value < 0.001
   ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  #make the headers bold
   tab_style(
     style = list(
       cell_text(weight = "bold")
     ),
-    locations = cells_column_labels(everything())
-  )
-
-
+    locations = cells_column_labels(everything()))
 ```
 
 
@@ -268,14 +343,16 @@ tukey_combined %>%
     title = "Tukey HSD Post-hoc Test Results for AE Biofilm"
   ) %>% 
   fmt_number(
-    columns = vars(p.adj),
+    columns = c(p.adj),
     decimals = 3,
     rows = p.adj >= 0.001
   ) %>%
   fmt_scientific(
-    columns = vars(p.adj),
+    columns = c(p.adj),
     decimals = 1,
     rows = p.adj < 0.001
   )
 ```
+
+
 
