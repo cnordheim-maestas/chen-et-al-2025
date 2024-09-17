@@ -1,11 +1,12 @@
 ---
 title: "Biofilm Bd Update"
 author: "Caitlin Nordheim-Maestas"
-format:
-  html:
-    toc: true
-    code-fold: true
-    toc-location: left
+format: docx
+# format:
+#   html:
+#     toc: true
+#     code-fold: true
+#     toc-location: left
 ---
 
 # Map of experiments
@@ -26,6 +27,8 @@ format:
 
 ## read in and clean data
 library(tidyverse) # for cleaning and viewing data
+library(gt) # pretty stats tables
+library(broom) # cleaning for gt
 library(here) # for importing data
 library(car) # stats tests like Levene's
 library(Hmisc) # autocalculate stat summaries in ggplot
@@ -1294,6 +1297,16 @@ str(ml_noday0$day)
 # set PW-microbes as reference (no milliQ here)
 ml_noday0$sample_ID <- factor(ml_noday0$sample_ID)
 ml_noday0$sample_ID <- relevel(ml_noday0$sample_ID, ref = "PW-microbes")
+
+# change the names in microbes and tb so there arent 2 levels with y and n
+ml_noday0 <- ml_noday0 %>% 
+  mutate(
+    microbes = case_when(
+      microbes == "y" ~ "MO present",
+      microbes == "n" ~ "MO absent"),
+    TB = case_when(
+      TB == "y" ~ "TB present",
+      TB == "n" ~ "TB absent"))
 ```
 
 ## null
@@ -1302,26 +1315,42 @@ ml_noday0$sample_ID <- relevel(ml_noday0$sample_ID, ref = "PW-microbes")
 null <- lm(log_adh ~ 1,
   data = ml_noday0)
 AIC(null) #205.4965
-
 ```
 
 ## Bd \~ day\*microbes\*TB
 
 ```{r}
 # build model
-mod3 <- aov(log_adh ~ day*microbes*TB,
+aov_4b <- aov(log_adh ~ day*microbes*TB,
   data = ml_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
-plot(mod3) # looks good
+plot(aov_4b) # looks good
 
 # look at results
-summary(mod3)
-anova(mod3) # day, microbes, are significant, but TB alone is not. Interactions: day:microbes, microbes:TB are significant 
-AIC(mod3) # 132.8989 better than null
+summary(aov_4b)
+anova(aov_4b) # day, microbes, are significant, but TB alone is not. Interactions: day:microbes, microbes:TB are significant 
+AIC(aov_4b) # 132.8989 better than null
 
-TukeyHSD(mod3)
+TukeyHSD(aov_4b)
+
+# posthoc using emmeans
+# use emmeans package to get the t value
+# Perform pairwise comparisons for 'day'
+f4b_em_day <- emmeans(aov_4b, ~ day)
+f4b_tukey_day <- pairs(f4b_em_day, adjust = "tukey")
+f4b_tukey_day
+
+# Perform pairwise comparisons for 'microbes'
+f4b_em_microbes <- emmeans(aov_4b, ~ microbes)
+f4b_tukey_microbes <- pairs(f4b_em_microbes, adjust = "tukey")
+f4b_tukey_microbes
+
+# Perform pairwise comparisons for microbes:TB (interaction)
+f4b_em_interaction <- emmeans(aov_4b, ~ microbes * TB)
+f4b_tukey_interaction <- pairs(f4b_em_interaction, adjust = "tukey")
+f4b_tukey_interaction 
 ```
 
 # COMBINE PW AND AE FOR ALL
@@ -1449,18 +1478,18 @@ Assumptions testing
 
 ```{r}
 par(mfrow = c(2,2))
-mod3 <- aov(rate_loss~treatment, data=all_parts)
-plot(mod3)
+aov_5b <- aov(rate_loss~treatment, data=all_parts)
+plot(aov_5b)
 ```
 
 interpret
 
 ```{r}
 # with microbe depleted
-summary(mod3) # sig effect of treatment
-TukeyHSD(mod3)
+summary(aov_5b) # sig effect of treatment
+TukeyHSD(aov_5b)
 
-post_hoc_rateloss <- glht(mod3, # with your ANOVA model
+post_hoc_rateloss <- glht(aov_5b, # with your ANOVA model
                  linfct = mcp(treatment = "Tukey"))
 summary(post_hoc_rateloss)
 cld(post_hoc_rateloss) 
@@ -1475,6 +1504,11 @@ sig_data_rl <- tibble(
   treatment = treatments_rl,
   y_position = c(7,4,6.5,4),
   label = labels_rl)
+
+## emmeans for posthoc
+f5b_em_treat <- emmeans(aov_5b, ~ treatment)
+f5b_tukey_treat <- pairs(f5b_em_treat, adjust = "tukey")
+f5b_tukey_treat
 ```
 
 Better vis
@@ -1753,7 +1787,7 @@ fig3 <- fig_3a + fig_3b +
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
 fig3
-ggsave("3a_3b.png", plot = fig3, width = 14, height = 5, dpi = 1000)
+#ggsave("3a_3b.png", plot = fig3, width = 14, height = 5, dpi = 1000)
 ```
 
 ## Fig 4
@@ -1830,6 +1864,8 @@ fig_4b <- monolayer_summary %>%
                         labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
                    labels = c("Initial\nBd", "1", "3", "5", "7"))
+
+fig_4b
 ```
 
 Fig 4 combined
@@ -1847,15 +1883,13 @@ fig4
 
 # * Stats tables
 
-## 2B stats
+## 2B stats glm
 
-## 3B stats
+## 3B stats 2way anova
+
+### anova table
 
 ```{r}
-summary(aov_3b)
-TukeyHSD(aov_3b)
-
-
 # anova table
 anova_output <- tidy(aov_3b)
 
@@ -1890,6 +1924,51 @@ aov_3b_tbl <- anova_output %>%
   )
 aov_3b_tbl
 
+# prettier, simplified
+anova_output <- tidy(aov_3b)
+
+# Modify term to include degrees of freedom in *italics*
+anova_output <- anova_output %>%
+  mutate(term = ifelse(grepl("day:medium", term), "day x medium", term)) %>% 
+  mutate (term = paste0(term, " (*df = ", df, ", ", anova_output[df == max(df), "df"], "*)")) %>% 
+  filter(term != "Residuals (*df = 24, 24*)")
+
+# Create the gt table with selected columns
+aov_3b_tbl_b <- anova_output %>%
+  dplyr::select(term, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "ANOVA Table"
+  ) %>%
+  fmt_markdown(
+    columns = c(term)
+  ) %>%
+  fmt_number(
+    columns = c(statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+
+aov_3b_tbl_b
+```
+
+### posthoc table
+
+```{r}
 # post hoc table
 # Convert Tukey emmeans results to data frames
 tukey_day_df <- as.data.frame(tukey_day)
@@ -1945,10 +2024,286 @@ ph3b_table <- all_tukey_df %>%
 ph3b_table
 ```
 
+Simplified anova table inspiration: https://link.springer.com/article/10.1007/s11356-015-4566-8/tables/1
 
-## 4b stats
+## 4b stats 
 
-## 5A stats
+anova table
+
+```{r}
+# anova table
+anova_output4b <- tidy(aov_4b)
+
+aov_4b_tbl <- anova_output4b %>%
+  dplyr::select(term, df, sumsq, meansq, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "4b ANOVA Table"
+  ) %>%
+  fmt_number(
+    columns = c(sumsq, meansq, statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "Term",
+    df = "Df",
+    sumsq = "Sum Sq",
+    meansq = "Mean Sq",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+aov_4b_tbl
+
+# prettier, simplified
+anova_output4b <- tidy(aov_4b)
+
+# Modify term to include degrees of freedom in *italics*
+anova_output4b <- anova_output4b %>%
+  mutate(term = gsub(":", " x ", term)) %>% 
+  mutate (term = paste0(term, " (*df = ", df, ", ", anova_output4b[df == max(df), "df"], "*)")) %>%
+  filter(term != "Residuals (*df = 32, 32*)")
+
+# Create the gt table with selected columns
+aov_4b_tbl_b <- anova_output4b %>%
+  dplyr::select(term, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "4b ANOVA Table"
+  ) %>%
+  fmt_markdown(
+    columns = c(term)
+  ) %>%
+  fmt_number(
+    columns = c(statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+
+aov_4b_tbl_b
+```
+
+
+post hoc
+
+```{r}
+# post hoc table
+# Convert Tukey emmeans results to data frames
+f4b_tukey_day_df <- as.data.frame(f4b_tukey_day)
+f4b_tukey_microbes_df <- as.data.frame(f4b_tukey_microbes)
+f4b_tukey_interaction_df <- as.data.frame(f4b_tukey_interaction)
+
+# Add labels to indicate which factor the comparison refers to
+f4b_tukey_day_df  <- f4b_tukey_day_df  %>% mutate(factor = "Day")
+f4b_tukey_microbes_df <- f4b_tukey_microbes_df %>% mutate(factor = "Medium")
+f4b_tukey_interaction_df <- f4b_tukey_interaction_df %>% mutate(factor = "Interaction")
+
+f4b_all_tukey_df <- bind_rows(f4b_tukey_day_df, f4b_tukey_microbes_df, f4b_tukey_interaction_df)
+
+f4b_all_tukey_df <- f4b_all_tukey_df %>% 
+  mutate(contrast = gsub("MO present TB absent", "microbes only", contrast),
+         contrast = gsub("MO present TB present", "both microbes and TB", contrast),
+         contrast = gsub("MO absent TB absent", "neither microbes nor TB", contrast),
+         contrast = gsub("MO absent TB present", "TB only", contrast))
+
+
+ph4b_table <- f4b_all_tukey_df %>%
+  dplyr::select(factor, contrast, estimate, SE, df, t.ratio, p.value) %>%
+  gt() %>%
+  # change column names
+  cols_label(
+    factor = "Comparison",
+    contrast = "Group Comparison",
+    estimate = "Estimate",
+    SE = "Standard Error",
+    df = "Degrees of Freedom",
+    t.ratio = "t-Ratio",
+    p.value = "p-value"
+  ) %>%
+  # update header for table
+  tab_header(
+    title = "4b Emmeans Post-hoc Test Results"
+  ) %>%
+  # 3 decimal places
+  fmt_number(
+    columns = c(estimate, SE, t.ratio),
+    decimals = 3
+  ) %>%
+  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  #make the headers bold
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything()))
+
+ph4b_table
+```
 
 ## 5B stats
+
+anova table
+
+```{r}
+# anova table
+anova_output <- tidy(aov_5b)
+
+aov_5b_tbl <- anova_output %>%
+  dplyr::select(term, df, sumsq, meansq, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "5b ANOVA Table"
+  ) %>%
+  fmt_number(
+    columns = c(sumsq, meansq, statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "Term",
+    df = "Df",
+    sumsq = "Sum Sq",
+    meansq = "Mean Sq",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+aov_5b_tbl
+
+# prettier, simplified
+anova_output <- tidy(aov_5b)
+
+# Modify term to include degrees of freedom in *italics*
+anova_output <- anova_output %>%
+  mutate(term = ifelse(grepl("day:medium", term), "day x medium", term)) %>% 
+  mutate (term = paste0(term, " (*df = ", df, ", ", anova_output[df == max(df), "df"], "*)")) %>% 
+  filter(term != "Residuals (*df = 26, 26*)")
+
+# Create the gt table with selected columns
+aov_5b_tbl_b <- anova_output %>%
+  dplyr::select(term, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "5b ANOVA Table"
+  ) %>%
+  fmt_markdown(
+    columns = c(term)
+  ) %>%
+  fmt_number(
+    columns = c(statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+
+aov_5b_tbl_b
+```
+
+pairwise
+
+```{r}
+f5b_tukey_df <-as.data.frame(f5b_tukey_treat)
+f5b_tukey_df <- f5b_tukey_df %>% 
+  mutate(factor = "Treatment")
+
+ph5b_table <- f5b_tukey_df %>%
+  dplyr::select(contrast, estimate, SE, df, t.ratio, p.value) %>%
+  gt() %>%
+  # change column names
+  cols_label(
+    contrast = "Comparison",
+    estimate = "Estimate",
+    SE = "Standard Error",
+    df = "Degrees of Freedom",
+    t.ratio = "t-Ratio",
+    p.value = "p-value"
+  ) %>%
+  # update header for table
+  tab_header(
+    title = "5b Emmeans Post-hoc Test Results"
+  ) %>%
+  # 3 decimal places
+  fmt_number(
+    columns = c(estimate, SE, t.ratio),
+    decimals = 3
+  ) %>%
+  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  #make the headers bold
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything()))
+ph5b_table
+```
+
+
 
