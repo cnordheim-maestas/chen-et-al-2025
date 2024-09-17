@@ -1,7 +1,10 @@
 ---
 title: "Tukey Tatum"
 author: "Caitlin Nordheim-Maestas"
-format: docx
+format:
+  html:
+    toc: true
+    toc-location: left
 ---
 # Experiment:
 
