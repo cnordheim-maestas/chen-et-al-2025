@@ -1,5 +1,5 @@
 ---
-title: "2A: East Bay Pond Water"
+title: "2A & B: Pond Water Microbes"
 author: "Caitlin Nordheim-Maestas"
 format: docx
 # format:
