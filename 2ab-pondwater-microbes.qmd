@@ -21,10 +21,8 @@ library(gt) # pretty stats tables
 library(broom) # cleaning for gt
 library(here) # for importing data
 library(car) # stats tests like Levene's
-library(Hmisc) # autocalculate stat summaries in ggplot
 library(multcomp) # stats
 library(multcompView) # view cld
-library(nlme) # mixed effects models
 library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
 library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
@@ -521,22 +519,6 @@ TukeyHSD(aov_2b)
 
 # emmeans and cld
 
-cld_day <- emmeans(aov_2b, pairwise ~ day, adjust = "tukey") %>%
-  cld(Letters = letters)
-
-cld_day_2b <- ggplot(cld_day, aes(x = as.numeric(as.character(day)), y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
-  xlab("Day") +
-  ylab("Estimated Marginal Means") +
-  ggtitle("Day") +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
-#cld_day_2b
-
 # Compute CLD letters for 'day'
 cld_day <- emmeans(aov_2b, pairwise ~ day, adjust = "tukey") %>%
   cld(Letters = letters)
@@ -640,6 +622,14 @@ cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y =
         axis.title.x = element_text(face = "bold"),
         axis.title.y = element_text(face = "bold"))
 cld_water_thirdorder_2b 
+
+# get the stats for each comparison
+ph_2b_day <- emmeans(aov_2b, pairwise ~ day, adjust = "tukey")$contrasts
+ph_2b_TB <- emmeans(aov_2b, pairwise ~ TB, adjust = "tukey")$contrasts
+ph_2b_water_treatment <- emmeans(aov_2b, pairwise ~ water_treatment, adjust = "tukey")$contrasts 
+ph_2b_day_TB <- emmeans(aov_2b, pairwise ~ TB * day, adjust = "tukey")$contrasts
+ph_2b_water_treatment_day <- emmeans(aov_2b, pairwise ~ water_treatment * day, adjust = "tukey")$contrasts
+ph_2b_water_thirdorder <- emmeans(aov_2b, pairwise ~ water_treatment * day * TB, adjust = "tukey")$contrasts
 ```
 
 
@@ -928,6 +918,71 @@ cld_water_thirdorder_2b
 #ggsave("2b_thirdorder_pairwise_cld.png", plot = cld_water_thirdorder_2b , width = 14, height = 8, dpi = 1000)
 ```
 
+## 2b posthoc table
+
+We likely will not include this, but if we need to find these specific t and p values we can locate them here
+
+```{r}
+ph_2b_day_df <- as.data.frame(ph_2b_day)
+ph_2b_TB_df <- as.data.frame(ph_2b_TB)
+ph_2b_water_treatment_df <- as.data.frame(ph_2b_water_treatment)
+ph_2b_water_treatment_day_df <- as.data.frame(ph_2b_water_treatment_day)
+ph_2b_day_TB_df <- as.data.frame(ph_2b_day_TB)
+  
+ph_2b_day_df <- ph_2b_day_df  %>% mutate(factor = "Day")
+ph_2b_TB_df <- ph_2b_TB_df  %>% mutate(factor = "TB")
+ph_2b_water_treatment_df <- ph_2b_water_treatment_df  %>% mutate(factor = "WTreat")
+ph_2b_water_treatment_day_df <- ph_2b_water_treatment_day_df  %>% mutate(factor = "Day*WTreat")
+ph_2b_day_TB_df <- ph_2b_day_TB_df %>% mutate(factor = "Day*TB")
+
+# combine all pairwise comparisons
+f2b_all_tukey_df <- bind_rows(ph_2b_day_df, ph_2b_TB_df, ph_2b_water_treatment_df, ph_2b_water_treatment_day_df, ph_2b_day_TB_df)
+
+f2b_all_tukey_df
+
+ph2b_table <- f2b_all_tukey_df %>%
+  dplyr::select(factor, contrast, estimate, SE, df, t.ratio, p.value) %>%
+  gt() %>%
+  # change column names
+  cols_label(
+    factor = "Comparison",
+    contrast = "Group Comparison",
+    estimate = "Estimate",
+    SE = "Standard Error",
+    df = "Degrees of Freedom",
+    t.ratio = "t-Ratio",
+    p.value = "p-value"
+  ) %>%
+  # update header for table
+  tab_header(
+    title = "4b Emmeans Post-hoc Test Results"
+  ) %>%
+  # 3 decimal places
+  fmt_number(
+    columns = c(estimate, SE, t.ratio),
+    decimals = 3
+  ) %>%
+  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  #make the headers bold
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything()))
+
+ph2b_table
+```
 
 # Appendix
 
