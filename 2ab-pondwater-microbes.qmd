@@ -1,0 +1,966 @@
+---
+title: "2A: East Bay Pond Water"
+author: "Caitlin Nordheim-Maestas"
+#format: docx
+format:
+  html:
+    embed-resources: true
+    toc: true
+    code-fold: true
+    toc-location: left
+---
+
+
+
+# Load in data and libraries
+
+```{r}
+#| warning: false
+
+## read in and clean data
+library(tidyverse) # for cleaning and viewing data
+library(gt) # pretty stats tables
+library(broom) # cleaning for gt
+library(here) # for importing data
+library(car) # stats tests like Levene's
+library(Hmisc) # autocalculate stat summaries in ggplot
+library(multcomp) # stats
+library(nlme) # mixed effects models
+library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
+library(ggpubr) # for making ggqq plot
+library(patchwork) # for combining figures
+
+# load data
+fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
+fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
+
+# Colors: these are from Paul Tol's colorblind friendly palette
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
+
+# set up custom theme
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 12, face = "bold", family = "Times"),
+          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
+          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
+          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+          axis.ticks = element_blank() # Remove x and y axis ticks
+    )}
+```
+
+# 2A
+
+## Data Wrangling
+
+```{r}
+# remove controls
+eb_pw <- fs_pw_bd %>% filter(site != "sterile MQ")
+
+# keep control for labeling plot
+eb_pw_controls <- fs_pw_bd %>% 
+  filter(site =="sterile MQ") %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+   mutate(day = case_when(
+    day == 1 ~ "Day_1",
+    day == 7 ~ "Day_7"))
+
+# data type cleaning
+eb_pw$bd_location <- factor(eb_pw$bd_location, levels = c("floating", "adherent"))
+eb_pw$filter <- factor(eb_pw$filter,
+                          levels = c("40um_filter", "0.22um_filter"))
+eb_pw$day <- factor(eb_pw$day, levels = c("1", "7"),
+                            labels = c("Day_1", "Day_7"))
+eb_pw$site <- factor(eb_pw$site,
+                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ"))
+
+# get the total difference across days by combining both locations of Bd then subtracting across days
+eb_pw_total_diff <- eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  subset(select = -c(adherent,floating)) %>% 
+
+# different metrics of difference in Bd
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+
+  # calculate the rate loss by taking the log of each before subtracting
+  mutate(rate_loss = log(Day_1) - log(Day_7))
+
+# Split into 2 data frames one for 40 and one for .22
+eb_pw_total_diff_40um <- eb_pw_total_diff %>% 
+  filter(filter =="40um_filter")
+eb_pw_total_diff.22um <- eb_pw_total_diff%>% 
+  filter(filter =="0.22um_filter")
+```
+
+## EDA
+
+```{r}
+# Renwei barplot remake
+eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= combined_bd, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+  scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7"))) +
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+```
+
+Boxplot
+
+```{r}
+# eb_pw %>%
+#   # combine floating and adherent for total_Bd
+#   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+#   mutate(combined_bd = adherent + floating) %>% 
+#   
+#   # create the plot
+#   ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+#     geom_boxplot() +
+#   geom_jitter(width = 0.2, alpha = 0.3) +
+#     scale_y_log10() +
+#     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+#                                                     "Day_7" = "Day 7")))+
+#   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+#                                 "0.22um_filter" = no_microbes_.22_color)) +
+#     theme_classic() +
+#    theme(legend.position = "none",
+#          strip.text = element_text(face="bold"),
+#          axis.title = element_text(face = "bold")) + 
+#   scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+#     xlab("Presence of Microbes in Pond Water") +
+#     ylab("Bd Quantity \n (zoospore equivalents)") +
+#   
+#   # add controls ad x's
+#   geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+```
+
+## Stats and assumption testing
+
+**Statistical question**: Is there a difference in the **rate of gain or loss of Bd over 6 days** between the **filter sizes** looking at the **TOTAL BD**
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+Assumption testing:
+
+```{r}
+# check normality of the differences across groups
+
+# numeric check
+eb_pw_40um_shapiro.test <- shapiro.test(eb_pw_total_diff_40um$rate_loss) # normal, yay!
+eb_pw_0.22um_shapiro.test <- shapiro.test(eb_pw_total_diff.22um$rate_loss) # normal, yay!
+
+# visual check
+eb_pw_40um_qq <- eb_pw_total_diff_40um %>% 
+  ggqqplot("rate_loss", title = "40 um")
+
+# Histogram using ggplot2
+eb_pw_40um_hist <- eb_pw_total_diff_40um %>% 
+  ggplot(aes(x = rate_loss)) +
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "40 um")
+
+# visual check
+eb_pw_0.22um_qq <- eb_pw_total_diff.22um %>% 
+  ggqqplot("rate_loss", title = "0.22 um")
+
+# Histogram using ggplot2
+eb_pw_0.22um_hist <- eb_pw_total_diff.22um %>% 
+  ggplot(aes(x = rate_loss)) +
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "0.22 um")
+
+eb_pw_40um_qq + eb_pw_40um_hist + eb_pw_0.22um_qq + eb_pw_0.22um_hist
+
+eb_pw_40um_shapiro.test
+eb_pw_0.22um_shapiro.test
+```
+
+The data for the 40um filter is normally distributed (Shapiro-Wilk test, W = `r round(eb_pw_40um_shapiro.test$statistic, 5)`, p = `r round(eb_pw_40um_shapiro.test$p.value, 4)`), and so is the data for the 0.22 filter (Shapiro-Wilk test, W = `r round(eb_pw_0.22um_shapiro.test$statistic, 5)`, p = `r round(eb_pw_0.22um_shapiro.test$p.value, 4)`).
+
+```{r}
+# Run the paired t-test on the difference
+eb_pw_paired_ttest_result <- t.test(eb_pw_total_diff_40um$rate_loss, eb_pw_total_diff.22um$rate_loss, paired = TRUE)
+
+eb_pw_paired_ttest_result
+```
+
+**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = `r eb_pw_paired_ttest_result$statistic`, df = `r eb_pw_paired_ttest_result$parameter`, p-value = `r eb_pw_paired_ttest_result$p.value`)**
+
+The t-value is positive, which shows that the first item entered (with microbes) has a larger loss of Bd than the second item entered (no microbes.) Df of 14 is expected, because it's 15 sites.
+
+# 2b
+
+# Data cleaning
+
+```{r}
+## 2B
+pw <- fig_2b_raw %>% 
+  # add column for microbes or no
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microorganism") ~ "y",
+    TRUE ~ "n"
+  )) %>% 
+  # # add column for water_treatment
+  mutate(water_treatment = case_when(
+    sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water",
+    sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO",
+    sample_ID %in% c("1%TB+PW-microorganism", "PW-microorganism") ~ "PW-MO"
+  )) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(
+    str_detect(sample_ID, "TB") ~ "y",
+    TRUE ~ "n"
+  ))
+
+pw_summary <- pw %>% 
+  group_by(day, sample_ID) %>% 
+  reframe(mean = mean(adh_plus_sup), # calculate the mean
+            n = length(adh_plus_sup), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh_plus_sup), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>% 
+  mutate(microbes = case_when(
+    str_detect(sample_ID, "\\+microorganism") ~ "y",TRUE ~ "n")) %>% 
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
+  # add column for PW or no
+   mutate(water_treatment = case_when(
+    sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water",
+    sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO",
+    sample_ID %in% c("1%TB+PW-microorganism", "PW-microorganism") ~ "PW-MO"
+  ))
+
+pw_control_data <- pw %>%
+  filter(day == 0) %>% 
+  dplyr::select(day, adh_plus_sup)
+
+##### 2b #####
+pw_noday0 <- pw %>%
+  filter(day != 0) %>%
+  mutate(log_adh_plus_sup = log(adh_plus_sup)) # note: no zeroes so not log + 1
+
+# quick check: we want day as a FACTOR
+pw_noday0 <- pw_noday0 %>% 
+  mutate(day = as.factor(day))
+
+pw_noday0 <- pw_noday0 %>% 
+mutate(day = factor(day, 
+          levels = c("1", "3", "5", "7"), ordered = T))
+str(pw_noday0$day)
+
+# set MQ as reference
+pw_noday0$sample_ID <- factor(pw_noday0$sample_ID)
+pw_noday0$sample_ID <- relevel(pw_noday0$sample_ID, ref = "MQ")
+
+# set sterile water as reference
+pw_noday0$water_treatment <- factor(pw_noday0$water_treatment)
+pw_noday0$water_treatment <- relevel(pw_noday0$water_treatment, ref = "sterile-water")
+
+# set no TB as reference
+pw_noday0$TB <- factor(pw_noday0$TB)
+pw_noday0$TB <- relevel(pw_noday0$TB, ref = "n")
+
+# set no microbes as reference
+pw_noday0$microbes <- factor(pw_noday0$microbes)
+pw_noday0$microbes <- relevel(pw_noday0$microbes, ref = "n")
+```
+
+# 2b: NCOS Pond water
+
+## Renwei's figure
+
+![](data/fig_2b_Renweiexcelversion.jpg){fig-align="left" width="4in"}
+
+```{r}
+#| include: false
+#| message: false
+
+### gut check: ggplot version: replicating Renwei's
+pw_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd")),
+         # Create a new column to identify 'initial Bd'
+         is_initial_Bd = ifelse(day == 0, "initial Bd", "other")) %>%
+  
+  ggplot(aes(x = day, 
+           y = mean, 
+           color = sample_ID)) +
+  geom_point(aes(shape = is_initial_Bd), size = 2, show.legend = FALSE) + # Use shape without adding to the legend
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+  geom_line(aes(linetype = microbes)) + 
+  scale_y_log10(limits = c(1e3, 1e8), 
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "Sanity check: Replicating Renwei version exactly",
+       caption = "supernatant plus adherent visualized here") +
+  scale_color_manual(values = c("1%TB" = "goldenrod", 
+                                "MQ" = "blue", 
+                                "1%TB+PW+microorganism" = "darkolivegreen3", 
+                                "PW+microorganism" = "magenta", 
+                                "1%TB+PW-microorganism" = "palegreen4", 
+                                "PW-microorganism" = "palevioletred1",
+                                "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid")) +
+  scale_shape_manual(values = c("initial Bd" = 4, "other" = 16)) + # Assign 'X' shape to initial Bd
+  theme_minimal() +
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+                     labels = c("initial Bd", "1", "3", "5", "7"))
+
+```
+
+## Caitlin's version
+
+```{r}
+#| message: false
+#| warning: false
+#| output: false
+
+fig_2b <- pw_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
+
+  ggplot(aes(x = day, 
+           y = mean, 
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+  scale_y_log10(limits = c(1e3, 1e8), 
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
+  # vibes
+ # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       color = "Medium",       # Title for color legend
+       linetype = "Microbes Present"  # Title for linetype legend
+       ) +
+  scale_color_manual(values = c("1%TB" = "#CCBB44", 
+                                "MQ" = "#228833", 
+                                "1%TB+PW+microorganism" = "#4477AA", 
+                                "PW+microorganism" = "#EE6677", 
+                                "1%TB+PW-microorganism" = "#66CCEE",
+                                #"Added Bd" = "#BBBBBB" # removed bc not really a medium
+                                "PW-microorganism" = "#AA3377"),  # Assign specific colors to match RC's plot
+                    labels = c("1%TB" = "TB",
+                                "MQ" = "MQ",
+                                "1%TB+PW+microorganism" = "TB + PW + MO",
+                                "PW+microorganism" = "PW + MO",
+                                "1%TB+PW-microorganism" = "TB + PW - MO",
+                                "PW-microorganism" = "PW - MO",
+                                "Added Bd" = "Initial Bd")) + # Custom labels for the color legend
+    geom_line(aes(linetype = microbes)) + 
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid"),
+                        labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
+ myCustomTheme()+
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+                   labels = c("Initial\nBd", "1", "3", "5", "7"))
+  theme(legend.position = "right") # Adjust the legend position to overlap with the plot
+
+```
+
+## 2b EDA
+
+visualize y var: bd load
+
+log transformed will get me closer to normal, note we only need to worry about the residuals normality though, so commented out the transformation of the data for space
+
+```{r}
+# untransformed
+ggqqplot(pw_noday0, "adh_plus_sup", title = "untransformed")
+shapiro.test(pw_noday0$adh_plus_sup) # nope
+hist(pw_noday0$adh_plus_sup) # note
+
+hist(sqrt(pw_noday0$adh_plus_sup)) # nope
+hist(log10(pw_noday0$adh_plus_sup)) # much better...?
+shapiro.test(log10(pw_noday0$adh_plus_sup)) # not quite
+
+# transformed
+ggqqplot(pw_noday0, "log_adh_plus_sup", title = "log transformed") # gorgeous
+hist(pw_noday0$log_adh_plus_sup) # better
+shapiro.test(pw_noday0$log_adh_plus_sup) # p-value = 0.01361, does not pass shapiro, but this has an n of 72 which is more than the recommended <50 samples
+
+# visualize comparisons
+# TB y or n
+pw_noday0 %>% 
+    ggplot(aes(x = TB, 
+           y = log_adh_plus_sup)) +
+  geom_boxplot()
+# water_treat
+pw_noday0 %>% 
+    ggplot(aes(x = water_treatment, 
+           y = log_adh_plus_sup)) +
+  geom_boxplot()
+# day
+pw_noday0 %>% 
+    ggplot(aes(x = day, 
+           y = log_adh_plus_sup)) +
+  geom_boxplot()
+
+```
+
+## 2b Stats
+
+TRY ARCSIN
+
+Most appropriate comaprison for study design: day*microbes*water_treatment
+
+-   y variable: amount of Bd
+
+-   x vars: day, TB y/n, water_treatment (pw with microbes, pw without, sterile water)
+
+Question: Does the amount of Bd in the sample differ across the treatments of presence of water type (pw with microbes, pw without, sterile water), TB, and day?
+
+Model: Linear model
+
+Note: anovas, lm's and glm's are all linear models!
+
+## null
+
+```{r}
+null <- lm(log_adh_plus_sup ~ 1,
+  data = pw_noday0)
+AIC(null) #326.4356
+```
+
+## Try ANOVA with interactions: Bd \~ day\*TB\*water_treatment
+
+**important: does not pass anova assumption that resids are normally distributed**
+
+I tried different transformations with no luck either :(
+
+Note: Kruskall wallace isn't the best move here because I want interactions, if I cut the interactions, a normal anova works, so no need for a KW
+
+```{r}
+# build model
+# all interactions
+# read into whether ordered is important!!
+mod3 <- aov(log_adh_plus_sup ~ day*TB*water_treatment,
+  data = pw_noday0)
+
+# diagnostic plot
+par(mfrow = c(2,2))
+plot(mod3) # NOT normal...
+
+# make qq in car with 95% CI
+qqPlot(mod3$residuals)
+
+summary(mod3) # 10 out of 70 points falling out "totally passes" for Tatum
+```
+
+## GLM Bd \~ day\*TB\*water_treatment
+
+Normal distribution GLM DOES NOT WORK!!
+
+TRY POISSON OF UNLOGGED DATA, compare aic's
+
+Cant do a 2 way kruskal wallace
+
+Tatum says its not that severe given the histogram, but try the poisson on the unlogged first!
+
+**Results**
+
+1.  Day : Day 3 \> Day 1 = Day 5 \> Day 7
+
+2.  TB: With TB = more Bd than no TB (p \<.0001)
+
+3.  Water treatment: any treatment with MO has lower Bd, sterile water and microbe free pond water are the same (p = 0.0629), pond water with microorganisms has less Bd than sterile water (p \< 0.001), and pond water with MO has less Bd than pond water without (p \< 0.001)
+
+4.  Interactions are all significant, except TB:water_treatment. I recommend putting these in a table, rather than listing them here, but 5 & 6 summarize them
+
+5.  Day and presence of TB: After day 1, there was less Bd in treatments without TB, but on day 1, there was no difference
+
+6.  Day and water treatment: across all days, the water treatment trend holds that presence of MO will have lower Bd than without. However, there are nuances between the sterile water and the filtered pond water.
+
+    1.  on days 5&7 sterile water had more Bd than pond water without microbes, but on day 1, sterile water had more Bd than pond water with no microbes, but on day 3, there was no difference.
+    
+.L and .Q and .C are estimating things for model we do not neeed, turn it off, see the bolker thing Tatum is sending
+
+https://stats.stackexchange.com/questions/387735/interpreting-the-estimate-of-an-ordered-factor-in-regression
+
+```{r}
+# normal distribution, should be relatively the same as the anova
+mod3_glm <- glm(log_adh_plus_sup ~ factor(day) * TB * water_treatment,
+                data = pw_noday0,
+                family = gaussian(link = "identity"))
+
+par(mfrow = c(2,2))
+plot(mod3_glm) # better...but because it is the deviance residuals!!!! this is not comparable to the anova!!
+
+summary(mod3_glm)
+aov_glm_2b <- anova(mod3_glm, test="F") # all interactions are sig except TB:water_treatment
+aov_glm_2b 
+# source for use of anova function on a glm: https://dshizuka.github.io/RCourse/05.1.Stats_LinearModels.html#:~:text=Since%20ANOVA%20is%20a%20linear,to%20get%20the%20F%20statistic.
+
+# all comparisons
+em <- emmeans(mod3_glm, ~ day * TB * water_treatment)
+# Perform the Tukey test for pairwise comparisons
+pairwise_comparisons <- contrast(em, method = "pairwise", adjust = "tukey")
+summary(pairwise_comparisons)
+
+## First order comparisons
+
+# Pairwise comparisons for 'day'
+# Day 3 > Day 1 = Day 5 > Day 7
+pairwise_day_2b <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey")
+pairwise_day_2b
+plot(pairwise_day_2b)
+
+# Pairwise comparisons for 'TB'
+# note I dont need to test this bc its only 2 levels, bc I am "wasting" df
+# or bonferroni comparisons by hand is another option
+pairwise_TB_2b <- emmeans(mod3_glm, pairwise ~ TB, adjust = "tukey")
+pairwise_TB_2b
+plot(pairwise_TB_2b)
+
+# Pairwise comparisons for 'water_treatment'
+pairwise_water_treatment_2b <- emmeans(mod3_glm, pairwise ~ water_treatment, adjust = "tukey")
+pairwise_water_treatment_2b
+plot(pairwise_water_treatment_2b)
+
+## second order comparisons
+
+# day:TB
+pairwise_day_TB_2b <- emmeans(mod3_glm, pairwise ~ TB * day, adjust = "tukey")
+pairwise_day_TB_2b
+plot(pairwise_day_TB_2b)
+
+# day:water_treatment
+pairwise_water_treatment_day_2b <- emmeans(mod3_glm, pairwise ~ water_treatment * day, adjust = "tukey")
+pairwise_water_treatment_day_2b
+plot(pairwise_water_treatment_day_2b)
+
+# should I go for the cld letter comparisons for these? I think that may be the easiest to show
+```
+
+cld post hoc plots
+
+```{r}
+library(multcompView)
+
+# Compute CLD letters for 'day'
+cld_day <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey") %>%
+  cld(Letters = letters)
+
+cld_day_2b <- ggplot(cld_day, aes(x = as.numeric(as.character(day)), y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("Day") +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_day_2b
+
+# Compute CLD letters for 'TB'
+cld_TB <- emmeans(mod3_glm, pairwise ~ TB, adjust = "tukey") %>%
+  cld(Letters = letters)
+cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  xlab("TB") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("TB") +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_TB_2b 
+
+# Compute CLD letters for 'water_treatment'
+cld_water_treatment <- emmeans(mod3_glm, pairwise ~ water_treatment, adjust = "tukey") %>%
+  cld(Letters = letters)
+cld_water_treatment_2b <-ggplot(cld_water_treatment, aes(x = water_treatment, y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  xlab("Water Treatment") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("Water Treatment") +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_water_treatment_2b
+
+# Compute CLD letters for 'TB * day'
+cld_day_TB <- emmeans(mod3_glm, pairwise ~ TB * day, adjust = "tukey") %>%
+  cld(Letters = letters)
+tb_labels <- c("n" = "TB absent", "y" = "TB present")
+# Create the plot with custom labels for 'TB'
+cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +  # Facet by TB with custom labels
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("TB * Day") +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_tb_day_int_2b
+
+# Compute CLD letters for 'water_treatment * day'
+cld_water_treatment_day <- emmeans(mod3_glm, pairwise ~ water_treatment * day, adjust = "tukey") %>%
+  cld(Letters = letters)
+cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  facet_wrap(~ water_treatment) +  # Facet by water_treatment
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("Wtreat*Day") +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_watertreat_day_int_2b 
+
+pairwise_cld_2b <- cld_day_2b + cld_TB_2b + cld_water_treatment_2b + cld_tb_day_int_2b + cld_watertreat_day_int_2b +
+  plot_annotation(tag_levels = 'A')
+
+# Display the combined plot
+pairwise_cld_2b
+
+ggsave("2b_pairwise_cld.png", plot = pairwise_cld_2b, width = 14, height = 8, dpi = 1000)
+```
+
+
+
+
+# *Publication figure
+
+2a
+
+```{r}
+fig_2a <- eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  
+  # create the plot
+  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    myCustomTheme() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "+ AE Microbes", "0.22um_filter" = "- AE Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity (ZE)") +
+  
+  # add controls ad x's
+  geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+```
+
+2b
+
+```{r}
+# Convert factor day to numeric while preserving original values
+pw_noday0$day <- as.numeric(as.character(pw_noday0$day))
+
+fig2B <- pw_summary %>% 
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID, 
+                            levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
+  mutate(day = as.numeric(day)) %>%  
+  ggplot(aes(x = day, 
+             y = mean, 
+             color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+
+  # Adding the raw data as a layer with jitter
+  geom_point(data = pw_noday0, 
+             aes(x = day, 
+                 y = adh_plus_sup, 
+                 color = sample_ID),  # Raw data points
+             position = position_jitter(width = 0.1, seed = 1),
+             alpha = 0.3) +
+  # add control raw data too
+  geom_point(data = pw_control_data, 
+             aes(x = day, 
+                 y = adh_plus_sup, 
+                 color = "#BBBBBB"),  # Raw data points
+             position = position_jitter(width = 0.1, seed = 1),
+             alpha = 0.3) +
+  
+  scale_y_log10(limits = c(1e3, 1e8), 
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
+  labs(x = "Day",
+       y = "Bd Quantity (ZE)",
+       color = "Medium",       # Title for color legend
+       linetype = "Microbes\nPresent"  # Title for linetype legend
+       ) +
+  scale_color_manual(values = c("1%TB" = "#CCBB44", 
+                                "MQ" = "#228833", 
+                                "1%TB+PW+microorganism" = "#4477AA", 
+                                "PW+microorganism" = "#EE6677", 
+                                "1%TB+PW-microorganism" = "#66CCEE",
+                                #"Added Bd" = "#BBBBBB" # removed bc not really a medium
+                                "PW-microorganism" = "#AA3377"),  
+                    labels = c("1%TB" = "TB",
+                                "MQ" = "MQ",
+                                "1%TB+PW+microorganism" = "TB + PW + MO",
+                                "PW+microorganism" = "PW + MO",
+                                "1%TB+PW-microorganism" = "TB + PW - MO",
+                                "PW-microorganism" = "PW - MO",
+                                "Added Bd" = "Initial Bd")) + # Custom labels for the color legend
+  
+    geom_line(aes(linetype = microbes)) + 
+  scale_linetype_manual(values = c("n" = "dashed", 
+                                   "y" = "solid"),
+                        labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
+ myCustomTheme()+
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+                   labels = c("Initial\nBd", "1", "3", "5", "7")) +
+  theme(legend.position = "right",
+        panel.grid.major.y = element_line(color = "grey"), # Add major y grid lines
+        panel.border = element_blank())
+```
+
+combine
+
+```{r}
+# Combine fig_2a and fig_2b side by side
+fig2 <- fig_2a + fig2B + 
+  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
+  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
+
+fig2
+
+#ggsave("2a_2b.png", plot = fig2, width = 14, height = 5, dpi = 1000)
+```
+
+
+# *Appendix figures and tables
+
+## 2B stats glm
+
+glm output
+
+```{r}
+glm_2b <- tidy(mod3_glm)
+
+glm_2b_tbl <- glm_2b %>% 
+  gt() %>%
+  tab_header(
+    title = "GLM Results: log_adh_plus_sup ~ day * TB * water_treatment"
+  ) %>%
+  fmt_number(
+    columns = c("estimate", "std.error", "statistic"),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "Term",
+    estimate = "Estimate",
+    std.error = "Std. Error",
+    statistic = "t value",
+    p.value = "P-value"
+  ) %>%  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+
+glm_2b_tbl # there's gotta be a better/ more concise way to present this, especially since I'll be doing the pairwise comparisons
+
+```
+
+let's try anova table of a glm??
+
+```{r}
+# anova table
+anova_output <- tidy(aov_glm_2b)
+
+colnames(anova_output)
+
+aov_2b_tbl <- anova_output %>%
+  dplyr::select(term, df, deviance, df.residual, residual.deviance, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "GLM ANOVA Table??"
+  ) %>%
+  fmt_number(
+    columns = c(deviance, df.residual, residual.deviance, statistic),
+    decimals = 2
+  # ) %>%
+  # cols_label(
+  #   term = "Term",
+  #   df = "Df",
+  #   sumsq = "Sum Sq",
+  #   meansq = "Mean Sq",
+  #   statistic = "F value",
+  #   p.value = "P-value"
+  ) %>%  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+aov_2b_tbl
+```
+
+post hoc try again
+
+```{r}
+# Extract pairwise comparisons for main effect 'day'
+pairwise_day_2b <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%  # Convert to a data frame
+  mutate(comparison = "day")  # Add a column indicating that these are comparisons for 'day'
+
+# Extract pairwise comparisons for main effect 'TB'
+pairwise_TB_2b <- emmeans(mod3_glm, pairwise ~ TB, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "TB")  # Add a column indicating that these are comparisons for 'TB'
+
+# Extract pairwise comparisons for main effect 'water_treatment'
+pairwise_water_treatment_2b <- emmeans(mod3_glm, pairwise ~ water_treatment, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "water_treatment")  # Add a column indicating that these are comparisons for 'water_treatment'
+
+# Extract pairwise comparisons for interaction 'TB * day'
+pairwise_day_TB_2b <- emmeans(mod3_glm, pairwise ~ TB * day, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "TB * day")  # Add a column indicating that these are comparisons for the interaction 'TB * day'
+
+# Extract pairwise comparisons for interaction 'water_treatment * day'
+pairwise_water_treatment_day_2b <- emmeans(mod3_glm, pairwise ~ water_treatment * day, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "water_treatment * day")  # Add a column indicating that these are comparisons for the interaction 'water_treatment * day'
+
+# Combine all pairwise comparisons (main effects and interactions) into one data frame
+pairwise_all <- bind_rows(
+  pairwise_day_2b, 
+  pairwise_TB_2b, 
+  pairwise_water_treatment_2b,
+  pairwise_day_TB_2b,
+  pairwise_water_treatment_day_2b
+)
+
+pairwise_day_2b <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "day")
+
+pairwise_TB_2b <- emmeans(mod3_glm, pairwise ~ TB, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "TB")
+
+pairwise_water_treatment_2b <- emmeans(mod3_glm, pairwise ~ water_treatment, adjust = "tukey")$contrasts %>%
+  as.data.frame() %>%
+  mutate(comparison = "water_treatment")
+
+
+# Combine all pairwise comparisons into one data frame
+pairwise_all <- bind_rows(pairwise_day_2b, pairwise_TB_2b, pairwise_water_treatment_2b, pairwise_day_TB_2b, pairwise_water_treatment_day_2b)
+
+# comparison first
+pairwise_all <- pairwise_all %>%
+  dplyr::select(comparison, contrast, estimate, SE, df, t.ratio, p.value)
+
+# Create the combined table using gt
+pairwise_all %>%
+  gt() %>%
+  tab_header(
+    title = "Pairwise Comparisons for 2b"
+  ) %>%
+    # 3 decimal places
+  fmt_number(
+    columns = c(estimate, SE, t.ratio),
+    decimals = 3
+  ) %>%
+  cols_label(
+    comparison = "Comparison",
+    contrast = "Contrast",
+    estimate = "Estimate",
+    SE = "Std. Error",
+    df = "Degrees of Freedom",
+    t.ratio = "t Ratio",
+    p.value = "P-value"
+  ) %>%
+  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 2,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  #make the headers bold
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything()))
+```
