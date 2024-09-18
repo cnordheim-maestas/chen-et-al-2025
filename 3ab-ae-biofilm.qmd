@@ -200,12 +200,42 @@ ae <- fig_3b_raw %>%
   mutate(PW = case_when(
     str_detect(sample_ID, "PW") ~ "y",
     TRUE ~ "n"
-  ))
+  )) %>% 
+  # update day to have day in it
+    mutate(day = case_when(
+    day == 1 ~ "Day_1",
+    day == 3 ~ "Day_3",
+    day == 5 ~ "Day_5",
+    day == 7 ~ "Day_7",
+    day == 0 ~ "Day_0"  # In case you want to include Day_0 as well
+  )) %>% 
+  mutate(day = factor(day)) %>% 
+  # add numeric for plotting
+  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day))))
 
 # control data for ae
 ae_control_data <- ae %>% 
-  filter(day == 0) %>% 
-  dplyr::select(day, adh)
+  filter(day == "Day_0") %>% 
+  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day)))) %>% 
+  dplyr::select(day, adh, day_numeric)
+
+ae_summary <- ae %>%
+  group_by(day, sample_ID) %>%
+  reframe(mean = mean(adh), # calculate the mean
+            n = length(adh), # count the number of observations
+            df = n - 1, # calculate the degrees of freedom
+            sd = sd(adh), # calculate the standard deviation
+            se = sd/sqrt(n), # calculate the standard error
+          ) %>%
+  # add column for TB or no
+  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>%
+  # add column for PW or no
+  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) %>% 
+  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day))))
+
+ae_noday0 <- ae %>% 
+  filter(day != "Day_0") %>% 
+  mutate(log_adh = log(adh)) # note: no zeroes so not log + 1
 ```
 
 ## 3b EDA
@@ -217,109 +247,80 @@ Renwei's figure
 ggplot version: replicating Renwei's AE
 
 ```{r}
-# ae_summary <- ae %>%
-#   group_by(day, sample_ID) %>%
-#   reframe(mean = mean(adh), # calculate the mean
-#             n = length(adh), # count the number of observations
-#             df = n - 1, # calculate the degrees of freedom
-#             sd = sd(adh), # calculate the standard deviation
-#             se = sd/sqrt(n), # calculate the standard error
-#           ) %>%
-#   # add column for TB or no
-#   mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>%
-#   # add column for PW or no
-#   mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n"))
-# 
-# ae_summary %>%
-#   # reorder to match Renwei's plot
-#   mutate(sample_ID = factor(sample_ID,
-#                             levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
-#                                        "PW+AEBiofilm",   "Added Bd"  ))) %>%
-# 
-#   ggplot(aes(x = day,
-#            y = mean,
-#            color = sample_ID)) +
-#   geom_point(size = 2) +
-#   geom_errorbar(aes(ymin = mean - se, # plot the standard error
-#                     ymax = mean + se),
-#                 width = 0.1) +
-#   geom_line() + 
-#   scale_y_log10(limits = c(1e3, 1e7),
-#                 breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
-#   # vibes
-#   labs(x = "Day",
-#        y = "Bd Quantity per sample (ZE/well)",
-#        title = "Environmental Biofilm",
-#        caption = "only adherent Bd visualized here (the only data we have)") +
-#   scale_color_manual(values = c("1%TB+AEbiofilm"= "orange",
-#                                 "MQ+AEbiofilm" = "blue",
-#                                 "PW+AEBiofilm" = "magenta",
-#                                 "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
-#   theme_minimal() +
-#   theme(
-#     panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-#     panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
-#   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
+ae_summary %>%
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID,
+                            levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
+                                       "PW+AEBiofilm",   "Added Bd"  ))) %>%
+
+  ggplot(aes(x = day_numeric,
+           y = mean,
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+  geom_line() +
+  scale_y_log10(limits = c(1e3, 1e7),
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity per sample (ZE/well)",
+       title = "Environmental Biofilm",
+       caption = "only adherent Bd visualized here (the only data we have)") +
+  scale_color_manual(values = c("1%TB+AEbiofilm"= "orange",
+                                "MQ+AEbiofilm" = "blue",
+                                "PW+AEBiofilm" = "magenta",
+                                "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
+  scale_x_discrete(labels = c("Day_0" = "initial Bd", "Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7"))  # Use discrete scale for day
 ```
 
 Caitlin's version AE
 
 ```{r}
-# ae_summary <- ae %>%
-#   group_by(day, sample_ID) %>%
-#   reframe(mean = mean(adh), # calculate the mean
-#             n = length(adh), # count the number of observations
-#             df = n - 1, # calculate the degrees of freedom
-#             sd = sd(adh), # calculate the standard deviation
-#             se = sd/sqrt(n), # calculate the standard error
-#           ) %>%
-#   # add column for TB or no
-#   mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>%
-#   # add column for PW or no
-#   mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n"))
-# 
-# ae_summary %>%
-#   # reorder to match Renwei's plot
-#   mutate(sample_ID = factor(sample_ID,
-#                             levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
-#                                        "PW+AEBiofilm",   "Added Bd"  ))) %>%
-# 
-#   ggplot(aes(x = day,
-#            y = mean,
-#            color = sample_ID)) +
-#   geom_point(size = 2) +
-#   geom_errorbar(aes(ymin = mean - se, # plot the standard error
-#                     ymax = mean + se),
-#                 width = 0.1) +
-#   geom_line() + 
-#   scale_y_log10(limits = c(1e3, 1e7),
-#                 breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
-#   # vibes
-#   labs(x = "Day",
-#        y = "Bd Quantity in AE Biofilm (ZE/well)",
-#         color = "Medium with\nAE Biofilm")+ # Title for color legend
-#   
-#   scale_color_manual(values = c("1%TB+AEbiofilm"= "#4477AA",
-#                                 "MQ+AEbiofilm" = "#228833",
-#                                 #"Added Bd" = "darkgrey",
-#                                 "PW+AEBiofilm" = "#AA3377"),
-#                     labels = c("1%TB+AEbiofilm" = "TB Broth",
-#                                "MQ+AEbiofilm" = "MQ Water",
-#                                "PW+AEBiofilm" = "Filtered\nPond Water",
-#                                 "Added Bd" = "Initial Bd")) + # Custom labels
-# 
-#  myCustomTheme()+
-#   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
-#                    labels = c("Initial\nBd", "1", "3", "5", "7"))
+ae_summary %>%
+  # reorder to match Renwei's plot
+  mutate(sample_ID = factor(sample_ID,
+                            levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
+                                       "PW+AEBiofilm",   "Added Bd"  ))) %>%
+
+  ggplot(aes(x = day_numeric,
+           y = mean,
+           color = sample_ID)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean - se, # plot the standard error
+                    ymax = mean + se),
+                width = 0.1) +
+  geom_line() +
+  scale_y_log10(limits = c(1e3, 1e7),
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
+  # vibes
+  labs(x = "Day",
+       y = "Bd Quantity in AE Biofilm (ZE/well)",
+        color = "Medium with\nAE Biofilm")+ # Title for color legend
+
+  scale_color_manual(values = c("1%TB+AEbiofilm"= "#4477AA",
+                                "MQ+AEbiofilm" = "#228833",
+                                #"Added Bd" = "darkgrey",
+                                "PW+AEBiofilm" = "#AA3377"),
+                    labels = c("1%TB+AEbiofilm" = "TB Broth",
+                               "MQ+AEbiofilm" = "MQ Water",
+                               "PW+AEBiofilm" = "Filtered\nPond Water",
+                                "Added Bd" = "Initial Bd")) + # Custom labels
+
+ myCustomTheme()+
+  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+                   labels = c("Initial\nBd", "1", "3", "5", "7"))
 ```
 
 visualize y var: bd load
 
 ```{r}
 # untransformed
-ae_noday0 <- ae %>% 
-  filter(day != 0) %>% 
-  mutate(log_adh = log(adh)) # note: no zeroes so not log + 1
 ggqqplot(ae_noday0, "adh", title = "untransformed")
 shapiro.test(ae_noday0$adh) # nope
 hist(ae_noday0$adh) # note
@@ -351,7 +352,7 @@ Bd qty Day 1 \> Day 3 \> Day 5 \> Day 7 (all p \<0.005) in other words, Bd signi
 MQ+AEbiofilm \> PW+AEBiofilm \> 1%TB+AEbiofilm (all p \<0.005) In other words, TB plus biofilm has most Bd inhibition power, followed by pond water, then by milliQ with the least inhibition power
 
 
-## null
+null
 
 ```{r}
 null <- lm(log_adh ~ 1,
@@ -366,9 +367,13 @@ Note: Not perfectly homoskedstic but "good enough"
 ```{r}
 # quick check: we want day as a FACTOR
 ae_noday0 <- ae_noday0 %>% 
-  mutate(day = as.factor(day)) %>% 
 # column for medium
-mutate(medium = sample_ID)
+  mutate(medium = sample_ID)
+
+# set day 1 as reference
+ae_noday0$day <- factor(ae_noday0$day, levels = c("Day_1", "Day_3", "Day_5", "Day_7"))
+ae_noday0$day <- relevel(ae_noday0$day, ref = "Day_1")
+
 str(ae_noday0$day)
 
 # set MQ as reference
@@ -387,15 +392,20 @@ plot(aov_3b) # kinda not homoskedastic
 summary(aov_3b)
 anova(aov_3b) # all significant and interaction sig
 AIC(aov_3b) # 37.78083 better than null
+```
 
+### Posthoc
+
+```{r}
 # posthoc
-TukeyHSD(aov_3b)
+#TukeyHSD(aov_3b)
 
 # posthoc using emmeans
 # use emmeans package to get the t value
 # Perform pairwise comparisons for 'day'
 em_day <- emmeans(aov_3b, ~ day)
 tukey_day <- pairs(em_day, adjust = "tukey")
+
 # Perform pairwise comparisons for 'medium'
 em_medium <- emmeans(aov_3b, ~ medium)
 tukey_medium <- pairs(em_medium, adjust = "tukey")
@@ -403,6 +413,66 @@ tukey_medium <- pairs(em_medium, adjust = "tukey")
 # Perform pairwise comparisons for 'day * medium' (interaction)
 em_interaction <- emmeans(aov_3b, ~ day * medium)
 tukey_interaction <- pairs(em_interaction, adjust = "tukey")
+```
+
+#### cld
+
+```{r}
+# Compute CLD letters for 'day'
+cld_day <- emmeans(aov_3b, pairwise ~ day, adjust = "tukey") %>%
+  cld(Letters = letters, reverse = TRUE)
+cld_day_3b <- ggplot(cld_day, aes(x = day, y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("Day") +
+  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_day_3b
+
+# Compute CLD letters for 'medium'
+cld_medium <- emmeans(aov_3b, pairwise ~ medium, adjust = "tukey") %>%
+  cld(Letters = letters, reverse = TRUE)
+cld_medium_3b <- ggplot(cld_medium, aes(x = factor(medium, levels = c("MQ+AEbiofilm", "PW+AEBiofilm", "1%TB+AEbiofilm")), y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  xlab("Medium with AE biofilm") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("Medium") +
+  scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ")) +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_medium_3b
+
+# Compute CLD letters for 'day * medium'
+cld_day_medium <- emmeans(aov_3b, pairwise ~ day * medium, adjust = "tukey") %>%
+  cld(Letters = letters, reverse = TRUE)
+# Create the plot with custom labels for 'TB'
+cld_day_medium_3b <- ggplot(cld_day_medium, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 3) +  # Plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
+  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+facet_wrap(~ factor(medium, levels = c("MQ+AEbiofilm", "PW+AEBiofilm", "1%TB+AEbiofilm")), 
+             labeller = as_labeller(c("1%TB+AEbiofilm" = "1%TB", 
+                                      "PW+AEBiofilm" = "PW - MO", 
+                                      "MQ+AEbiofilm" = "MQ"))) +  # Custom facet labels and order
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  ggtitle("Day * Medium") +
+ scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
+  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
+cld_day_medium_3b
 ```
 
 Results write up
@@ -444,10 +514,6 @@ geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
 3B: AE Biofilm 
 
 ```{r}
-# Convert factor day to numeric while preserving original values
-ae_noday0$day <- as.numeric(as.character(ae_noday0$day))
-
-
 # add column for microbes or no
 fig_3b <- ae_summary %>%
   # reorder to match Renwei's plot
@@ -455,7 +521,7 @@ fig_3b <- ae_summary %>%
                             levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
                                        "PW+AEBiofilm",   "Added Bd"  ))) %>%
 
-  ggplot(aes(x = day,
+  ggplot(aes(x = day_numeric,
            y = mean,
            color = sample_ID)) +
   geom_point(size = 2) +
@@ -466,15 +532,14 @@ fig_3b <- ae_summary %>%
   
   # Adding the raw data as a layer with jitter
   geom_point(data = ae_noday0, 
-             aes(x = day, 
+             aes(x = day_numeric, 
                  y = adh, 
                  color = sample_ID),  # Raw data points
              position = position_jitter(width = 0.1, seed = 1),
              alpha = 0.3) +
-  
   # controls raw data
     geom_point(data = ae_control_data, 
-             aes(x = day, 
+             aes(x = day_numeric, 
                  y = adh, 
                  color = "#BBBBBB"),  # Raw data points
              position = position_jitter(width = 0.1, seed = 1),
@@ -482,7 +547,7 @@ fig_3b <- ae_summary %>%
   
   # Adding the raw data as a layer with jitter
   geom_point(data = ae_noday0,
-             aes(x = day,
+             aes(x = day_numeric,
                  y = adh,
                  color = sample_ID),  # Raw data points
              position = position_jitter(width = 0.1, seed = 1),
@@ -602,6 +667,18 @@ aov_3b_tbl_b <- anova_output %>%
   )
 
 aov_3b_tbl_b
+```
+
+## cld 3b
+
+```{r}
+pairwise_cld_3b <- cld_day_3b + cld_medium_3b + cld_day_medium_3b +
+  plot_annotation(tag_levels = 'A')
+
+# Display the combined plot
+pairwise_cld_3b 
+
+#ggsave("3b_pairwise_cld.png", plot = pairwise_cld_3b , width = 14, height = 5, dpi = 1000)
 ```
 
 ### posthoc table
