@@ -34,24 +34,6 @@ fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fi
 # Colors: these are from Paul Tol's colorblind friendly palette
 with_microbes_40_color <- "#999933"
 no_microbes_.22_color <- "#88ccee"
-
-# set up custom theme
-myCustomTheme <- function() {
-  theme_light() +
-    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
-          title = element_text(size = 12, face = "bold", family = "Times"),
-          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
-          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
-          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
-          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
-          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
-          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
-          axis.ticks = element_blank() # Remove x and y axis ticks
-    )}
 ```
 
 # 2A
@@ -717,6 +699,48 @@ library(multcompView)
 
 # *Publication figure
 
+```{r}
+# install.packages("extrafont")
+# library(extrafont)
+# font_import(pattern = "Arial")
+# loadfonts(device = "pdf")
+
+# set up custom theme
+# myCustomTheme <- function() {
+#   theme_light() +
+#     theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+#           axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+#           axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+#           title = element_text(size = 7, face = "bold", family = "Helvetica"),
+#           plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+#           legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+#           panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+#           panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+#           panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+#           panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+#           strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+#           strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+#           axis.ticks = element_blank() # Remove x and y axis ticks
+#     )}
+
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey"),   # Keep tick markers
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey")  # Set strip background to white, outline grey
+    )
+}
+```
+
 2a
 
 ```{r}
@@ -745,6 +769,8 @@ fig_2a <- eb_pw %>%
   
   # add controls ad x's
   geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+
+fig_2a
 ```
 
 2b
@@ -803,29 +829,47 @@ fig2B <- pw_summary %>%
                                 "PW-microorganism" = "PW - MO",
                                 "Added Bd" = "Initial Bd")) + # Custom labels for the color legend
   
-    geom_line(aes(linetype = microbes)) + 
+   geom_line(aes(linetype = microbes), show.legend = FALSE) + 
   scale_linetype_manual(values = c("n" = "dashed", 
                                    "y" = "solid"),
                         labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
  myCustomTheme()+
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
                    labels = c("Initial\nBd", "1", "3", "5", "7")) +
-  theme(legend.position = "right",
-        panel.grid.major.y = element_line(color = "grey"), # Add major y grid lines
-        panel.border = element_blank())
+  theme(legend.position = "bottom",
+        panel.border = element_blank(),
+        legend.text = element_text(size = 5),  # Set legend text font size to 5pt
+        legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
+        legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) +  # Remove margins around legend
+guides(color = guide_legend(title = NULL))
+
+fig2B
 ```
+
 
 combine
 
+
 ```{r}
 # Combine fig_2a and fig_2b side by side
-fig2 <- fig_2a + fig2B + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
+fig2 <- fig_2a / fig2B + 
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
 fig2
 
-#ggsave("2a_2b.png", plot = fig2, width = 14, height = 5, dpi = 1000)
+#ggsave("2a_2b.pdf", plot = fig2, width = 14, height = 5, dpi = 1000) # change to width 88 mm
+
+ggsave("hhhh.pdf", plot = fig2, width = 3.46, height = 5)
+
+# instead export 2a and 2b
+
+
+fig_2a
+ggsave("2a.pdf", plot = fig_2a, width = 3.46, height = 3.46)
+
+ggsave("2b.pdf", plot = fig2B, width = 3.46, height = 3.46)
+
 ```
 
 
