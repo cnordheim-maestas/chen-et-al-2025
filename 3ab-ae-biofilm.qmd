@@ -482,6 +482,26 @@ A two-way ANOVA revealed that there was a statistically significant difference i
 
 # \*PUBLICATION FIGURES
 
+```{r}
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
+    )
+}
+```
+
+
 
 3A: AE Biofilm 
 
@@ -492,12 +512,15 @@ ggplot(aes(y= bd_qty, x = day)) +
     geom_jitter(alpha = 0.3, width = 0.05) +
     myCustomTheme() +
   scale_y_log10() +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) + 
     xlab("Day") +
     ylab("Bd Quantity (ZE)") +
-  scale_x_discrete (labels= c("Day_1" = "1", "Day_7" = "7"))
+  scale_x_discrete (labels= c("Day_1" = "1", "Day_7" = "7")) +
+  
+   theme(legend.position = "none",
+        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5))
+
+
 
 # Let's add significance letters
 significance_data <- tibble(
@@ -507,7 +530,18 @@ significance_data <- tibble(
 
 fig_3a <- fig_3a_boxplot + 
 geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
-            position = position_dodge(width = 0.75), vjust = 0) 
+            position = position_dodge(width = 0.75), vjust = 0, size = 7 / 2.85) # /2.85 to convert to the same "pt" text sizing the axes use
+
+fig_3a
+
+fig_3a <- fig_3a +
+  labs(tag = "A") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
+
+fig_3a
 ```
 
 
@@ -571,7 +605,27 @@ fig_3b <- ae_summary %>%
 
  myCustomTheme()+
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
-                   labels = c("Initial\nBd", "1", "3", "5", "7"))
+                   labels = c("Initial\nBd", "1", "3", "5", "7")) +
+  theme(legend.position = "bottom",
+        panel.border = element_blank(),
+        legend.text = element_text(size = 5),  # Set legend text font size to 5pt
+        legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
+        legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0),
+        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5)) +  # Keep the y-axis line) +  # Remove margins around legend
+guides(color = guide_legend(title = NULL))
+
+fig_3b
+
+fig_3b <- fig_3b +
+  labs(tag = "B") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
+
+fig_3b
 ```
 
 Fig 3 combined
@@ -582,8 +636,14 @@ fig3 <- fig_3a + fig_3b +
   plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
-fig3
+#fig3
 #ggsave("3a_3b.png", plot = fig3, width = 14, height = 5, dpi = 1000)
+
+# 3a alone
+ggsave("3a.pdf", plot = fig_3a, width = 3.46, height = 5)
+
+# 3b alone
+ggsave("3b.pdf", plot = fig_3b, width = 3.46, height = 5)
 ```
 
 # *SI figures and tables

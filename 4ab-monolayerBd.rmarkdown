@@ -53,6 +53,7 @@ myCustomTheme <- function() {
     )}
 ```
 
+
 # 4A: East Bay Monolayer
 
 Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
@@ -64,6 +65,7 @@ Is there a difference in the **gain or loss of ADHERENT Bd over 6 days** between
 **There is a significant difference in the change in the quantity of adherent Bd from Day 1 to Day 7 across the filter types (t = -6.45, df = 7, p-value = 0.0003)**
 
 ## 4a Data Wrangling
+
 
 ```{r}
 eb_monolayer <- ns_ml_pw_bd %>% 
@@ -96,9 +98,11 @@ eb_monolayer_diff.22um <- eb_monolayer_diff %>%
 
 ```
 
+
 ## 4a EDA
 
 Renwei barplot
+
 
 ```{r}
 eb_monolayer %>%
@@ -119,7 +123,9 @@ ggplot(aes(y= bd_qty, x = site, fill = filter)) +
 
 ```
 
+
 Boxplot
+
 
 ```{r}
 eb_monolayer %>%
@@ -146,6 +152,7 @@ geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size =
 
 ```
 
+
 ## 4aStats and assumption testing
 
 Question:
@@ -161,6 +168,7 @@ Assumptions:
 Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
 
 Test: Paired t-test on the difference in total Bd between day 1 and 7
+
 
 ```{r}
 # check normality of the differences across groups
@@ -189,6 +197,7 @@ ggplot(aes(y= rate_loss, x = filter)) +
 t.test(eb_monolayer_diff_40um$rate_loss, eb_monolayer_diff.22um$rate_loss, paired = TRUE)
 ```
 
+
 ### Stats results:
 
 When monolayer Bd biofilm is exposed to pond water without microbes has a significantly greater loss of Bd between day 1 to day 7 than pond water with microbes (t = -5.4, df = 8, p = 0.0006772). The t-value is negative, which shows that the first item entered (with microbes) has a smaller loss of Bd than the second item entered (no microbes).
@@ -203,6 +212,7 @@ This will be a lme since it is a mixed effects model!
 
 Data wrangling
 
+
 ```{r}
 eb_monolayer <- eb_monolayer %>% 
   mutate(log_bd = log(bd_qty))
@@ -212,7 +222,9 @@ eb_monolayer %>%
  ggqqplot("log_bd") # gorgeous
 ```
 
+
 Assumptions testing
+
 
 ```{r}
 par(mfrow = c(2,2))
@@ -223,7 +235,9 @@ plot(mod6) # passes homogeneity of variances
 qqPlot(resid(mod6), main="QQ Plot of Residuals") # passes normality of resids
 ```
 
+
 Interpret
+
 
 ```{r}
 summary(mod6)
@@ -232,11 +246,13 @@ anova(mod6)
 emmeans::emmeans(mod6, pairwise ~ day * filter) # pairwise comparisons
 ```
 
+
 # 4b: NCOS
 
 Add in NCOS now
 
 ## 4b Data Wrangling
+
 
 ```{r}
 ## Monolayer
@@ -312,6 +328,7 @@ ml_noday0 <- ml_noday0 %>%
 ```
 
 
+
 ## 4b EDA
 
 Note: only the ADHERENT Bd here!
@@ -321,6 +338,7 @@ Note: only the ADHERENT Bd here!
 ![](data/4b_monolayer.jpg){width="4in"}
 
 ### ggplot version: replicating Renwei's ML
+
 
 ```{r}
 rc <- monolayer_summary %>% 
@@ -356,7 +374,9 @@ rc <- monolayer_summary %>%
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
 ```
 
+
 ## Caitlin's version ML
+
 
 ```{r}
 cnm <- monolayer_summary %>% 
@@ -397,9 +417,11 @@ cnm <- monolayer_summary %>%
                    labels = c("Initial\nBd", "1", "3", "5", "7"))
 ```
 
+
 visualize y var: bd load
 
 Commented out to save space, log transformed is better
+
 
 ```{r}
 # # untransformed
@@ -414,6 +436,7 @@ Commented out to save space, log transformed is better
 # ggqqplot(ml_noday0, "log_adh", title = "log transformed") # gorgeous
 # hist(ml_noday0$log_adh) # better
 ```
+
 
 ## 4b Stats
 
@@ -453,13 +476,16 @@ Results summary
 
 ## null
 
+
 ```{r}
 null <- lm(log_adh ~ 1,
   data = ml_noday0)
 AIC(null) #205.4965
 ```
 
+
 ## Bd \~ day\*microbes\*TB
+
 
 ```{r}
 # build model
@@ -475,7 +501,9 @@ summary(aov_4b)
 AIC(aov_4b) # 132.8989 better than null
 ```
 
+
 Post hoc
+
 
 ```{r}
 TukeyHSD(aov_4b)
@@ -503,7 +531,9 @@ f4b_tukey_int_microbe_day <- pairs(f4b_em_int_microbe_day, adjust = "tukey")
 f4b_tukey_int_microbe_day 
 ```
 
+
 ### cld
+
 
 ```{r}
 # Compute CLD letters for 'day'
@@ -581,7 +611,9 @@ cld_TB_microbes_4b
 # cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b
 ```
 
+
 # *Figures
+
 
 ```{r}
 myCustomTheme <- function() {
@@ -603,7 +635,9 @@ myCustomTheme <- function() {
 ```
 
 
+
  Fig 4
+
 
 ```{r}
 fig_4a <- eb_monolayer %>% 
@@ -626,18 +660,8 @@ fig_4a <- eb_monolayer %>%
  # add controls ad x's
 geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size = 2)
 
-#fig_4a
-
-fig_4a <- fig_4a +
-  labs(tag = "A") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
-
 fig_4a
 ```
-
 
 ```{r}
 # Convert factor day to numeric while preserving original values
@@ -698,19 +722,12 @@ guides(color = guide_legend(title = NULL)) +
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
                    labels = c("Initial\nBd", "1", "3", "5", "7"))
 
-#fig_4b
-
-fig_4b <- fig_4b +
-  labs(tag = "B") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
-
 fig_4b
 ```
 
+
 Fig 4 combined
+
 
 ```{r}
 # Combine fig_2a and fig_2b side by side
@@ -718,20 +735,16 @@ fig4 <- fig_4a + fig_4b +
   plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
-#fig4
+fig4
 
 #ggsave("4a_4b.png", plot = fig4, width = 14, height = 5, dpi = 1000)
-
-# 4a alone
-ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 5)
-
-# 4b alone
-ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 5)
 ```
+
 
 # *SI
 
 ## anova table
+
 
 ```{r}
 # anova table
@@ -810,7 +823,9 @@ aov_4b_tbl_b <- anova_output4b %>%
 aov_4b_tbl_b
 ```
 
+
 ## post hoc
+
 
 ```{r}
 # post hoc table
@@ -879,7 +894,9 @@ ph4b_table <- f4b_all_tukey_df %>%
 ph4b_table
 ```
 
+
 ## cld
+
 
 ```{r}
 # cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b
