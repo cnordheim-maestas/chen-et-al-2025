@@ -80,6 +80,8 @@ eb_pw_total_diff_40um <- eb_pw_total_diff %>%
   filter(filter =="40um_filter")
 eb_pw_total_diff.22um <- eb_pw_total_diff%>% 
   filter(filter =="0.22um_filter")
+
+write.csv(eb_pw_total_diff, "data/eb_pw_total_diff.csv", row.names = FALSE)
 ```
 
 ## EDA
@@ -280,6 +282,8 @@ pw_noday0$TB <- relevel(pw_noday0$TB, ref = "n")
 # set no microbes as reference
 pw_noday0$microbes <- factor(pw_noday0$microbes)
 pw_noday0$microbes <- relevel(pw_noday0$microbes, ref = "n")
+
+write.csv(pw_noday0, "data/pw_noday0.csv", row.names = FALSE)
 ```
 
  Renwei's figure
@@ -386,8 +390,6 @@ fig_2b <- pw_summary %>%
 visualize y var: bd load
 
 log transformed will get me closer to normal, note we only need to worry about the residuals normality though, so commented out the transformation of the data for space
-
-TRY ARCSIN, TRY OTHER THINGS
 
 ```{r}
 # untransformed

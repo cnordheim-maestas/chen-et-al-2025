@@ -1,0 +1,439 @@
+---
+title: "5ab-combined-analyses"
+author: "Caitlin Nordheim-Maestas"
+format: docx
+# format:
+#   html:
+#     embed-resources: true
+#     toc: true
+#     code-fold: true
+#     toc-location: left
+---
+
+# Load in data and libraries
+
+```{r}
+#| warning: false
+
+## read in and clean data
+library(tidyverse) # for cleaning and viewing data
+library(gt) # pretty stats tables
+library(broom) # cleaning for gt
+library(here) # for importing data
+library(car) # stats tests like Levene's
+library(multcomp) # stats
+library(multcompView) # view cld
+library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
+library(ggpubr) # for making ggqq plot
+library(patchwork) # for combining figures
+
+# load "East Bay" experiments data
+ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
+fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
+ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
+
+fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
+fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
+fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
+
+# load wrangled data
+eb_pw_total_diff <- read.csv(here("data", "eb_pw_total_diff.csv"))
+pw_noday0 <- read.csv(here("data", "pw_noday0.csv"))
+
+# Colors: these are from Paul Tol's colorblind friendly palette
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
+```
+
+# Data wrangling for all datasets
+
+MAYBE I WILL EXPORT THE WRANGLED DATA FROM THE OTHER WORKFLOWS
+
+I need
+
+-   eb_pw_total_diff
+
+-   pw_noday0
+
+-   eb_ae_bf_only
+
+-   ae_noday0
+
+# COMBINE PW AND AE FOR ALL
+
+## Fig 5 Data wrangling
+
+```{r}
+# data wrangling for comparisons across experiments
+
+# pond water with microbes
+pw_WITH_microbes <- eb_pw_total_diff %>%
+  filter(filter != "0.22um_filter") %>% 
+  mutate(treatment = "EB_PW_40um") %>% 
+  rename(sample_ID = site) %>% 
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+
+## NCOS version fig 2 PW + MO
+ncos_pw_WITH_microbes <- pw_noday0 %>% 
+  filter(sample_ID == "PW+microorganism") %>% 
+  filter(day != "3" & day != "5") %>%
+  dplyr::select(day, sample_ID, replicate, adh_plus_sup) %>% 
+  mutate(day = str_replace(as.character(day), "1", "Day_1"),
+         day = str_replace(day, "7", "Day_7")) %>% 
+ pivot_wider(names_from = day, values_from = adh_plus_sup) %>%
+# calculate the rate loss by taking the log of each before subtracting
+    mutate(treatment = "NCOS_PW_40um") %>% 
+  mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+
+## Field bf
+fieldbf_no_microbes <- eb_ae_bf_only %>%
+   subset(select = -c(bd_location, log_qty)) %>% 
+  filter(day != "Day_0") %>% 
+# calculate the difference in raw amount of Bd
+  pivot_wider(names_from = day, values_from = bd_qty) %>%
+# calculate the rate loss by taking the log of each before subtracting
+  mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
+  mutate(treatment = "EB_biofilm") %>% 
+  mutate(filter = "0.22um_filter") %>% 
+  rename(sample_ID = site) %>% 
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+
+## NCOS version fig 3B ae bf with no microbes
+ncos_ae_no_microbes <- ae_noday0 %>% 
+  filter(sample_ID == "PW+AEBiofilm") %>% 
+  filter(day != "3" & day != "5") %>%
+  dplyr::select(day, sample_ID, replicate, adh) %>% 
+  mutate(day = str_replace(as.character(day), "1", "Day_1"),
+         day = str_replace(day, "7", "Day_7")) %>% 
+ pivot_wider(names_from = day, values_from = adh) %>%
+# calculate the rate loss by taking the log of each before subtracting
+    mutate(treatment = "NCOS_biofilm") %>% 
+  mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
+  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+  
+all_parts<- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes)
+
+# set PW 40 um as the intercept, comparing back to that one
+all_parts$treatment <- factor(all_parts$treatment,
+                          levels = c("EB_PW_40um", "NCOS_PW_40um", "EB_biofilm", "NCOS_biofilm")) 
+```
+
+## 5A: Biofilm vs pond water with sites combined
+
+t-test
+
+```{r}
+# make a column for medium
+all_parts <- all_parts %>% 
+  mutate(medium = case_when(
+    grepl("PW", treatment) ~ "PW",
+    grepl("biofilm", treatment) ~ "Biofilm"
+  ))
+
+# assumptions testing
+leveneTest(rate_loss ~ factor(medium), data = all_parts)
+
+# assumptions testing
+all_parts %>% 
+ ggqqplot("rate_loss") # good
+shapiro.test(all_parts$rate_loss) # normal, yay!
+hist(all_parts$rate_loss)
+
+t.test(rate_loss ~ medium, data = all_parts, var.equal = TRUE)
+```
+
+```{r}
+f5a <- all_parts %>% 
+  mutate(medium = fct_relevel(medium, "PW", "Biofilm")) %>% 
+  ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.05) +
+    theme_classic() +
+     scale_fill_manual(values = c("PW" = "white",
+                                  "Biofilm" = "darkgrey")) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 6 Days") + 
+   scale_x_discrete (labels= c("PW" = "Pond water + MO",
+                              "Biofilm" = "AE Biofilm"))
+f5a
+```
+
+## 5B pairwise comparisons across treatments
+
+Stats and assumption testing
+
+Exploratory viz:
+
+```{r}
+exploratory_viz <- all_parts %>% 
+  ggplot(aes(y= rate_loss, x = treatment)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.05) +
+    theme_classic() +
+   theme(legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 7 Days") + 
+  ggtitle("Exploratory visualization, not final plot")
+```
+
+Assumptions testing
+
+```{r}
+par(mfrow = c(2,2))
+aov_5b <- aov(rate_loss~treatment, data=all_parts)
+plot(aov_5b)
+```
+
+interpret
+
+```{r}
+# with microbe depleted
+summary(aov_5b) # sig effect of treatment
+TukeyHSD(aov_5b)
+
+post_hoc_rateloss <- glht(aov_5b, # with your ANOVA model
+                 linfct = mcp(treatment = "Tukey"))
+summary(post_hoc_rateloss)
+cld(post_hoc_rateloss) 
+
+# export cld results as a dataframe
+cld_results_rateloss <- cld(post_hoc_rateloss)
+labels_rl <- cld_results_rateloss$mcletters$Letters
+treatments_rl <- names(labels_rl)
+labels_rl <- as.character(labels_rl)
+
+sig_data_rl <- tibble(
+  treatment = treatments_rl,
+  y_position = c(7,4,6.5,4),
+  label = labels_rl)
+
+## emmeans for posthoc
+f5b_em_treat <- emmeans(aov_5b, ~ treatment)
+f5b_tukey_treat <- pairs(f5b_em_treat, adjust = "tukey")
+f5b_tukey_treat
+```
+
+# \*PUBLICATION FIGURES
+
+## Fig 5
+
+5a
+
+```{r}
+f5a <- all_parts %>% 
+  mutate(medium = fct_relevel(medium, "PW", "Biofilm")) %>% 
+  ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.05) +
+    myCustomTheme() +
+     scale_fill_manual(values = c("PW" = "white",
+                                  "Biofilm" = "darkgrey")) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Medium") +
+    ylab("Rate of Loss of Bd over 6 Days") + 
+   scale_x_discrete (labels= c("PW" = "Pond water + MO",
+                              "Biofilm" = "AE Biofilm"))
+f5a
+```
+
+5b
+
+```{r}
+all_parts$treatment <- factor(all_parts$treatment) 
+  
+fig5 <- all_parts %>% 
+    mutate(site = case_when(
+    grepl("NCOS", treatment) ~ "Santa Barbara",
+    TRUE ~ "East Bay"  # Default to "east Bay"
+  )) %>% 
+   ggplot(aes(y= rate_loss, x = treatment, fill = medium)) +
+    geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.05) +
+    myCustomTheme() +
+  # biofilm and pond water colors, both from paul tol colorblind palette
+   scale_fill_manual(values = c("PW" = "white",
+                                  "Biofilm" = "darkgrey")) +
+  #facet_wrap(~site, scales = "free_x") +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+  xlab("Treatment") +
+  ylab("Rate loss of Bd over 6 Days") + 
+  scale_x_discrete (limits = c("EB_PW_40um", "EB_biofilm", 
+                               "NCOS_PW_40um", "NCOS_biofilm"),  # Specify the order
+                        labels= c(
+                              "EB_PW_40um" = "East Bay\nPW + MO",
+                              "NCOS_PW_40um" = "SB \nPW + MO",
+                              "EB_biofilm" = "East Bay\nBiofilm",
+                              "NCOS_biofilm" = "SB \nBiofilm"))
+sig_data_rl <- sig_data_rl %>% 
+    mutate(site = case_when(
+    grepl("NCOS", treatment) ~ "Santa Barbara",
+    TRUE ~ "East Bay"  # Default to "east Bay"
+  ))
+
+f5b <- fig5 + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label, group = site), inherit.aes = FALSE) 
+
+f5b
+```
+
+Combine the figs
+
+```{r}
+# Combine fig_2a and fig_2b side by side
+fig5ab <- f5a + f5b + 
+  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
+  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
+
+fig5ab
+
+#ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
+```
+
+# \* Stats tables
+
+## 5B stats
+
+anova table
+
+```{r}
+# anova table
+anova_output <- tidy(aov_5b)
+
+aov_5b_tbl <- anova_output %>%
+  dplyr::select(term, df, sumsq, meansq, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "5b ANOVA Table"
+  ) %>%
+  fmt_number(
+    columns = c(sumsq, meansq, statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "Term",
+    df = "Df",
+    sumsq = "Sum Sq",
+    meansq = "Mean Sq",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+aov_5b_tbl
+
+# prettier, simplified
+anova_output <- tidy(aov_5b)
+
+# Modify term to include degrees of freedom in *italics*
+anova_output <- anova_output %>%
+  mutate(term = ifelse(grepl("day:medium", term), "day x medium", term)) %>% 
+  mutate (term = paste0(term, " (*df = ", df, ", ", anova_output[df == max(df), "df"], "*)")) %>% 
+  filter(term != "Residuals (*df = 26, 26*)")
+
+# Create the gt table with selected columns
+aov_5b_tbl_b <- anova_output %>%
+  dplyr::select(term, statistic, p.value) %>%
+  gt() %>%
+  tab_header(
+    title = "5b ANOVA Table"
+  ) %>%
+  fmt_markdown(
+    columns = c(term)
+  ) %>%
+  fmt_number(
+    columns = c(statistic),
+    decimals = 2
+  ) %>%
+  cols_label(
+    term = "",
+    statistic = "F value",
+    p.value = "P-value"
+  ) %>%
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  )
+
+aov_5b_tbl_b
+```
+
+pairwise
+
+```{r}
+f5b_tukey_df <-as.data.frame(f5b_tukey_treat)
+f5b_tukey_df <- f5b_tukey_df %>% 
+  mutate(factor = "Treatment")
+
+unique(f5b_tukey_df$contrast)
+
+f5b_tukey_df <- f5b_tukey_df %>% 
+  mutate(contrast = gsub("NCOS_PW_40um", "SB PW Microbes", contrast),
+         contrast = gsub("NCOS_biofilm", "SB Biofilm", contrast),
+         contrast = gsub("EB_PW_40um", "EB PW Microbes", contrast),
+         contrast = gsub("EB_biofilm", "EB Biofilm", contrast))
+
+ph5b_table <- f5b_tukey_df %>%
+  dplyr::select(contrast, estimate, SE, df, t.ratio, p.value) %>%
+  gt() %>%
+  # change column names
+  cols_label(
+    contrast = "Comparison",
+    estimate = "Estimate",
+    SE = "Standard Error",
+    df = "Degrees of Freedom",
+    t.ratio = "t-Ratio",
+    p.value = "p-value"
+  ) %>%
+  # update header for table
+  tab_header(
+    title = "5b Emmeans Post-hoc Test Results"
+  ) %>%
+  # 3 decimal places
+  fmt_number(
+    columns = c(estimate, SE, t.ratio),
+    decimals = 3
+  ) %>%
+  # scientific number format for values <0.001 in p values
+  fmt_scientific(
+    columns = c(p.value),
+    decimals = 1,
+    rows = p.value < 0.001
+  ) %>%
+  # 3 decimals for p values >=0.001
+  fmt_number(
+    columns = c(p.value),
+    decimals = 3,
+    rows = p.value >= 0.001
+  ) %>%
+  #make the headers bold
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything()))
+ph5b_table
+```
