@@ -77,6 +77,8 @@ eb_ae_bf_only <- eb_ae %>%
   filter(day != "Day_0") %>% 
   #log bd qty
   mutate(log_qty = log(bd_qty))
+
+write.csv(eb_ae_bf_only, "data/eb_ae_bf_only.csv", row.names = FALSE)
 ```
 
 ## EDA
@@ -236,6 +238,8 @@ ae_summary <- ae %>%
 ae_noday0 <- ae %>% 
   filter(day != "Day_0") %>% 
   mutate(log_adh = log(adh)) # note: no zeroes so not log + 1
+
+write.csv(ae_noday0, "data/ae_noday0.csv", row.names = FALSE)
 ```
 
 ## 3b EDA

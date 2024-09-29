@@ -28,17 +28,21 @@ library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
 
 # load "East Bay" experiments data
-ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
-fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
-ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
-
-fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
-fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
-fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
+# ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
+# fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
+# ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
+# 
+# fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
+# fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
+# fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
 
 # load wrangled data
 eb_pw_total_diff <- read.csv(here("data", "eb_pw_total_diff.csv"))
 pw_noday0 <- read.csv(here("data", "pw_noday0.csv"))
+eb_ae_bf_only <- read.csv(here("data", "eb_ae_bf_only.csv"))
+ae_noday0 <- read.csv(here("data", "ae_noday0.csv"))
+
+# 
 
 # Colors: these are from Paul Tol's colorblind friendly palette
 with_microbes_40_color <- "#999933"
@@ -66,51 +70,45 @@ I need
 ```{r}
 # data wrangling for comparisons across experiments
 
-# pond water with microbes
+## EBpond water
 pw_WITH_microbes <- eb_pw_total_diff %>%
   filter(filter != "0.22um_filter") %>% 
   mutate(treatment = "EB_PW_40um") %>% 
   rename(sample_ID = site) %>% 
-  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+  dplyr::select(sample_ID, treatment, rate_loss)
 
-## NCOS version fig 2 PW + MO
+## NCOS PW 
 ncos_pw_WITH_microbes <- pw_noday0 %>% 
   filter(sample_ID == "PW+microorganism") %>% 
-  filter(day != "3" & day != "5") %>%
+  filter(day != "Day_3" & day != "Day_5") %>%
   dplyr::select(day, sample_ID, replicate, adh_plus_sup) %>% 
-  mutate(day = str_replace(as.character(day), "1", "Day_1"),
-         day = str_replace(day, "7", "Day_7")) %>% 
  pivot_wider(names_from = day, values_from = adh_plus_sup) %>%
 # calculate the rate loss by taking the log of each before subtracting
-    mutate(treatment = "NCOS_PW_40um") %>% 
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+  mutate(treatment = "NCOS_PW_40um") %>% 
+  dplyr::select(sample_ID, treatment, rate_loss)
 
 ## Field bf
 fieldbf_no_microbes <- eb_ae_bf_only %>%
-   subset(select = -c(bd_location, log_qty)) %>% 
   filter(day != "Day_0") %>% 
-# calculate the difference in raw amount of Bd
+   dplyr::select(day, site, bd_qty) %>% 
   pivot_wider(names_from = day, values_from = bd_qty) %>%
 # calculate the rate loss by taking the log of each before subtracting
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  mutate(treatment = "EB_biofilm") %>% 
-  mutate(filter = "0.22um_filter") %>% 
   rename(sample_ID = site) %>% 
-  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+  mutate(treatment = "EB_biofilm") %>% 
+  dplyr::select(sample_ID, treatment, rate_loss)
 
 ## NCOS version fig 3B ae bf with no microbes
 ncos_ae_no_microbes <- ae_noday0 %>% 
   filter(sample_ID == "PW+AEBiofilm") %>% 
-  filter(day != "3" & day != "5") %>%
+  filter(day != "Day_3" & day != "Day_5") %>%
   dplyr::select(day, sample_ID, replicate, adh) %>% 
-  mutate(day = str_replace(as.character(day), "1", "Day_1"),
-         day = str_replace(day, "7", "Day_7")) %>% 
  pivot_wider(names_from = day, values_from = adh) %>%
 # calculate the rate loss by taking the log of each before subtracting
     mutate(treatment = "NCOS_biofilm") %>% 
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
-  dplyr::select(sample_ID, treatment, rate_loss, Day_1)
+  dplyr::select(sample_ID, treatment, rate_loss)
   
 all_parts<- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes)
 
@@ -221,6 +219,26 @@ f5b_tukey_treat
 
 # \*PUBLICATION FIGURES
 
+```{r}
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          panel.border = element_blank(),
+          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
+    )
+}
+```
+
 ## Fig 5
 
 5a
@@ -234,13 +252,23 @@ f5a <- all_parts %>%
     myCustomTheme() +
      scale_fill_manual(values = c("PW" = "white",
                                   "Biofilm" = "darkgrey")) +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
+ theme(legend.position = "none",
+        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5),
+       panel.border = element_blank()) +
     xlab("Medium") +
     ylab("Rate of Loss of Bd over 6 Days") + 
    scale_x_discrete (labels= c("PW" = "Pond water + MO",
                               "Biofilm" = "AE Biofilm"))
+f5a
+
+f5a <- f5a +
+  labs(tag = "A") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
+
 f5a
 ```
 
@@ -263,8 +291,8 @@ fig5 <- all_parts %>%
                                   "Biofilm" = "darkgrey")) +
   #facet_wrap(~site, scales = "free_x") +
    theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
+          axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5)) +
   xlab("Treatment") +
   ylab("Rate loss of Bd over 6 Days") + 
   scale_x_discrete (limits = c("EB_PW_40um", "EB_biofilm", 
@@ -280,7 +308,20 @@ sig_data_rl <- sig_data_rl %>%
     TRUE ~ "East Bay"  # Default to "east Bay"
   ))
 
-f5b <- fig5 + geom_text(data = sig_data_rl, aes(x = treatment, y = y_position, label = label, group = site), inherit.aes = FALSE) 
+f5b <- fig5 + 
+  geom_text(data = sig_data_rl, 
+            aes(x = treatment, y = y_position, label = label, group = site), 
+            inherit.aes = FALSE, 
+            size = 2.4)  # Set fixed text size outside of aes()
+
+f5b
+
+f5b <- f5b +
+  labs(tag = "B") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
 
 f5b
 ```
@@ -293,9 +334,15 @@ fig5ab <- f5a + f5b +
   plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
-fig5ab
+#fig5ab
 
 #ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
+
+# 5a alone
+ggsave("5a.pdf", plot = f5a, width = 3.46, height = 5)
+
+# 5b alone
+ggsave("5b.pdf", plot = f5b, width = 3.46, height = 5)
 ```
 
 # \* Stats tables
