@@ -339,10 +339,10 @@ fig5ab <- f5a + f5b +
 #ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
 
 # 5a alone
-ggsave("5a.pdf", plot = f5a, width = 3.46, height = 5)
+ggsave("5a.pdf", plot = f5a, width = 3.46, height = 3.46)
 
 # 5b alone
-ggsave("5b.pdf", plot = f5b, width = 3.46, height = 5)
+ggsave("5b.pdf", plot = f5b, width = 3.46, height = 3.46)
 ```
 
 # \* Stats tables

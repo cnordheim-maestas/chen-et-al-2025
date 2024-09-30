@@ -723,10 +723,10 @@ fig4 <- fig_4a + fig_4b +
 #ggsave("4a_4b.png", plot = fig4, width = 14, height = 5, dpi = 1000)
 
 # 4a alone
-ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 5)
+ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 3.46)
 
 # 4b alone
-ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 5)
+ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 3.46)
 ```
 
 # *SI
