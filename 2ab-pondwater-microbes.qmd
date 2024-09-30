@@ -513,49 +513,43 @@ TukeyHSD(aov_2b)
 cld_day <- emmeans(aov_2b, pairwise ~ day, adjust = "tukey") %>% 
   cld(Letters = letters, reverse = TRUE)
 cld_day_2b <- ggplot(cld_day, aes(x = day, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme()+
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_day_2b
 
 # Compute CLD letters for 'TB'
 cld_TB <- emmeans(aov_2b, pairwise ~ TB, adjust = "tukey") %>%
   cld(Letters = letters)
 cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("TB") +
   ylab("Estimated Marginal Means") +
   ggtitle("TB") +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_TB_2b 
 
 # Compute CLD letters for 'water_treatment'
 cld_water_treatment <- emmeans(aov_2b, pairwise ~ water_treatment, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_water_treatment_2b <-ggplot(cld_water_treatment, aes(x = water_treatment, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Water Treatment") +
   ylab("Estimated Marginal Means") +
   ggtitle("Water Treatment") +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme()+
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_water_treatment_2b
 
 # Compute CLD letters for 'TB * day'
@@ -564,36 +558,32 @@ cld_day_TB <- emmeans(aov_2b, pairwise ~ TB * day, adjust = "tukey") %>%
 tb_labels <- c("n" = "TB absent", "y" = "TB present")
 # Create the plot with custom labels for 'TB'
 cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
   facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +  # Facet by TB with custom labels
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("TB * Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme()+
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_tb_day_int_2b
 
 # Compute CLD letters for 'water_treatment * day'
 cld_water_treatment_day <- emmeans(aov_2b, pairwise ~ water_treatment * day, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
   facet_wrap(~ water_treatment) +  # Facet by water_treatment
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("Wtreat*Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme()+
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_watertreat_day_int_2b 
 
 # third order...prepare for chaos
@@ -602,18 +592,16 @@ cld_water_thirdorder <- emmeans(aov_2b, pairwise ~ water_treatment * day * TB, a
   cld(Letters = letters)
 tb_labels <- c("n" = "TB absent", "y" = "TB present")
 cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
   facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +  # Facet by water_treatment with custom labels for TB
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("Wtreat*Day*TB") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme()+
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_water_thirdorder_2b 
 
 # get the stats for each comparison
@@ -954,17 +942,17 @@ aov_2b_tbl_b
 ## 2b cld plots
 
 ```{r}
-pairwise_cld_2b <- cld_day_2b + cld_TB_2b + cld_water_treatment_2b + cld_tb_day_int_2b + cld_watertreat_day_int_2b +
+pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) / (cld_tb_day_int_2b + cld_watertreat_day_int_2b) +
   plot_annotation(tag_levels = 'A')
 
 # Display the combined plot
 pairwise_cld_2b
 
-ggsave("2b_pairwise_cld.png", plot = pairwise_cld_2b, width = 14, height = 8, dpi = 1000)
+ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
 
 cld_water_thirdorder_2b 
 
-ggsave("2b_thirdorder_pairwise_cld.png", plot = cld_water_thirdorder_2b , width = 14, height = 8, dpi = 1000)
+ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
 ```
 
 ## 2b posthoc table

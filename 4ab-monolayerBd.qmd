@@ -510,34 +510,30 @@ f4b_tukey_int_microbe_day
 cld_day <- emmeans(aov_4b, pairwise ~ day, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+ myCustomTheme() +  # Use minimal theme for clean look
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_day_4b
 
 # Compute CLD letters for 'microbes'
 cld_microbes <- emmeans(aov_4b, pairwise ~ microbes, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_microbes_4b <- ggplot(cld_microbes, aes(x = microbes, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Microbes present") +
   ylab("Estimated Marginal Means") +
   ggtitle("Microbes") +
   scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+ myCustomTheme() +  # Use minimal theme for clean look
+theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_microbes_4b 
 
 # Compute CLD letters for 'day * microbes'
@@ -545,18 +541,16 @@ cld_day_microbes <- emmeans(aov_4b, pairwise ~ day * microbes, adjust = "tukey")
   cld(Letters = letters, reverse = TRUE)
 # Create the plot with custom labels for 'TB'
 cld_day_microbes_4b <- ggplot(cld_day_microbes, aes(x = day, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
 facet_wrap(~ factor(microbes)) +  # Custom facet labels and order
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("Day * Microbes") +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+ myCustomTheme() +  # Use minimal theme for clean look
+theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_day_microbes_4b
 
 # Compute CLD letters for 'microbes * TB'
@@ -564,18 +558,16 @@ cld_TB_microbes <- emmeans(aov_4b, pairwise ~ TB * microbes, adjust = "tukey") %
   cld(Letters = letters, reverse = TRUE)
 # Create the plot with custom labels for 'TB'
 cld_TB_microbes_4b <- ggplot(cld_TB_microbes, aes(x = TB, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
 facet_wrap(~ factor(microbes)) +  # Custom facet labels and order
-  xlab("Day") +
+  xlab("TB Presence") +
   ylab("Estimated Marginal Means") +
   ggtitle("Microbes * TB") +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+ myCustomTheme() +  # Use minimal theme for clean look
+theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_TB_microbes_4b
 
 # cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b
@@ -889,6 +881,8 @@ pairwise_cld_4b <- cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_m
 
 # Display the combined plot
 pairwise_cld_4b 
+
+ggsave("SI_4b.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
 
 #ggsave("4b_pairwise_cld.png", plot = pairwise_cld_4b , width = 14, height = 8, dpi = 1000)
 ```
