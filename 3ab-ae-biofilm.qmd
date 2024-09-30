@@ -38,20 +38,20 @@ no_microbes_.22_color <- "#88ccee"
 # set up custom theme
 myCustomTheme <- function() {
   theme_light() +
-    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
-          title = element_text(size = 12, face = "bold", family = "Times"),
-          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
-          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
-          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
-          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
-          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
-          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
-          axis.ticks = element_blank() # Remove x and y axis ticks
-    )}
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
+    )
+}
 ```
 
 # 3A
@@ -426,34 +426,29 @@ tukey_interaction <- pairs(em_interaction, adjust = "tukey")
 cld_day <- emmeans(aov_3b, pairwise ~ day, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_day_3b <- ggplot(cld_day, aes(x = day, y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   ggtitle("Day") +
+  myCustomTheme() +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+    theme()
 cld_day_3b
 
 # Compute CLD letters for 'medium'
 cld_medium <- emmeans(aov_3b, pairwise ~ medium, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_medium_3b <- ggplot(cld_medium, aes(x = factor(medium, levels = c("MQ+AEbiofilm", "PW+AEBiofilm", "1%TB+AEbiofilm")), y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Medium with AE biofilm") +
   ylab("Estimated Marginal Means") +
   ggtitle("Medium") +
-  scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Adjust text size for better readability
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  myCustomTheme() +
+  scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ"))
 cld_medium_3b
 
 # Compute CLD letters for 'day * medium'
@@ -461,21 +456,19 @@ cld_day_medium <- emmeans(aov_3b, pairwise ~ day * medium, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 # Create the plot with custom labels for 'TB'
 cld_day_medium_3b <- ggplot(cld_day_medium, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 3) +  # Plot the estimated means
+  geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 5, color = "black") +  # Add CLD letters
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
 facet_wrap(~ factor(medium, levels = c("MQ+AEbiofilm", "PW+AEBiofilm", "1%TB+AEbiofilm")), 
              labeller = as_labeller(c("1%TB+AEbiofilm" = "1%TB", 
                                       "PW+AEBiofilm" = "PW - MO", 
-                                      "MQ+AEbiofilm" = "MQ"))) +  # Custom facet labels and order
+                                      "MQ+AEbiofilm" = "MQ"))) +  
   xlab("Day") +
   ylab("Estimated Marginal Means") +
-  ggtitle("Day * Medium") +
+ ggtitle("Day * Medium") +
+  myCustomTheme() +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  theme_minimal(base_size = 15) +  # Use minimal theme for clean look
-  theme(axis.text.x = element_text(size = 12),  # Rotate x-axis labels 45 degrees
-        axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+  theme()
 cld_day_medium_3b
 ```
 
@@ -735,13 +728,13 @@ aov_3b_tbl_b
 ## cld 3b
 
 ```{r}
-pairwise_cld_3b <- cld_day_3b + cld_medium_3b + cld_day_medium_3b +
+pairwise_cld_3b <- (cld_day_3b + cld_medium_3b) / cld_day_medium_3b +
   plot_annotation(tag_levels = 'A')
 
 # Display the combined plot
 pairwise_cld_3b 
 
-#ggsave("3b_pairwise_cld.png", plot = pairwise_cld_3b , width = 14, height = 5, dpi = 1000)
+ggsave("SI_3b.pdf", plot = pairwise_cld_3b ,width = 3.46, height = 3.46)
 ```
 
 ### posthoc table
