@@ -735,7 +735,7 @@ pairwise_cld_3b <- (cld_day_3b + cld_medium_3b) / cld_day_medium_3b +
 # Display the combined plot
 pairwise_cld_3b 
 
-ggsave("SI_3b.pdf", plot = pairwise_cld_3b ,width = 3.46, height = 3.46)
+ggsave("SI_3b.pdf", plot = pairwise_cld_3b, width = 7.09, height = 3.46)
 ```
 
 ### posthoc table
