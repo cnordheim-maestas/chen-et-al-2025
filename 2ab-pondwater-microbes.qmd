@@ -955,6 +955,57 @@ cld_water_thirdorder_2b
 ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
 ```
 
+## 2a Raw EB data barplot
+
+```{r}
+# Combine the two datasets (eb_pw and eb_pw_controls)
+eb_pw_controls <- eb_pw_controls %>%
+  mutate(filter = case_when(
+    filter == "40um_filter" ~ "sterile MQ 40um_filter",
+    filter == "0.22um_filter" ~ "sterile MQ 0.22um_filter",
+    TRUE ~ filter
+  ))
+
+combined_data <- bind_rows(
+  eb_pw %>%
+    # combine floating and adherent for total Bd
+    pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+    mutate(combined_bd = adherent + floating),
+  eb_pw_controls # controls data is already in the required format
+)
+
+fig_SI2A <- combined_data %>%
+  ggplot(aes(y = combined_bd, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+    scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +
+    scale_x_discrete(limits = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  # Order "MQ" last
+    scale_fill_manual(values = c(
+      "40um_filter" = with_microbes_40_color, 
+      "0.22um_filter" = no_microbes_.22_color,
+      "sterile MQ 40um_filter" = "darkgray",
+      "sterile MQ 0.22um_filter" = "lightgray"
+    )) +
+    myCustomTheme() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        legend.position = "bottom",
+        panel.border = element_blank(),
+        legend.text = element_text(size = 5),  # Set legend text font size to 5pt
+        legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
+        legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) + # Remove margins around legend) + # Keep the x-axis line, make ~2.35 pt
+    xlab("Site") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+    guides(fill = guide_legend(title = ""))
+
+fig_SI2A
+
+ggsave("SI_2a.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
+```
+
+
+
+
 ## 2b posthoc table
 
 We likely will not include this, but if we need to find these specific t and p values we can locate them here
