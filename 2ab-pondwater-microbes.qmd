@@ -850,9 +850,9 @@ combine
 fig2 <- fig_2a / fig2B + 
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
-ggsave("2a.pdf", plot = fig_2a, width = 3.46, height = 3.46)
+#ggsave("2a.pdf", plot = fig_2a, width = 3.46, height = 3.46)
 
-ggsave("2b.pdf", plot = fig2B, width = 3.46, height = 3.46)
+#ggsave("2b.pdf", plot = fig2B, width = 3.46, height = 3.46)
 
 ```
 
@@ -948,11 +948,11 @@ pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) / (cld_tb_d
 # Display the combined plot
 pairwise_cld_2b
 
-ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
+#ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
 
 cld_water_thirdorder_2b 
 
-ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
+#ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
 ```
 
 ## 2a Raw EB data barplot
@@ -1004,7 +1004,7 @@ scale_y_continuous(expand = c(0.01, 0.01),
 
 fig_SI2A
 
-ggsave("SI_2a.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
+#ggsave("SI_2a.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
 ```
 
 
