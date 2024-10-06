@@ -887,3 +887,53 @@ ggsave("SI_4b.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
 #ggsave("4b_pairwise_cld.png", plot = pairwise_cld_4b , width = 14, height = 8, dpi = 1000)
 ```
 
+## 4a Raw EB data barplot
+
+```{r}
+# Combine the two datasets (eb_pw and eb_pw_controls)
+eb_ml_controls <- eb_ml_controls %>%
+  mutate(site = case_when(
+    site == "MQ" ~ "sterile MQ",
+    TRUE ~ site )) %>% 
+  mutate(filter = case_when(
+    filter == "40um_filter" ~ "sterile MQ 40um_filter",
+    filter == "0.22um_filter" ~ "sterile MQ 0.22um_filter",
+    TRUE ~ filter
+  ))
+
+eb_monolayer_nolog <- eb_monolayer %>% 
+  dplyr::select(-log_bd)
+
+combined_data_4 <- bind_rows(
+  eb_monolayer_nolog,
+  eb_ml_controls) # controls data is already in the required format
+
+SI_4a <- combined_data_4 %>%
+ggplot(aes(y= bd_qty, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+  scale_y_continuous(expand = c(0.01, 0.01),
+                        trans = "log",  # Natural logarithmic scale
+                       breaks = c(1e+01, 1e+03, 1e+05),  # Set exact breaks
+                       labels = scales::label_scientific()) +  # Use scientific notation 1e+01, 1e+03, 1e+05
+   scale_x_discrete(limits = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color,
+                                "sterile MQ 40um_filter" = "darkgray",
+                                "sterile MQ 0.22um_filter" = "lightgray")) +
+   myCustomTheme() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        legend.position = "bottom",
+        panel.border = element_rect(color = "gray", size = 0.5, fill = NA),
+        legend.text = element_text(size = 5),  # Set legend text font size to 5pt
+        legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
+        legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+
+SI_4a 
+
+ggsave("SI_4a.pdf", plot = SI_4a, width = 7.09, height = 3.46)
+```
