@@ -977,7 +977,11 @@ combined_data <- bind_rows(
 fig_SI2A <- combined_data %>%
   ggplot(aes(y = combined_bd, x = site, fill = filter)) + 
     geom_col(position = position_dodge()) +
-    scale_y_log10() +
+scale_y_continuous(expand = c(0.01, 0.01),
+  trans = "log",  # Natural logarithmic scale
+                       breaks = c(1e+01, 1e+03, 1e+05),  # Set exact breaks
+                       labels = scales::label_scientific()) +  # Use scientific notation 1e+01, 1e+03, 1e+05
+  #scale_y_log10() + #same thing, but created weird spacing in the facet so using abpve method
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +
     scale_x_discrete(limits = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  # Order "MQ" last
     scale_fill_manual(values = c(
@@ -989,7 +993,7 @@ fig_SI2A <- combined_data %>%
     myCustomTheme() + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
         legend.position = "bottom",
-        panel.border = element_blank(),
+        panel.border = element_rect(color = "gray", size = 0.5, fill = NA),
         legend.text = element_text(size = 5),  # Set legend text font size to 5pt
         legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
         legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
