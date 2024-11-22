@@ -599,11 +599,12 @@ myCustomTheme <- function() {
 
 ```{r}
 fig_4a <- eb_monolayer %>% 
+ mutate(filter = factor(filter, levels = c("40um_filter", "0.22um_filter"))) %>% # Switch the order of levels
   # plot it
   ggplot(aes(y= bd_qty, x = filter, fill = filter)) + 
     geom_boxplot() +
   geom_jitter(width = 0.2, alpha = 0.3) +
-    scale_y_log10() +
+    scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
@@ -630,6 +631,43 @@ fig_4a <- fig_4a +
 fig_4a
 ```
 
+ Fig 4 Renwei scale
+
+```{r}
+fig_4a_RS <- eb_monolayer %>% 
+ mutate(filter = factor(filter, levels = c("40um_filter", "0.22um_filter"))) %>% # Switch the order of levels
+  # plot it
+  ggplot(aes(y= bd_qty, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
+  coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+ myCustomTheme()+
+   theme(legend.position = "none",
+    strip.background = element_rect(fill = "white", color = "grey", size = 0.5)) + # Adjust the facet line thickness
+  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
+    xlab("Presence of Microbes in PW with Monolayer") +
+    ylab("Bd Quantity (ZE)") +
+
+ # add controls ad x's
+geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size = 2)
+
+#fig_4a
+
+fig_4a_RS <- fig_4a_RS +
+  labs(tag = "A") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
+
+fig_4a_RS
+```
+
 
 ```{r}
 # Convert factor day to numeric while preserving original values
@@ -649,15 +687,16 @@ fig_4b <- monolayer_summary %>%
                 width = 0.1) +
     geom_line(aes(linetype = microbes), show.legend = FALSE) + 
   
-  # raw data
-   geom_point(data = ml_noday0, 
-             aes(x = day_numeric, 
-                 y = adh_plus_sup, 
-                 color = sample_ID),  # Raw data points
-             position = position_jitter(width = 0.1, seed = 1),
-             alpha = 0.3) +
+  # # raw data
+  #  geom_point(data = ml_noday0, 
+  #            aes(x = day_numeric, 
+  #                y = adh_plus_sup, 
+  #                color = sample_ID),  # Raw data points
+  #            position = position_jitter(width = 0.1, seed = 1),
+  #            alpha = 0.3) +
   scale_y_log10(limits = c(1e4, 1e8), 
-                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8)) +
+                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8),
+                labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) +
   
   # vibes
   labs(x = "Day",
@@ -716,6 +755,11 @@ fig4 <- fig_4a + fig_4b +
 
 # 4a alone
 ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 3.46)
+
+ggsave("fig_4a_RS.pdf", plot = fig_4a_RS, width = 3.46, height = 3.46)
+
+
+
 
 # 4b alone
 ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 3.46)

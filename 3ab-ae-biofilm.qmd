@@ -509,7 +509,7 @@ ggplot(aes(y= bd_qty, x = day)) +
     geom_boxplot(fill = no_microbes_.22_color) +
     geom_jitter(alpha = 0.3, width = 0.05) +
     myCustomTheme() +
-  scale_y_log10() +
+   scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
     xlab("Day") +
     ylab("Bd Quantity (ZE)") +
   scale_x_discrete (labels= c("Day_1" = "1", "Day_7" = "7")) +
@@ -541,6 +541,47 @@ fig_3a <- fig_3a +
 fig_3a
 ```
 
+3A: AE Biofilm Renwei scale
+
+```{r}
+fig_3a_RS_boxplot <- eb_ae_bf_only  %>%
+ggplot(aes(y= bd_qty, x = day)) + 
+    geom_boxplot(fill = no_microbes_.22_color) +
+    geom_jitter(alpha = 0.3, width = 0.05) +
+    myCustomTheme() +
+   scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
+  coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
+    xlab("Day") +
+    ylab("Bd Quantity (ZE)") +
+  scale_x_discrete (labels= c("Day_1" = "1", "Day_7" = "7")) +
+  
+   theme(legend.position = "none",
+        panel.border = element_blank(),
+        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5))
+
+# Let's add significance letters
+significance_data <- tibble(
+ day = factor(c("Day_1", "Day_7"), levels = c("Day_1", "Day_7")),
+  y_position = c(1.6e+05, 1.4e+04),  # Adjust this depending on your plot's scale
+  label = c("a", "b"))
+
+fig_3a_RS <- fig_3a_RS_boxplot + 
+geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
+            position = position_dodge(width = 0.75), vjust = 0, size = 7 / 2.85) # /2.85 to convert to the same "pt" text sizing the axes use
+
+#fig_3a
+
+fig_3a_RS <- fig_3a_RS +
+  labs(tag = "A") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
+
+fig_3a_RS
+```
+
 
 3B: AE Biofilm 
 
@@ -562,30 +603,31 @@ fig_3b <- ae_summary %>%
   geom_line() + 
   
   # Adding the raw data as a layer with jitter
-  geom_point(data = ae_noday0, 
-             aes(x = day_numeric, 
-                 y = adh, 
-                 color = sample_ID),  # Raw data points
-             position = position_jitter(width = 0.1, seed = 1),
-             alpha = 0.3) +
+  # geom_point(data = ae_noday0, 
+  #            aes(x = day_numeric, 
+  #                y = adh, 
+  #                color = sample_ID),  # Raw data points
+  #            position = position_jitter(width = 0.1, seed = 1),
+  #            alpha = 0.3) +
   # controls raw data
-    geom_point(data = ae_control_data, 
-             aes(x = day_numeric, 
-                 y = adh, 
-                 color = "#BBBBBB"),  # Raw data points
-             position = position_jitter(width = 0.1, seed = 1),
-             alpha = 0.3) +
+    # geom_point(data = ae_control_data, 
+    #          aes(x = day_numeric, 
+    #              y = adh, 
+    #              color = "#BBBBBB"),  # Raw data points
+    #          position = position_jitter(width = 0.1, seed = 1),
+    #          alpha = 0.3) +
   
-  # Adding the raw data as a layer with jitter
-  geom_point(data = ae_noday0,
-             aes(x = day_numeric,
-                 y = adh,
-                 color = sample_ID),  # Raw data points
-             position = position_jitter(width = 0.1, seed = 1),
-             alpha = 0.3) +
+  # # Adding the raw data as a layer with jitter
+  # geom_point(data = ae_noday0,
+  #            aes(x = day_numeric,
+  #                y = adh,
+  #                color = sample_ID),  # Raw data points
+  #            position = position_jitter(width = 0.1, seed = 1),
+  #            alpha = 0.3) +
   
   scale_y_log10(limits = c(1e3, 1e7),
-                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7)) +
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8),
+                labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) +
   # vibes
   labs(x = "Day",
        y = "Bd Quantity (ZE)",
@@ -613,7 +655,7 @@ fig_3b <- ae_summary %>%
         axis.line.y = element_line(color = "grey", size = 0.5)) +  # Keep the y-axis line) +  # Remove margins around legend
 guides(color = guide_legend(title = NULL))
 
-fig_3b
+#fig_3b
 
 fig_3b <- fig_3b +
   labs(tag = "B") +
@@ -637,7 +679,9 @@ fig3 <- fig_3a + fig_3b +
 #ggsave("3a_3b.png", plot = fig3, width = 14, height = 5, dpi = 1000)
 
 # 3a alone
-ggsave("3a.pdf", plot = fig_3a, width = 3.46, height = 3.46)
+#ggsave("3a.pdf", plot = fig_3a, width = 3.46, height = 3.46)
+
+#ggsave("3a_RS.pdf", plot = fig_3a_RS, width = 3.46, height = 3.46)
 
 # 3b alone
 ggsave("3b.pdf", plot = fig_3b, width = 3.46, height = 3.46)

@@ -518,6 +518,7 @@ cld_day_2b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
   ggtitle("Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
   myCustomTheme()+
@@ -533,6 +534,7 @@ cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
   geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("TB") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
   ggtitle("TB") +
   myCustomTheme() +
   theme(axis.title.y = element_text(margin = margin(r = 1)))
@@ -547,6 +549,7 @@ cld_water_treatment_2b <-ggplot(cld_water_treatment, aes(x = water_treatment, y 
   geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Water Treatment") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
   ggtitle("Water Treatment") +
   myCustomTheme()+
   theme(axis.title.y = element_text(margin = margin(r = 1)))
@@ -564,6 +567,7 @@ cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
   facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +  # Facet by TB with custom labels
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
   ggtitle("TB * Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
   myCustomTheme()+
@@ -580,6 +584,7 @@ cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day)
   facet_wrap(~ water_treatment) +  # Facet by water_treatment
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
   ggtitle("Wtreat*Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
   myCustomTheme()+
@@ -598,6 +603,7 @@ cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y =
   facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +  # Facet by water_treatment with custom labels for TB
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
   ggtitle("Wtreat*Day*TB") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
   myCustomTheme()+
@@ -726,7 +732,7 @@ fig_2a <- eb_pw %>%
   ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
     geom_boxplot() +
   geom_jitter(width = 0.2, alpha = 0.3) +
-    scale_y_log10() +
+       scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   
@@ -736,7 +742,7 @@ fig_2a <- eb_pw %>%
    theme(legend.position = "none",
          panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) + 
   
-  scale_x_discrete (labels= c("40um_filter" = "+ AE Microbes", "0.22um_filter" = "- AE Microbes")) +
+  scale_x_discrete (labels= c("40um_filter" = "+AE Microbes ", "0.22um_filter" = "-AE Microbes")) +
     xlab("Presence of Microbes in Pond Water") +
     ylab("Bd Quantity (ZE)") +
   
@@ -753,6 +759,48 @@ fig_2a <- fig_2a +
   )
 
 fig_2a
+```
+
+2a_Renwei_scale
+
+```{r}
+fig_2a_RS <- eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  
+  # create the plot
+  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+       scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
+   coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    myCustomTheme() +
+   theme(legend.position = "none",
+         panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) + 
+  
+  scale_x_discrete (labels= c("40um_filter" = "+AE Microbes ", "0.22um_filter" = "-AE Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity (ZE)") +
+  
+  # add controls ad x's
+  geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+
+#fig_2a_RS
+
+fig_2a_RS <- fig_2a_RS+
+  labs(tag = "A") +
+  theme(
+    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag.position = c(0, 1)
+  )
+
+fig_2a_RS
 ```
 
 2b
@@ -775,22 +823,23 @@ fig2B <- pw_summary %>%
                 width = 0.1) +
 
   # Adding the raw data as a layer with jitter
-  geom_point(data = pw_noday0, 
-             aes(x = day_numeric, 
-                 y = adh_plus_sup, 
-                 color = sample_ID),  # Raw data points
-             position = position_jitter(width = 0.1, seed = 1),
-             alpha = 0.3) +
-  # add control raw data too
-  geom_point(data = pw_control_data, 
-             aes(x = day_numeric, 
-                 y = adh_plus_sup, 
-                 color = "#BBBBBB"),  # Raw data points
-             position = position_jitter(width = 0.1, seed = 1),
-             alpha = 0.3) +
+  # geom_point(data = pw_noday0, 
+  #            aes(x = day_numeric, 
+  #                y = adh_plus_sup, 
+  #                color = sample_ID),  # Raw data points
+  #            position = position_jitter(width = 0.1, seed = 1),
+  #            alpha = 0.3) +
+  # # add control raw data too
+  # geom_point(data = pw_control_data, 
+  #            aes(x = day_numeric, 
+  #                y = adh_plus_sup, 
+  #                color = "#BBBBBB"),  # Raw data points
+  #            position = position_jitter(width = 0.1, seed = 1),
+  #            alpha = 0.3) +
   
   scale_y_log10(limits = c(1e3, 1e8), 
-                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8),
+                labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) +
   labs(x = "Day",
        y = "Bd Quantity (ZE)",
        color = "Medium",       # Title for color legend
@@ -829,7 +878,7 @@ fig2B <- pw_summary %>%
 
   guides(color = guide_legend(title = NULL))
 
-fig2B
+#fig2B
 
 fig2B <- fig2B +
   labs(tag = "B") +
@@ -851,6 +900,9 @@ fig2 <- fig_2a / fig2B +
   plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
 
 #ggsave("2a.pdf", plot = fig_2a, width = 3.46, height = 3.46)
+
+#ggsave("fig_2a_RS.pdf", plot = fig_2a_RS, width = 3.46, height = 3.46)
+
 
 #ggsave("2b.pdf", plot = fig2B, width = 3.46, height = 3.46)
 
@@ -948,11 +1000,11 @@ pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) / (cld_tb_d
 # Display the combined plot
 pairwise_cld_2b
 
-#ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
+ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
 
 cld_water_thirdorder_2b 
 
-#ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
+ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
 ```
 
 ## 2a Raw EB data barplot
@@ -980,7 +1032,9 @@ fig_SI2A <- combined_data %>%
 scale_y_continuous(expand = c(0.01, 0.01),
   trans = "log",  # Natural logarithmic scale
                        breaks = c(1e+01, 1e+03, 1e+05),  # Set exact breaks
-                       labels = scales::label_scientific()) +  # Use scientific notation 1e+01, 1e+03, 1e+05
+                      # labels = scales::label_scientific(),
+   labels = function(x) {gsub("e", "E", scales::label_scientific()(x))}
+  ) +  # Use scientific notation 1e+01, 1e+03, 1e+05
   #scale_y_log10() + #same thing, but created weird spacing in the facet so using abpve method
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +
     scale_x_discrete(limits = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  # Order "MQ" last
@@ -1004,7 +1058,7 @@ scale_y_continuous(expand = c(0.01, 0.01),
 
 fig_SI2A
 
-#ggsave("SI_2a.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
+ggsave("SI_2a.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
 ```
 
 
