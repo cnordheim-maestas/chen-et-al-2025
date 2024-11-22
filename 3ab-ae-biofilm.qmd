@@ -431,6 +431,7 @@ cld_day_3b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Day") +
   myCustomTheme() +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
@@ -446,6 +447,7 @@ cld_medium_3b <- ggplot(cld_medium, aes(x = factor(medium, levels = c("MQ+AEbiof
   geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Medium with AE biofilm") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Medium") +
   myCustomTheme() +
   scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW-MO", "MQ+AEbiofilm" = "MQ")) +
@@ -466,6 +468,7 @@ facet_wrap(~ factor(medium, levels = c("MQ+AEbiofilm", "PW+AEBiofilm", "1%TB+AEb
                                       "MQ+AEbiofilm" = "MQ"))) +  
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
  ggtitle("Day * Medium") +
   myCustomTheme() +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
