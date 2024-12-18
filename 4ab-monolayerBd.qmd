@@ -515,6 +515,7 @@ cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
  myCustomTheme() +  # Use minimal theme for clean look
@@ -530,6 +531,7 @@ cld_microbes_4b <- ggplot(cld_microbes, aes(x = microbes, y = emmean)) +
   geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
   xlab("Microbes present") +
   ylab("Estimated Marginal Means") +
+    scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Microbes") +
   scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ")) +
  myCustomTheme() +  # Use minimal theme for clean look
@@ -547,6 +549,7 @@ cld_day_microbes_4b <- ggplot(cld_day_microbes, aes(x = day, y = emmean)) +
 facet_wrap(~ factor(microbes)) +  # Custom facet labels and order
   xlab("Day") +
   ylab("Estimated Marginal Means") +
+    scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Day * Microbes") +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
  myCustomTheme() +  # Use minimal theme for clean look
@@ -564,6 +567,7 @@ cld_TB_microbes_4b <- ggplot(cld_TB_microbes, aes(x = TB, y = emmean)) +
 facet_wrap(~ factor(microbes)) +  # Custom facet labels and order
   xlab("TB Presence") +
   ylab("Estimated Marginal Means") +
+    scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Microbes * TB") +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
  myCustomTheme() +  # Use minimal theme for clean look
@@ -604,7 +608,8 @@ fig_4a <- eb_monolayer %>%
   ggplot(aes(y= bd_qty, x = filter, fill = filter)) + 
     geom_boxplot() +
   geom_jitter(width = 0.2, alpha = 0.3) +
-    scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
+scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
+                  limits = c(1e+02, 1e+06)) +  # Set y-axis range from 1e2 to 1e3
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
@@ -629,6 +634,8 @@ fig_4a <- fig_4a +
   )
 
 fig_4a
+
+ggsave("4a_updated.pdf", plot = fig_4a, width = 3.46, height = 3.46)
 ```
 
  Fig 4 Renwei scale
@@ -754,15 +761,12 @@ fig4 <- fig_4a + fig_4b +
 #ggsave("4a_4b.png", plot = fig4, width = 14, height = 5, dpi = 1000)
 
 # 4a alone
-ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 3.46)
+#ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 3.46)
 
-ggsave("fig_4a_RS.pdf", plot = fig_4a_RS, width = 3.46, height = 3.46)
-
-
-
+#ggsave("fig_4a_RS.pdf", plot = fig_4a_RS, width = 3.46, height = 3.46)
 
 # 4b alone
-ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 3.46)
+#ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 3.46)
 ```
 
 # *SI
@@ -926,10 +930,80 @@ pairwise_cld_4b <- cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_m
 # Display the combined plot
 pairwise_cld_4b 
 
-ggsave("SI_4b.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
+#ggsave("SI_4b.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
 
 #ggsave("4b_pairwise_cld.png", plot = pairwise_cld_4b , width = 14, height = 8, dpi = 1000)
 ```
+
+## Renwei y axis specs
+```{r}
+global_y_limits <- c(9, 18)
+global_y_breaks <- seq(10, 18, by = 2)
+
+# Compute CLD letters for 'day'
+cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Day") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Compute CLD letters for 'microbes'
+cld_microbes_4b <- ggplot(cld_microbes, aes(x = microbes, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
+  xlab("Microbes present") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Microbes") +
+  scale_x_discrete(labels = c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Compute CLD letters for 'day * microbes'
+cld_day_microbes_4b <- ggplot(cld_day_microbes, aes(x = day, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
+  facet_wrap(~ factor(microbes)) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Day * Microbes") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Compute CLD letters for 'microbes * TB'
+cld_TB_microbes_4b <- ggplot(cld_TB_microbes, aes(x = TB, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
+  facet_wrap(~ factor(microbes)) +
+  xlab("TB Presence") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Microbes * TB") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Combine all plots
+pairwise_cld_4b <- cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b +
+  plot_annotation(tag_levels = 'A')
+
+pairwise_cld_4b
+
+ggsave("SI_4b_updated.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
+
+```
+
 
 ## 4a Raw EB data barplot
 

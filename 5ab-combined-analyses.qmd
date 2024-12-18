@@ -301,7 +301,8 @@ fig5 <- all_parts %>%
                               "EB_PW_40um" = "East Bay\nPW + MO",
                               "NCOS_PW_40um" = "SB \nPW + MO",
                               "EB_biofilm" = "East Bay\nBiofilm",
-                              "NCOS_biofilm" = "SB \nBiofilm"))
+                              "NCOS_biofilm" = "SB \nBiofilm")) +
+  scale_y_continuous(limits = c(0, 8))  # Set y-axis limits from 0 to 8
 sig_data_rl <- sig_data_rl %>% 
     mutate(site = case_when(
     grepl("NCOS", treatment) ~ "Santa Barbara",
@@ -314,8 +315,6 @@ f5b <- fig5 +
             inherit.aes = FALSE, 
             size = 2.4)  # Set fixed text size outside of aes()
 
-f5b
-
 f5b <- f5b +
   labs(tag = "B") +
   theme(
@@ -324,6 +323,8 @@ f5b <- f5b +
   )
 
 f5b
+
+#ggsave("5b_updated.pdf", plot = f5b, width = 3.46, height = 3.46)
 ```
 
 Combine the figs
@@ -339,10 +340,10 @@ fig5ab <- f5a + f5b +
 #ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
 
 # 5a alone
-ggsave("5a.pdf", plot = f5a, width = 3.46, height = 3.46)
+#ggsave("5a.pdf", plot = f5a, width = 3.46, height = 3.46)
 
 # 5b alone
-ggsave("5b.pdf", plot = f5b, width = 3.46, height = 3.46)
+#ggsave("5b.pdf", plot = f5b, width = 3.46, height = 3.46)
 ```
 
 # \* Stats tables

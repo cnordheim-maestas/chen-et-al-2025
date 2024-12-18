@@ -34,6 +34,23 @@ fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fi
 # Colors: these are from Paul Tol's colorblind friendly palette
 with_microbes_40_color <- "#999933"
 no_microbes_.22_color <- "#88ccee"
+
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
+    )
+}
 ```
 
 # 2A
@@ -653,7 +670,8 @@ summary(pairwise_comparisons)
 # Day 3 > Day 1 = Day 5 > Day 7
 pairwise_day_2b <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey")
 pairwise_day_2b # df infinity?? definitely sketchy
-plot(pairwise_day_2b)
+plot(pairwise_day_2b, xlim = c(8, 16))
+
 
 # Pairwise comparisons for 'TB'
 # note I dont need to test this bc its only 2 levels, bc I am "wasting" df
@@ -681,6 +699,21 @@ plot(pairwise_water_treatment_day_2b)
 
 # should I go for the cld letter comparisons for these? I think that may be the easiest to show
 ```
+
+```{r}
+pairwise_day_2b <- emmeans(mod3_glm, pairwise ~ day, adjust = "tukey")
+pairwise_day_2b # df infinity?? definitely sketchy
+plot(pairwise_day_2b, xlim = c(8, 16))
+
+pairwise_day_2b_df <- as.data.frame(pairwise_day_2b$emmeans)
+ggplot(pairwise_day_2b_df, aes(x = day, y = emmean)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2) +
+  scale_y_continuous(limits = c(8, 16), breaks = seq(8, 16, by = 2)) +
+  labs(title = "Pairwise Comparisons: Day", x = "Day", y = "Estimated Marginal Means") +
+  theme_minimal()
+```
+
 
 cld post hoc plots
 
@@ -732,7 +765,10 @@ fig_2a <- eb_pw %>%
   ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
     geom_boxplot() +
   geom_jitter(width = 0.2, alpha = 0.3) +
-       scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
+  # scale_y_log10(labels = function(x) {gsub("e", "E", x = scales::scientific_format()(x))}) + # Custom scientific notation
+  scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
+                  limits = c(1e+02, 1e+06)) + 
+  
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   
@@ -748,8 +784,6 @@ fig_2a <- eb_pw %>%
   
   # add controls ad x's
   geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
-
-fig_2a
 
 fig_2a <- fig_2a +
   labs(tag = "A") +
@@ -759,48 +793,53 @@ fig_2a <- fig_2a +
   )
 
 fig_2a
+
+#ggsave("2a_updated.pdf", plot = fig_2a, width = 3.46, height = 3.46)
+
+
 ```
 
-2a_Renwei_scale
+
 
 ```{r}
-fig_2a_RS <- eb_pw %>%
-  # combine floating and adherent for total_Bd
-  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-  mutate(combined_bd = adherent + floating) %>% 
-  
-  # create the plot
-  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
-    geom_boxplot() +
-  geom_jitter(width = 0.2, alpha = 0.3) +
-       scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
-   coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
-    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
-                                                    "Day_7" = "Day 7")))+
-  
-  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
-                                "0.22um_filter" = no_microbes_.22_color)) +
-    myCustomTheme() +
-   theme(legend.position = "none",
-         panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) + 
-  
-  scale_x_discrete (labels= c("40um_filter" = "+AE Microbes ", "0.22um_filter" = "-AE Microbes")) +
-    xlab("Presence of Microbes in Pond Water") +
-    ylab("Bd Quantity (ZE)") +
-  
-  # add controls ad x's
-  geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
-
-#fig_2a_RS
-
-fig_2a_RS <- fig_2a_RS+
-  labs(tag = "A") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
-
-fig_2a_RS
+#2a_Renwei_scale
+# fig_2a_RS <- eb_pw %>%
+#   # combine floating and adherent for total_Bd
+#   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+#   mutate(combined_bd = adherent + floating) %>% 
+#   
+#   # create the plot
+#   ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+#     geom_boxplot() +
+#   geom_jitter(width = 0.2, alpha = 0.3) +
+#        scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
+#    coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
+#     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+#                                                     "Day_7" = "Day 7")))+
+#   
+#   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+#                                 "0.22um_filter" = no_microbes_.22_color)) +
+#     myCustomTheme() +
+#    theme(legend.position = "none",
+#          panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) + 
+#   
+#   scale_x_discrete (labels= c("40um_filter" = "+AE Microbes ", "0.22um_filter" = "-AE Microbes")) +
+#     xlab("Presence of Microbes in Pond Water") +
+#     ylab("Bd Quantity (ZE)") +
+#   
+#   # add controls ad x's
+#   geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+# 
+# #fig_2a_RS
+# 
+# fig_2a_RS <- fig_2a_RS+
+#   labs(tag = "A") +
+#   theme(
+#     plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+#     plot.tag.position = c(0, 1)
+#   )
+# 
+# fig_2a_RS
 ```
 
 2b
@@ -1000,12 +1039,125 @@ pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) / (cld_tb_d
 # Display the combined plot
 pairwise_cld_2b
 
-ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
+#ggsave("SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
 
 cld_water_thirdorder_2b 
 
-ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
+#ggsave("SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
 ```
+
+## Renwei y axis specs
+
+```{r}
+global_y_limits <- c(8, 16.5)
+global_y_breaks <- seq(8, 16, by = 2)
+
+# Plot for 'day'
+cld_day_2b <- ggplot(cld_day, aes(x = day, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Day") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Plot for 'TB'
+cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  xlab("TB") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("TB") +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Plot for 'water_treatment'
+cld_water_treatment_2b <- ggplot(cld_water_treatment, aes(x = water_treatment, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  xlab("Water Treatment") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Water Treatment") +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+# Plot for 'TB * day'
+tb_labels <- c("n" = "TB absent", "y" = "TB present")
+cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("TB * Day") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+
+# Plot for 'water_treatment * day'
+cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  facet_wrap(~ water_treatment) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Water Treatment * Day") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) /
+                   (cld_tb_day_int_2b + cld_watertreat_day_int_2b) +
+                   plot_annotation(tag_levels = 'A')
+
+pairwise_cld_2b
+
+
+ggsave("SI_2b_updated.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
+
+```
+
+```{r}
+global_y_limits <- c(7, 19)
+global_y_breaks <- seq(8, 18, by = 2)
+
+cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
+  facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(
+    labels = scales::label_number(accuracy = 1), 
+    limits = global_y_limits, 
+    breaks = global_y_breaks
+  ) +
+  ggtitle("Water Treatment * Day * TB") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+cld_water_thirdorder_2b
+
+ggsave("SI_2b_thirdorder_updated.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
+
+```
+
+
 
 ## 2a Raw EB data barplot
 
