@@ -54,7 +54,6 @@ main_map <- ggplot(data = california) +
     axis.text = element_text(size = 12),
     panel.border = element_rect(color = "black", fill = NA)
   )
-
 main_map
 
 ```
