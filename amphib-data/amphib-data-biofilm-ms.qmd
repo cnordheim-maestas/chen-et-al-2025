@@ -62,6 +62,7 @@ group_by(code) %>%
     prevalence = round(100 * bd_positive / n_frogs, 1),
     avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)
   )
+str(swab_summary)
 
 swab_summary %>% 
    gt() %>%
@@ -86,6 +87,96 @@ swab_summary %>%
     locations = cells_column_labels(everything())
   )
 ```
+
+### By species and site
+```{r}
+swab_summary2 <- swab_may22 %>% 
+group_by(code, amphibian_spp) %>%
+  summarise(
+    n_frogs = n(),
+    bd_positive = sum(infected == 1),
+    prevalence = round(100 * bd_positive / n_frogs, 1),
+    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)
+  ) %>% 
+  mutate(
+    avg_load_bd_pos = ifelse(is.nan(avg_load_bd_pos), NA, avg_load_bd_pos)
+  )
+
+swab_summary2
+
+swab_summary2 %>%
+  arrange(code, amphibian_spp) %>%
+  mutate(site = code) %>%
+  group_by(site) %>%
+  mutate(site = ifelse(row_number() == 1, site, "")) %>%
+  ungroup() %>%
+  select(site, amphibian_spp, n_frogs, bd_positive, prevalence, avg_load_bd_pos) %>%
+  gt() %>%
+  cols_label(
+    site = "Site",
+    amphibian_spp = "Species",
+    n_frogs = md("Count<br>Swabbed"),
+    bd_positive = md("Count<br>Bd+"),
+    prevalence = md("Bd<br>Prev (%)"),
+    avg_load_bd_pos = md("Ave Bd<br>Load (ZE)")
+  ) %>%
+  fmt_number(
+    columns = c(prevalence, avg_load_bd_pos),
+    decimals = 0
+  ) %>%
+  tab_header(
+    title = "Frog Bd Sampling and Bd Prevalence by Site and Species (May 2022)"
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(everything())
+  ) %>%
+tab_style(
+  style = cell_text(align = "left"),
+  locations = cells_column_labels(everything())
+)
+
+
+
+
+```
+
+```{r}
+swab_summary2 %>%
+  arrange(code, amphibian_spp) %>%
+  mutate(site = code) %>%
+  group_by(site) %>%
+  mutate(site = ifelse(row_number() == 1, site, "")) %>%
+  ungroup() %>%
+  select(site, amphibian_spp, n_frogs, bd_positive, prevalence, avg_load_bd_pos) %>%  # remove code, reorder
+  gt() %>%
+  cols_label(
+site = "Site",
+  amphibian_spp = "Species",
+  n_frogs = md("Count<br>Swabbed"),
+  bd_positive = md("Count<br>Bd+"),
+  prevalence = md("Bd<br>Prev (%)"),
+  avg_load_bd_pos = md("Ave Bd<br>Load (ZE)")
+  ) %>%
+  fmt_number(
+    columns = c(prevalence, avg_load_bd_pos),
+    decimals = 0
+  ) %>%
+  tab_header(
+    title = "Frog Bd Sampling and Bd Prevalence by Site (May 2022)"
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(everything())
+  ) %>%
+  tab_style(
+    style = cell_text(align = "center"),
+    locations = cells_body(columns = site)
+  )
+
+```
+
+
 
 ### Mar - June 2022
 
