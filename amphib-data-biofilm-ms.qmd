@@ -17,13 +17,25 @@ library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
 
 # wrangle data that match our sampling
-swab <- read.csv(here("amphib-data", "swab_may2022_ninesites.csv"))
+swab_may22 <- read.csv(here("amphib-data", "swab_may2022_ninesites.csv"))
+
+swab_mj <- read.csv(here("amphib-data", "allmonths_swabs_updated 2024-10-28.csv")) %>% 
+  filter(code %in% c(
+    "CABIN", "WEST", "GRAMP",
+    "GDPND004", "GDPND005", "GDPND009", "GDPND006",
+    "PRPND004", "PRPND009", "PRPND010"
+  )) %>%
+    filter(sampling_id %in% c(
+    "Mar_22", "May_22", "Jun_22"
+  ))
+
+write.csv(swab_mj, "swab_mar-jun22_filtered.csv", row.names = FALSE)
 ```
 
 # Calculate Bd prev per site
 
 ```{r}
-swab_summary <- swab %>% 
+swab_summary <- swab_may22 %>% 
 group_by(code) %>%
   summarise(
     n_frogs = n(),
@@ -42,11 +54,49 @@ swab_summary %>%
     avg_load_bd_pos = "Avg Bd Load (ZE)"
   ) %>%
   tab_header(
-    title = "Summary of Bd Infection by Site – May 2022"
+    title = "Summary of Bd Infection by Site: May 2022"
   ) %>%
   fmt_number(
     columns = c(prevalence, avg_load_bd_pos),
-    decimals = 1
+    decimals = 0
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_column_labels(everything())
+  )
+```
+
+
+
+```{r}
+swab_summary_mj <- swab_mj %>% 
+group_by(code) %>%
+  summarise(
+    n_frogs = n(),
+    bd_positive = sum(infected == 1),
+    prevalence = round(100 * bd_positive / n_frogs, 1),
+    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)
+  )
+
+swab_summary_mj
+
+swab_summary_mj %>% 
+   gt() %>%
+  cols_label(
+    code = "Site",
+    n_frogs = "Number Swabbed",
+    bd_positive = "Bd Positive",
+    prevalence = "Bd Prevalence (%)",
+    avg_load_bd_pos = "Avg Bd Load (ZE)"
+  ) %>%
+  tab_header(
+    title = "Summary of Bd Infection by Site: Mar-Jun 2022"
+  ) %>%
+  fmt_number(
+    columns = c(prevalence, avg_load_bd_pos),
+    decimals = 0
   ) %>%
   tab_style(
     style = list(
