@@ -67,7 +67,7 @@ main_map <- ggplot(data = california) +
 
 main_map
 
-ggsave("main_map.pdf", plot = main_map, width = 6, height = 6, units = "in")
+ggsave("main_map.pdf", plot = main_map, width = 4, height = 4, units = "in")
 ```
 
 Insets
