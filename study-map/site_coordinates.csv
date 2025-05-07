@@ -1,14 +1,11 @@
-﻿Site,Property,Lat,Long,County
-CABIN,Blue Oaks Ranch Reserve,37.379497,-121.731727,Santa Clara County
-WEST,Blue Oaks Ranch Reserve,37.379514,-121.74448,Santa Clara County
-GRAMP,Blue Oaks Ranch Reserve,37.375156,-121.72784,Santa Clara County
-CA-BN004,Briones Regional Park,37.9435248,-122.1410001,Contra Costa County
-CA-BN016,Briones Regional Park,37.931326,-122.16635,Contra Costa County
-GDPND004,Garin/Dry Creek Pioneer Regional Park,37.611846,-122.004401,Alameda County
-GDPND005,Garin/Dry Creek Pioneer Regional Park,37.622541,-122.000243,Alameda County
-GDPND009,Garin/Dry Creek Pioneer Regional Park,37.63528823,-122.0246109,Alameda County
-GDPND006,Garin/Dry Creek Pioneer Regional Park,37.624493,-122.004644,Alameda County
-PRPND004,Pleasanton Ridge Regional Park,37.61930012,-121.8978634,Alameda County
-PRPND009,Pleasanton Ridge Regional Park,37.64527893,-121.918319,Alameda County
-PRPND010,Pleasanton Ridge Regional Park,37.64720844,-121.9192917,Alameda County
-NCOS,UC Santa Barbara,34.421789,-119.873464,Santa Barbara County
+﻿Site,Property,Lat,Long,County,general_location
+CABIN,Blue Oaks Ranch Reserve,37.379497,-121.731727,Santa Clara County,SFEB
+WEST,Blue Oaks Ranch Reserve,37.379514,-121.74448,Santa Clara County,SFEB
+GRAMP,Blue Oaks Ranch Reserve,37.375156,-121.72784,Santa Clara County,SFEB
+GDPND005,Garin/Dry Creek Pioneer Regional Park,37.622541,-122.000243,Alameda County,SFEB
+GDPND009,Garin/Dry Creek Pioneer Regional Park,37.63528823,-122.0246109,Alameda County,SFEB
+GDPND006,Garin/Dry Creek Pioneer Regional Park,37.624493,-122.004644,Alameda County,SFEB
+PRPND004,Pleasanton Ridge Regional Park,37.61930012,-121.8978634,Alameda County,SFEB
+PRPND009,Pleasanton Ridge Regional Park,37.64527893,-121.918319,Alameda County,SFEB
+PRPND010,Pleasanton Ridge Regional Park,37.64720844,-121.9192917,Alameda County,SFEB
+NCOS,UC Santa Barbara,34.421789,-119.873464,Santa Barbara County,SB

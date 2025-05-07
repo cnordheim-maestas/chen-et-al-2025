@@ -22,8 +22,7 @@ library(ggspatial)
 library(cowplot)
 library(grid)  # For annotation_custom() and viewport
 
-data <- read_csv(here("study-map","site_coordinates.csv")) %>% 
-  mutate(general_location = if_else(Site == "NCOS", "SB", "SFEB"))
+data <- read_csv(here("study-map","site_coordinates.csv"))
 ```
 
 Big, medium, small insets
@@ -31,140 +30,311 @@ Big, medium, small insets
 ```{r}
 # Load the state boundaries for the United States, filtered for California
 states <- ne_states(country = "United States of America", returnclass = "sf")
-california <- states %>% filter(name == "California")
+california <- states  # Use the same object for California data
 
 # Define a custom color palette for the different properties
-general_location_colors <- setNames(c("#1b9e77", "#d95f02"), 
+loc_colors <- setNames(c("#1b9e77", "#d95f02"), 
                             unique(data$general_location))
-```
 
-## map no insets
-
-```{r}
 # Main California map, displaying all sites on the state outline
-main_map <- ggplot(data = california) +
+main_map <- ggplot(data = states) +
   geom_sf() +  # Plot the outline of the states
   geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
              color = "black", size = 2, shape = 21, stroke = 0.5) +  # Plot data points with black borders
-  scale_fill_manual(values = general_location_colors) +  # Apply consistent color palette for properties
-  coord_sf(xlim = c(-124.5, -114), ylim = c(32.3, 42.2), expand = FALSE) +  # tightened to CA borders
-  labs(
-    x = "Longitude",                # rename x-axis
-    y = "Latitude",                 # rename y-axis
-    fill = "Sample Source" # rename legend title
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = c(0.7, 0.85),          # legend inside the plot
-    legend.background = element_rect(fill = "white", color = "black") # optional box around legend
-  )
+  scale_fill_manual(values = loc_colors) +  # Apply consistent color palette for properties
+  coord_sf(xlim = c(-108, -125), ylim = c(32, 42), expand = F) +  # Set map limits for the broader region
+  theme_void() +  # Remove all axis elements and gridlines for a clean map
+  theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank())
 
-main_map
+# Inset map for all parks, with latitude and longitude labels and a scale bar
+all_parks_inset <- ggplot(data = states) +
+    geom_sf() +  # Base map with state outline
+    geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
+               color = "black", size = 2, shape = 21, stroke = 0.5) +  # Points with black borders
+    scale_fill_manual(values = loc_colors) +  # Apply consistent color palette
+    coord_sf(xlim = c(-122.6, -121.3), ylim = c(37.2, 38.2), expand = F) +  # Set tighter bounds for inset
+    labs(x = "Longitude", y = "Latitude") +  # Add axis labels
+    theme_bw() +  # Use a classic white background
+    annotation_scale(location = "bl", width_hint = 0.5) +  # Add a scale bar at the bottom-left corner
+    theme(legend.position = "none",  # Remove legend
+          axis.ticks = element_line(),  # Keep axis ticks
+          axis.text.x = element_text(size = 12, angle = 90),  # Rotate and size longitude labels
+          axis.text.y = element_text(size = 12),  # Size latitude labels
+          axis.title.x = element_text(size = 14, face = "bold"),  # Bold and size longitude title
+          axis.title.y = element_text(size = 14, face = "bold"),  # Bold and size latitude title
+          plot.background = element_rect(color = "black"))  # Add a black border
 
-ggsave("main_map.pdf", plot = main_map, width = 4, height = 4, units = "in")
+# Function to create inset maps for individual parks, without any labels
+create_inset <- function(property_name) {
+  ggplot(data = states) +
+    geom_sf() +  # Base map
+    geom_point(data = subset(data, Property == property_name), 
+               aes(x = Long, y = Lat, fill = general_location), 
+               size = 2, shape = 21, stroke = 0.5) +  # Plot points for the specified park
+    scale_fill_manual(values = loc_colors) +  # Use the same color palette
+    coord_sf(xlim = range(subset(data, Property == property_name)$Long) + c(-0.02, 0.02), 
+             ylim = range(subset(data, Property == property_name)$Lat) + c(-0.02, 0.02), 
+             expand = F) +  # Set tight bounds for the park's location
+    theme_void() +  # Remove all gridlines and axis elements
+    theme(legend.position = "none", 
+          panel.background = element_blank(),  # Remove the default grey background
+          plot.background = element_rect(color = "black", size = 0.5),  # Black border with thickness
+          plot.margin = margin(5, 5, 5, 5))  # Add a small margin around the plot
+}
+
+# Function to create a combined inset for multiple parks (Pleasanton & Garin in this case)
+create_combined_inset <- function(property_names) {
+  ggplot(data = california) +
+    geom_sf() +  # Base map
+    geom_point(data = subset(data, Property %in% property_names), 
+               aes(x = Long, y = Lat, fill = general_location), 
+               size = 2, shape = 21, stroke = 0.5) +  # Plot points for multiple parks
+    scale_fill_manual(values = loc_colors) +  # Use the same color palette
+    coord_sf(xlim = range(subset(data, Property %in% property_names)$Long) + c(-0.02, 0.02), 
+             ylim = range(subset(data, Property %in% property_names)$Lat) + c(-0.02, 0.02), 
+             expand = F) +  # Set tight bounds for the locations of multiple parks
+    theme_void() +  # Remove gridlines and axis elements
+    theme(legend.position = "none", 
+          panel.background = element_blank(),  # Remove the default grey background
+          plot.background = element_rect(color = "black", size = 0.5),  # Black border with thickness
+          plot.margin = margin(5, 5, 5, 5))  # Add a small margin around the plot
+}
+
+# Create the combined inset for Pleasanton Ridge and Garin parks
+pleasanton_garin_inset <- create_combined_inset(
+  property_names = c("Pleasanton Ridge Regional Park", "Garin/Dry Creek Pioneer Regional Park"))
+
+# Create individual insets for Briones and Blue Oaks parks
+briones_inset <- create_inset("Briones Regional Park")
+blue_oaks_inset <- create_inset("Blue Oaks Ranch Reserve")
+
+# Combine the main map and insets using cowplot
+inset_plot <- ggdraw() +
+  draw_plot(main_map) +  # Main California map
+  draw_plot(all_parks_inset,        x = 0.2, y = 0.25, width = .6, height = 0.6) +  # Inset for all parks
+  draw_plot(briones_inset,          x = 0.65, y = 0.75, width = 0.2, height = 0.2) +  # Briones inset
+  draw_plot(pleasanton_garin_inset, x = 0.65, y = 0.55, width = 0.2, height = 0.2) +  # Pleasanton & Garin inset
+  draw_plot(blue_oaks_inset,        x = 0.65, y = 0.35, width = 0.2, height = 0.2)  # Blue Oaks inset
+
+# Print the final combined map with all insets
+print(inset_plot)
+
+#save_plot(plot=inset_plot, filename="field_map.pdf")
 ```
 
-Insets
+Just the Bay, then a little reference map of CA 
 
 ```{r}
-# bounds
-bay_bounds <- c(xmin = -122.6, xmax = -121.3, ymin = 37.2, ymax = 38.2)
-sb_bounds <- c(xmin = -120.0, xmax = -119.5, ymin = 34.3, ymax = 34.6)
+states <- ne_states(country = "United States of America", returnclass = "sf")
+california <- states %>% 
+  filter(name == "California") 
+# Use the same object for California data
 
-inset_both <- inset_california_map <- ggplot(data = california) +
-    geom_sf(fill = "lightgrey", color = "black") +  # Entire California map with border
-   geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
-             color = "black", size = 2, shape = 21, stroke = 0.5) +  # Plot data points with black borders
-  scale_fill_manual(values = general_location_colors) +  # Apply consistent color palette for properties
-    geom_rect(aes(xmin = bay_bounds["xmin"], xmax = bay_bounds["xmax"], 
-                  ymin = bay_bounds["ymin"], ymax = bay_bounds["ymax"]),
-              fill = NA, color = "black", linewidth = 0.5) +  # Add red bounding box for Bay Area
-   geom_rect(aes(xmin = sb_bounds["xmin"], xmax = sb_bounds["xmax"], 
-                ymin = sb_bounds["ymin"], ymax = sb_bounds["ymax"]),
-            fill = NA, color = "black", linewidth = 0.5) +
-    theme_void() + # No axis or gridlines
-  theme(legend.position = "none") 
-inset_both
+# Define a custom color palette for the different properties
+property_colors <- setNames(c("#1b9e77", "#d95f02", "#7570b3", "#e7298a"), 
+                            unique(data$Property))
 
-```
-
-```{r}
-# Zoomed-in Santa Barbara map
-sb_map <- ggplot(data = california) +
-  geom_sf(linewidth = 0.5) +  # Plot base
-  geom_point(data = data, aes(x = Long, y = Lat, fill = "#1b9e77"),
-             color = "black", size = 2, shape = 21, stroke = 0.5) +
-
-  # Zoom to Santa Barbara bounds
-  coord_sf(
-    xlim = c(sb_bounds["xmin"], sb_bounds["xmax"]),
-    ylim = c(sb_bounds["ymin"], sb_bounds["ymax"]),
-    expand = FALSE
-  ) +
-
-  # fewer axis ticks
-  scale_x_continuous(breaks = c(-119.9, -119.7, -119.5)) +
-  scale_y_continuous(breaks = c(34.35, 34.45, 34.55)) +
-
-  # style
-  theme_bw() +
-  theme(legend.position = "none",
-        panel.border = element_rect(color = "black", fill = NA))
-sb_map
-
-# Zoomed-in Bay map
-bay_map <- ggplot(data = california) +
-  geom_sf(linewidth = 0.5) +  # Plot base
-  geom_point(data = data, aes(x = Long, y = Lat, fill = "#d95f02"),
-             color = "black", size = 2, shape = 21, stroke = 0.5) +
-
-  # Zoom to Bay Area bounds
-  coord_sf(
-    xlim = c(bay_bounds["xmin"], bay_bounds["xmax"]),
-    ylim = c(bay_bounds["ymin"], bay_bounds["ymax"]),
-    expand = FALSE
-  ) +
-
-  # fewer axis ticks
-  scale_x_continuous(breaks = c(-122.5, -122, -121.5)) +
-  scale_y_continuous(breaks = c(37.3, 37.8)) +
-  
-  # style
+bay_area <- ggplot(data = california) +
+    geom_sf(linewidth = 0.5) +  # Base map with state outline
+    geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
+               color = "black", size = 2, shape = 21, stroke = 0.5) +  # Points with black borders
+    scale_fill_manual(values = loc_colors) +  # Apply consistent color palette
+    coord_sf(xlim = c(-122.6, -121.3), ylim = c(37.2, 38.2), expand = F) +  # Set tighter bounds for inset
+    labs(x = "Longitude", y = "Latitude") +  # Add axis labels
     theme_bw() +
-  theme(legend.position = "none",
-        panel.border = element_rect(color = "black", fill = NA))
-bay_map 
+    scale_x_continuous(breaks = seq(-122, -121, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks on the longitude axis
+    scale_y_continuous(breaks = seq(37, 38, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks on the latitude axis
+    annotation_scale(location = "bl", width_hint = 0.3, height = unit(0.2, "cm")) +  # Shorter and smaller scale bar
+    theme(legend.position = "none",  # Remove legend
+          axis.ticks = element_line(),  # Keep axis ticks
+          axis.text.x = element_text(size = 12),  # Rotate and size longitude labels
+          axis.text.y = element_text(size = 12),  # Size latitude labels
+          axis.title.x = element_text(size = 14, face = "bold"),  # Bold and size longitude title
+          axis.title.y = element_text(size = 14, face = "bold"),  # Bold and size latitude title
+          panel.grid.major = element_blank(),  # Remove major gridlines
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "#ADD8E6", color = NA),
+          #plot.background = element_rect(color = "black"),
+          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5))  
+bay_area
+```
+```{r}
+library(grid)  # For annotation_custom() and viewport
 
+# Load the California state boundaries
+california <- ne_states(country = "United States of America", returnclass = "sf") %>%
+    filter(name == "California")
 
+# Define the Bay Area bounds
+bay_area_bounds <- c(xmin = -122.6, xmax = -121.3, ymin = 37.2, ymax = 38.2)
+
+# Create the main Bay Area map
+bay_area_map <- ggplot(data = california) +
+    geom_sf(linewidth = 0.5) +  # Thicker outline for California
+    geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
+               color = "black", size = 2, shape = 21, stroke = 0.5) +  # Points with black borders
+    scale_fill_manual(values = loc_colors) +  # Apply consistent color palette
+    coord_sf(xlim = c(bay_area_bounds["xmin"], bay_area_bounds["xmax"]), 
+             ylim = c(bay_area_bounds["ymin"], bay_area_bounds["ymax"]), expand = F) +  # Set bounds for Bay Area
+    scale_x_continuous(breaks = seq(-122, -121, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks and format to 1 decimal place
+    scale_y_continuous(breaks = seq(37, 38, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks and format to 1 decimal place
+    labs(x = "Longitude", y = "Latitude") +  # Add axis labels
+    theme_bw() +
+    annotation_scale(location = "bl", width_hint = 0.3, height = unit(0.2, "cm")) +  # Shorter and smaller scale bar
+    theme(legend.position = "none",  # Remove legend
+          axis.ticks = element_line(),  # Keep axis ticks
+          axis.text.x = element_text(size = 12),  # Rotate and size longitude labels
+          axis.text.y = element_text(size = 12),  # Size latitude labels
+          axis.title.x = element_text(size = 14, face = "bold"),  # Bold and size longitude title
+          axis.title.y = element_text(size = 14, face = "bold"),  # Bold and size latitude title
+          panel.grid.major = element_blank(),  # Remove major gridlines
+          panel.grid.minor = element_blank(),  # Remove minor gridlines
+          panel.background = element_rect(fill = "#ADD8E6", color = NA),  # Blue background like the ocean
+          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5))  # Thicker inner border around the plot
+
+# Create an inset map of the entire state of California
+inset_california_map <- ggplot(data = california) +
+    geom_sf(fill = "lightgrey", color = "black") +  # Entire California map with border
+    geom_rect(aes(xmin = bay_area_bounds["xmin"], xmax = bay_area_bounds["xmax"], 
+                  ymin = bay_area_bounds["ymin"], ymax = bay_area_bounds["ymax"]),
+              fill = NA, color = "black", linewidth = 0.5) +  # Add red bounding box for Bay Area
+    theme_void()  # No axis or gridlines
+
+inset_california_map
+
+# Use annotation_custom to add the inset map
+bay_area_map_with_inset <- bay_area_map +
+    annotation_custom(grob = ggplotGrob(inset_california_map), 
+                      xmin = -121.3, xmax = -121, ymin = 37.3, ymax = 38.1)  # Adjust placement of inset
+
+# Display the Bay Area map with inset
+bay_area_map_with_inset
 
 ```
+
+# Prettiest
 
 ```{r}
-library(cowplot)
+library(grid)  # For annotation_custom() and viewport
 
-inset_border <- ggplot() +
-  theme_void() +
-  theme(plot.background = element_rect(fill = "black", color = "black"))
+# Load the California state boundaries
+california <- ne_states(country = "United States of America", returnclass = "sf") %>%
+    filter(name == "California")
 
-final_map <- ggdraw() +
-  # Main map
-  draw_plot(inset_both, x = 0, y = 0, width = 1, height = 1) +
+# Define the Bay Area bounds
+bay_area_bounds <- c(xmin = -122.6, xmax = -121.3, ymin = 37.3, ymax = 38.2)
 
-  # Bay Area inset with full black border
-  draw_plot(inset_border, x = 0.615, y = 0.595, width = 0.36, height = 0.36) +
-  draw_plot(bay_map,      x = 0.62,  y = 0.6,   width = 0.35, height = 0.35) +
+# Create the main Bay Area map
+bay_area_map <- ggplot(data = california) +
+    geom_sf( fill = "lightgrey") +  
+    geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
+               color = "black", size = 2, shape = 21, stroke = 0.5) +  # Points with black borders
+    scale_fill_manual(values = loc_colors) +  # Apply consistent color palette
+    coord_sf(xlim = c(bay_area_bounds["xmin"], bay_area_bounds["xmax"]), 
+             ylim = c(bay_area_bounds["ymin"], bay_area_bounds["ymax"]), expand = F) +  # Set bounds for Bay Area
+    scale_x_continuous(breaks = seq(-122, -121, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks and format to 1 decimal place
+    scale_y_continuous(breaks = seq(37, 38, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks and format to 1 decimal place
+    labs(x = "Longitude", y = "Latitude") +  # Add axis labels
+    theme_bw() +
+    annotation_scale(location = "bl", width_hint = 0.3, height = unit(0.2, "cm")) +  # Shorter and smaller scale bar
+    theme(legend.position = "none",  # Remove legend
+          axis.ticks = element_line(),  # Keep axis ticks
+          axis.text.x = element_text(size = 12),  # Rotate and size longitude labels
+          axis.text.y = element_text(size = 12),  # Size latitude labels
+          axis.title.x = element_text(size = 14, face = "bold"),  # Bold and size longitude title
+          axis.title.y = element_text(size = 14, face = "bold"),  # Bold and size latitude title
+          panel.grid.major = element_blank(),  # Remove major gridlines
+          panel.grid.minor = element_blank())  # Remove minor gridlines
+          #panel.background = element_rect(fill = "#ADD8E6", color = NA),  # Blue background like the ocean
+         # panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5))  # Thicker inner border around the plot
 
-  # Santa Barbara inset with full black border
-  draw_plot(inset_border, x = 0.615, y = 0.095, width = 0.36, height = 0.36) +
-  draw_plot(sb_map,       x = 0.62,  y = 0.1,   width = 0.35, height = 0.35)
+# Create an inset map of the entire state of California
+inset_california_map <- ggplot(data = california) +
+    geom_sf(fill = "lightgray", color = "black") +  # Entire California map with border
+    geom_rect(aes(xmin = bay_area_bounds["xmin"], xmax = bay_area_bounds["xmax"], 
+                  ymin = bay_area_bounds["ymin"], ymax = bay_area_bounds["ymax"]),
+              fill = NA, color = "black", linewidth = 0.5) +  # Add red bounding box for Bay Area
+    theme_void()  # No axis or gridlines
 
-final_map
+inset_california_map
+
+# Use annotation_custom to add the inset map
+bay_area_map_with_inset <- bay_area_map +
+    annotation_custom(grob = ggplotGrob(inset_california_map), 
+                      xmin = -122.8, xmax = -123.1, ymin = 37.3, ymax = 38.1)  # Adjust placement of inset
+
+# Display the Bay Area map with inset
+bay_area_map_with_inset
+
+#save_plot(plot=inset_plot, filename="field_map.pdf")
 
 ```
 
+## No Briones
 
+```{r}
+data_nb <- data %>% 
+  filter(Property!="Briones Regional Park")
 
+# Load the California state boundaries
+california <- ne_states(country = "United States of America", returnclass = "sf") %>%
+    filter(name == "California")
 
+# Define the Bay Area bounds
+bay_area_bounds <- c(xmin = -122.6, xmax = -121.3, ymin = 37.3, ymax = 38.2)
 
+# Create the main Bay Area map
+bay_area_map <- ggplot(data = california) +
+    geom_sf( fill = "lightgrey") +  
+    geom_point(data = data_nb, aes(x = Long, y = Lat, fill = general_location), 
+               color = "black", size = 2, shape = 21, stroke = 0.5) +  # Points with black borders
+    scale_fill_manual(values = loc_colors) +  # Apply consistent color palette
+    coord_sf(xlim = c(bay_area_bounds["xmin"], bay_area_bounds["xmax"]), 
+             ylim = c(bay_area_bounds["ymin"], bay_area_bounds["ymax"]), expand = F) +  # Set bounds for Bay Area
+    scale_x_continuous(breaks = seq(-122, -121, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks and format to 1 decimal place
+    scale_y_continuous(breaks = seq(37, 38, length.out = 3), 
+                       labels = scales::number_format(accuracy = 0.1)) +  # Set 3 breaks and format to 1 decimal place
+    labs(x = "Longitude", y = "Latitude") +  # Add axis labels
+    theme_bw() +
+    annotation_scale(location = "bl", width_hint = 0.3, height = unit(0.2, "cm")) +  # Shorter and smaller scale bar
+    theme(legend.position = "none",  # Remove legend
+          axis.ticks = element_line(),  # Keep axis ticks
+          axis.text.x = element_text(size = 12),  # Rotate and size longitude labels
+          axis.text.y = element_text(size = 12),  # Size latitude labels
+          axis.title.x = element_text(size = 14, face = "bold"),  # Bold and size longitude title
+          axis.title.y = element_text(size = 14, face = "bold"),  # Bold and size latitude title
+          panel.grid.major = element_blank(),  # Remove major gridlines
+          panel.grid.minor = element_blank())  # Remove minor gridlines
+          #panel.background = element_rect(fill = "#ADD8E6", color = NA),  # Blue background like the ocean
+         # panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5))  # Thicker inner border around the plot
+
+# Create an inset map of the entire state of California
+inset_california_map <- ggplot(data = california) +
+    geom_sf(fill = "lightgray", color = "black") +  # Entire California map with border
+    geom_rect(aes(xmin = bay_area_bounds["xmin"], xmax = bay_area_bounds["xmax"], 
+                  ymin = bay_area_bounds["ymin"], ymax = bay_area_bounds["ymax"]),
+              fill = NA, color = "black", linewidth = 0.5) +  # Add red bounding box for Bay Area
+    theme_void()  # No axis or gridlines
+
+inset_california_map
+
+# Use annotation_custom to add the inset map
+bay_area_map_with_inset <- bay_area_map +
+    annotation_custom(grob = ggplotGrob(inset_california_map), 
+                      xmin = -122.8, xmax = -123.1, ymin = 37.3, ymax = 38.1)  # Adjust placement of inset
+
+# Display the Bay Area map with inset
+bay_area_map_with_inset
+
+#save_plot(plot=inset_plot, filename="field_map_no briones.pdf")
+
+```
 
 
