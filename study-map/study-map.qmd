@@ -1,0 +1,187 @@
+---
+title: "Study map"
+author: "Caitlin Nordheim-Maestas"
+date: "`r Sys.Date()`"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    code-fold: true
+---
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                    setup                                 ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+library(tidyverse)
+library(here)
+library(sf)
+library(rnaturalearth)
+library(ggspatial)
+library(cowplot)
+library(grid)  # For annotation_custom() and viewport
+
+data <- read_csv(here("study-map","site_coordinates.csv")) %>% 
+  filter(Property != "Briones Regional Park") %>% 
+  filter(Site != "BARN" & Site != "NORTH") %>% 
+  filter(Site != "PRPND002" & Site != "PRPND003") %>% 
+  filter(Site != "GDPND004" & Site != "GDPND008") %>% 
+  mutate(general_location = if_else(Property == "NCOS", "SB", "SFEB"))
+```
+
+Big, medium, small insets
+
+```{r}
+# Load the state boundaries for the United States, filtered for California
+states <- ne_states(country = "United States of America", returnclass = "sf")
+california <- states %>% filter(name == "California")
+
+# Define a custom color palette for the different properties
+property_colors <- setNames(c("#1b9e77", "#d95f02", "#7570b3", "#e7298a"), 
+                            unique(data$Property))
+general_location_colors <- setNames(c("#1b9e77", "#d95f02"), 
+                            unique(data$general_location))
+```
+
+## map no insets
+
+```{r}
+# Main California map, displaying all sites on the state outline
+main_map <- ggplot(data = california) +
+  geom_sf() +  # Plot the outline of the states
+  geom_point(data = data, aes(x = Long, y = Lat, fill = general_location), 
+             color = "black", size = 2, shape = 21, stroke = 0.5) +  # Plot data points with black borders
+  scale_fill_manual(values = general_location_colors) +  # Apply consistent color palette for properties
+  coord_sf(xlim = c(-124.5, -114), ylim = c(32.3, 42.2), expand = FALSE) +  # tightened to CA borders
+  labs(
+    x = "Longitude",                # rename x-axis
+    y = "Latitude",                 # rename y-axis
+    fill = "Sample Source" # rename legend title
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = c(0.7, 0.85),          # legend inside the plot
+    legend.background = element_rect(fill = "white", color = "black") # optional box around legend
+  )
+
+main_map
+
+ggsave("main_map.pdf", plot = main_map, width = 6, height = 6, units = "in")
+```
+
+Insets
+
+```{r}
+# bounds
+bay_bounds <- c(xmin = -122.6, xmax = -121.3, ymin = 37.2, ymax = 38.2)
+sb_bounds <- c(xmin = -120.0, xmax = -119.5, ymin = 34.3, ymax = 34.6)
+
+inset_both <- inset_california_map <- ggplot(data = california) +
+    geom_sf(fill = "lightgrey", color = "black") +  # Entire California map with border
+   geom_point(data = data, aes(x = Long, y = Lat, fill = Property), 
+             color = "black", size = 2, shape = 21, stroke = 0.5) +  # Plot data points with black borders
+  scale_fill_manual(values = property_colors) +  # Apply consistent color palette for properties
+    geom_rect(aes(xmin = bay_bounds["xmin"], xmax = bay_bounds["xmax"], 
+                  ymin = bay_bounds["ymin"], ymax = bay_bounds["ymax"]),
+              fill = NA, color = "black", linewidth = 0.5) +  # Add red bounding box for Bay Area
+   geom_rect(aes(xmin = sb_bounds["xmin"], xmax = sb_bounds["xmax"], 
+                ymin = sb_bounds["ymin"], ymax = sb_bounds["ymax"]),
+            fill = NA, color = "black", linewidth = 0.5) +
+    theme_void() + # No axis or gridlines
+  theme(legend.position = "none") 
+inset_both
+
+```
+
+```{r}
+# Zoomed-in Santa Barbara map
+sb_map <- ggplot(data = california) +
+  geom_sf(linewidth = 0.5) +  # Plot base
+  geom_point(data = data, aes(x = Long, y = Lat, fill = Property),
+             color = "black", size = 2, shape = 21, stroke = 0.5) +
+  scale_fill_manual(values = property_colors) +
+
+  # Zoom to Santa Barbara bounds
+  coord_sf(
+    xlim = c(sb_bounds["xmin"], sb_bounds["xmax"]),
+    ylim = c(sb_bounds["ymin"], sb_bounds["ymax"]),
+    expand = FALSE
+  ) +
+
+  # fewer axis ticks
+  scale_x_continuous(breaks = c(-119.9, -119.7, -119.5)) +
+  scale_y_continuous(breaks = c(34.35, 34.45, 34.55)) +
+
+  # style
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.border = element_rect(color = "black", fill = NA))
+sb_map
+
+# Zoomed-in Bay map
+bay_map <- ggplot(data = california) +
+  geom_sf(linewidth = 0.5) +  # Plot base
+  geom_point(data = data, aes(x = Long, y = Lat, fill = Property),
+             color = "black", size = 2, shape = 21, stroke = 0.5) +
+  scale_fill_manual(values = property_colors) +
+
+  # Zoom to Bay Area bounds
+  coord_sf(
+    xlim = c(bay_bounds["xmin"], bay_bounds["xmax"]),
+    ylim = c(bay_bounds["ymin"], bay_bounds["ymax"]),
+    expand = FALSE
+  ) +
+
+  # fewer axis ticks
+  scale_x_continuous(breaks = c(-122.5, -122, -121.5)) +
+  scale_y_continuous(breaks = c(37.3, 37.8)) +
+  
+  # style
+    theme_bw() +
+  theme(legend.position = "none",
+        panel.border = element_rect(color = "black", fill = NA))
+bay_map 
+
+  # Add black outline + minimal ticks and labels
+  # theme(
+  #   panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),  # <-- black box outline
+  #   axis.text = element_text(size = 10),   # <-- fewer/smaller axis labels
+  #   axis.ticks = element_line(size = 0.3), # <-- smaller ticks
+  #   axis.title = element_blank()           # <-- no axis titles
+  # )
+
+
+
+
+```
+
+```{r}
+library(cowplot)
+
+inset_border <- ggplot() +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "black", color = "black"))
+
+final_map <- ggdraw() +
+  # Main map
+  draw_plot(inset_both, x = 0, y = 0, width = 1, height = 1) +
+
+  # Bay Area inset with full black border
+  draw_plot(inset_border, x = 0.615, y = 0.595, width = 0.36, height = 0.36) +
+  draw_plot(bay_map,      x = 0.62,  y = 0.6,   width = 0.35, height = 0.35) +
+
+  # Santa Barbara inset with full black border
+  draw_plot(inset_border, x = 0.615, y = 0.095, width = 0.36, height = 0.36) +
+  draw_plot(sb_map,       x = 0.62,  y = 0.1,   width = 0.35, height = 0.35)
+
+final_map
+
+```
+
+
+
+
+
+
+
