@@ -27,25 +27,25 @@ swab_mj <- read.csv(here("amphib-data", "swab_mar-jun22_filtered.csv"))
 # swab_may22 <- read.csv(here("amphib-data", "allmonths_swabs_updated 2024-10-28.csv")) %>%
 #   filter(code %in% c(
 #     "CABIN", "WEST", "GRAMPS",
-#     "GDPND004", "GDPND005", "GDPND009", "GDPND006",
+#     "GDPND005", "GDPND009", "GDPND006",
 #     "PRPND004", "PRPND009", "PRPND010"
 #   )) %>%
-#     filter(sampling_id %in% c(
-#     "May_22"
-#   ))
+#      filter(sampling_id %in% c(
+#      "May_22"
+#    ))
 # write.csv(swab_may22, "swab_may2022_ninesites.csv", row.names = FALSE)
-
-
+# 
+# 
 # swab_mj <- read.csv(here("amphib-data", "allmonths_swabs_updated 2024-10-28.csv")) %>%
 #   filter(code %in% c(
 #     "CABIN", "WEST", "GRAMPS",
-#     "GDPND004", "GDPND005", "GDPND009", "GDPND006",
+#      "GDPND005", "GDPND009", "GDPND006",
 #     "PRPND004", "PRPND009", "PRPND010"
 #   )) %>%
 #     filter(sampling_id %in% c(
 #     "Mar_22", "May_22", "Jun_22"
 #   ))
-# write.csv(swab_mj, "swab_ma-jun22_filtered.csv", row.names = FALSE)
+# write.csv(swab_mj, "swab_mar-jun22_filtered.csv", row.names = FALSE)
 ```
 
 
@@ -101,8 +101,6 @@ group_by(code, amphibian_spp) %>%
   mutate(
     avg_load_bd_pos = ifelse(is.nan(avg_load_bd_pos), NA, avg_load_bd_pos)
   )
-
-swab_summary2
 
 swab_summary2 %>%
   arrange(code, amphibian_spp) %>%
@@ -176,8 +174,6 @@ site = "Site",
 
 ```
 
-
-
 ### Mar - June 2022
 
 ```{r}
@@ -223,7 +219,7 @@ ves_may <- read.csv(here("amphib-data", "cln_survey_data2025-04-21.csv")) %>%
   filter(month(date) == 5 & year(date) == 2022) %>% 
   filter(site_code %in% c(
     "CABIN", "WEST", "GRAMPS",
-    "GDPND004", "GDPND005", "GDPND009", "GDPND006",
+    "GDPND005", "GDPND009", "GDPND006",
     "PRPND004", "PRPND009", "PRPND010"
   )) %>% 
    select(
@@ -245,7 +241,7 @@ ves_mj <- read.csv(here("amphib-data", "cln_survey_data2025-04-21.csv")) %>%
   filter(month(date) %in% c(3, 5, 6) & year(date) == 2022) %>% 
   filter(site_code %in% c(
     "CABIN", "WEST", "GRAMPS",
-    "GDPND004", "GDPND005", "GDPND009", "GDPND006",
+    "GDPND005", "GDPND009", "GDPND006",
     "PRPND004", "PRPND009", "PRPND010"
   )) %>% 
    select(
@@ -307,6 +303,54 @@ ves_may %>%
     style = cell_text(weight = "bold"),
     locations = cells_column_labels(everything())
   )
+```
+### summary sentence
+
+Note - no frogs caught at P4, but I guess we saw a toad in the VES
+
+```{r}
+n_total_sites <- ves_may %>%
+  distinct(site_code) %>%
+  nrow()
+
+n_sites_with_swabs <- swab_summary2 %>%
+  distinct(code) %>%
+  nrow()
+
+percent_sites_with_swabs <- round(100 * n_sites_with_swabs / n_total_sites, 1)
+
+total_frogs <- sum(swab_summary2$n_frogs, na.rm = TRUE)
+total_bd_pos <- sum(swab_summary2$bd_positive, na.rm = TRUE)
+overall_prevalence <- round(100 * total_bd_pos / total_frogs, 1)
+
+glue::glue(
+  "Amphibians were caught at {percent_sites_with_swabs}% of SFEB sites in May 2022, ",
+  "and Bd was detected on frogs with an overall prevalence of {overall_prevalence}% (n = {total_frogs} amphibians)."
+)
+
+glue::glue(
+  "Amphibians were found at 100% of SFEB sites in May 2022, ",
+  "and Bd was detected on frogs with an overall prevalence of {overall_prevalence}% (n = {total_frogs} amphibians)."
+)
+```
+
+```{r}
+n_total_sites <- ves_may %>%
+  distinct(site_code) %>%
+  nrow()
+
+
+n_sites_with_frogs <- ves_may %>%
+  mutate(taxx_juvenile = as.numeric(taxx_juvenile)) %>%
+  rowwise() %>%
+  mutate(total_frogs = sum(c_across(raca_adult:taxx_juvenile), na.rm = TRUE)) %>%
+  ungroup() %>%
+  filter(total_frogs > 0) %>%
+  nrow()
+
+
+percent_sites_with_frogs <- round(100 * n_sites_with_frogs / n_total_sites, 1)
+
 ```
 
 
