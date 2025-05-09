@@ -1,5 +1,5 @@
 ---
-title: "4A & B: Monolayer Biofilm"
+title: "Monolayer Biofilm Experiments"
 author: "Caitlin Nordheim-Maestas"
 format: docx
 # format:
@@ -9,6 +9,8 @@ format: docx
 #     code-fold: true
 #     toc-location: left
 ---
+
+# Experiment 4: Assessment of AE microorganisms’ effect on monolayer-associated Bd cells 
 
 ```{r}
 #| warning: false
@@ -27,7 +29,9 @@ library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
 
 # data
+# SFEB
 ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
+# SBNCOS
 fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
 
 # Colors: these are from Paul Tol's colorblind friendly palette
@@ -53,7 +57,7 @@ myCustomTheme <- function() {
     )}
 ```
 
-# 4A: East Bay Monolayer
+# SFEB Monolayer
 
 Scientific Q: Is mono-strain Bd biofilm resistant to microbes in pond water
 
@@ -63,7 +67,7 @@ Is there a difference in the **gain or loss of ADHERENT Bd over 6 days** between
 
 **There is a significant difference in the change in the quantity of adherent Bd from Day 1 to Day 7 across the filter types (t = -6.45, df = 7, p-value = 0.0003)**
 
-## 4a Data Wrangling
+## Data Wrangling SFEB Monolayer
 
 ```{r}
 eb_monolayer <- ns_ml_pw_bd %>% 
@@ -96,7 +100,7 @@ eb_monolayer_diff.22um <- eb_monolayer_diff %>%
 
 ```
 
-## 4a EDA
+## EDA SFEB Monolayer
 
 Renwei barplot
 
@@ -146,7 +150,7 @@ geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size =
 
 ```
 
-## 4aStats and assumption testing
+## SFEB Stats and assumption testing
 
 Question:
 
@@ -193,7 +197,7 @@ t.test(eb_monolayer_diff_40um$rate_loss, eb_monolayer_diff.22um$rate_loss, paire
 
 When monolayer Bd biofilm is exposed to pond water without microbes has a significantly greater loss of Bd between day 1 to day 7 than pond water with microbes (t = -5.4, df = 8, p = 0.0006772). The t-value is negative, which shows that the first item entered (with microbes) has a smaller loss of Bd than the second item entered (no microbes).
 
-## 4a Second stats: planned comparison
+## Planned comparison to look at Day 1
 
 Q: qty \~ factor(day) + microbe_treatment, random = \~1\|factor(site)
 
@@ -232,11 +236,11 @@ anova(mod6)
 emmeans::emmeans(mod6, pairwise ~ day * filter) # pairwise comparisons
 ```
 
-# 4b: NCOS
+Bd abundance was indeed significantly lower on day 1 in the presence of AE microorganisms compared to its abundance in microorganism-depleted pond water `(Day_1 0.22um_filter - Day_1 40um_filter p <.0001)`
 
-Add in NCOS now
+# SBNCOS
 
-## 4b Data Wrangling
+## Data Wrangling SBNCOS
 
 ```{r}
 ## Monolayer
@@ -312,7 +316,7 @@ ml_noday0 <- ml_noday0 %>%
 ```
 
 
-## 4b EDA
+## EDA SBNCOS
 
 Note: only the ADHERENT Bd here!
 
@@ -415,7 +419,7 @@ Commented out to save space, log transformed is better
 # hist(ml_noday0$log_adh) # better
 ```
 
-## 4b Stats
+## Stats SBNCOS
 
 y var: amount of Bd
 
@@ -577,14 +581,15 @@ cld_TB_microbes_4b
 # cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b
 ```
 
-# *Figures
+# *Publication figures
 
 ```{r}
+# set up custom theme
 myCustomTheme <- function() {
   theme_light() +
     theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
           title = element_text(size = 7, face = "bold", family = "Helvetica"),
           plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
           legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
@@ -592,24 +597,27 @@ myCustomTheme <- function() {
           # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
           # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
           axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          axis.ticks.x = element_line(color = "grey", size = 0.5),  # ensure bottom axis ticks
+          axis.ticks.y = element_line(color = "grey", size = 0.5),  # <- ensure side axis ticks
           strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
           strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
     )
 }
 ```
 
-
- Fig 4
+## SFEB Monolayer
 
 ```{r}
-fig_4a <- eb_monolayer %>% 
+fig_SFEB_monolayer <- eb_monolayer %>% 
  mutate(filter = factor(filter, levels = c("40um_filter", "0.22um_filter"))) %>% # Switch the order of levels
   # plot it
   ggplot(aes(y= bd_qty, x = filter, fill = filter)) + 
     geom_boxplot() +
   geom_jitter(width = 0.2, alpha = 0.3) +
 scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
-                  limits = c(1e+02, 1e+06)) +  # Set y-axis range from 1e2 to 1e3
+                # update to consistent scale per reviewer request
+                  limits = c(1e+02, 1e+08),
+                breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) + 
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
   scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
@@ -617,70 +625,28 @@ scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x
  myCustomTheme()+
    theme(legend.position = "none",
     strip.background = element_rect(fill = "white", color = "grey", size = 0.5)) + # Adjust the facet line thickness
-  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
-    xlab("Presence of Microbes in PW with Monolayer") +
-    ylab("Bd Quantity (ZE)") +
+  scale_x_discrete (labels= c("40um_filter" = "+", "0.22um_filter" = "-")) +
+    xlab("AE Microorganisms in pond water") +
+    ylab("Bd quantity in monolayers (ZE/well)") +
 
  # add controls ad x's
 geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size = 2)
 
-#fig_4a
-
-fig_4a <- fig_4a +
+fig_SFEB_monolayer <- fig_SFEB_monolayer +
   labs(tag = "A") +
   theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
     plot.tag.position = c(0, 1)
   )
 
-fig_4a
+fig_SFEB_monolayer
 
-ggsave("4a_updated.pdf", plot = fig_4a, width = 3.46, height = 3.46)
-```
-
- Fig 4 Renwei scale
-
-```{r}
-fig_4a_RS <- eb_monolayer %>% 
- mutate(filter = factor(filter, levels = c("40um_filter", "0.22um_filter"))) %>% # Switch the order of levels
-  # plot it
-  ggplot(aes(y= bd_qty, x = filter, fill = filter)) + 
-    geom_boxplot() +
-  geom_jitter(width = 0.2, alpha = 0.3) +
-    scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
-  coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
-    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
-                                                    "Day_7" = "Day 7")))+
-  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
-                                "0.22um_filter" = no_microbes_.22_color)) +
- myCustomTheme()+
-   theme(legend.position = "none",
-    strip.background = element_rect(fill = "white", color = "grey", size = 0.5)) + # Adjust the facet line thickness
-  scale_x_discrete (labels= c("40um_filter" = "With Microbes", "0.22um_filter" = "No Microbes")) +
-    xlab("Presence of Microbes in PW with Monolayer") +
-    ylab("Bd Quantity (ZE)") +
-
- # add controls ad x's
-geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size = 2)
-
-#fig_4a
-
-fig_4a_RS <- fig_4a_RS +
-  labs(tag = "A") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
-
-fig_4a_RS
+ggsave("paper-figures/expt4-SFEB_AE_monolayer_fig4a_updated.pdf", plot = fig_SFEB_monolayer, width = 3.46, height = 3.46)
 ```
 
 
 ```{r}
-# Convert factor day to numeric while preserving original values
-#ml_noday0$day <- as.numeric(as.character(ml_noday0$day))
-
-fig_4b <- monolayer_summary %>% 
+fig_SBNCOS_monolayer <- monolayer_summary %>% 
   # reorder to match Renwei's plot
   mutate(sample_ID = factor(sample_ID, 
                             levels = c("TB+PW+microbes","PW+microbes",
@@ -701,13 +667,14 @@ fig_4b <- monolayer_summary %>%
   #                color = sample_ID),  # Raw data points
   #            position = position_jitter(width = 0.1, seed = 1),
   #            alpha = 0.3) +
-  scale_y_log10(limits = c(1e4, 1e8), 
-                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8),
-                labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) +
+  scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
+                # update to consistent scale per reviewer request
+                  limits = c(1e+02, 1e+08),
+                breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) + 
   
   # vibes
-  labs(x = "Day",
-       y = "Bd Quantity (ZE)",
+  labs(x = "Incubation of Bd monolayers (day)",
+       y = "Bd quantity in monolayers (ZE/well)",
        color = "Medium",       # Title for color legend
        linetype = "Microbes\nPresent") +
   scale_color_manual(values = c("TB+PW+microbes" = "#4477AA", 
@@ -736,37 +703,14 @@ guides(color = guide_legend(title = NULL)) +
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
                    labels = c("Initial\nBd", "1", "3", "5", "7"))
 
-#fig_4b
-
-fig_4b <- fig_4b +
+fig_SBNCOS_monolayer <- fig_SBNCOS_monolayer +
   labs(tag = "B") +
   theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
     plot.tag.position = c(0, 1)
   )
 
-fig_4b
-```
-
-Fig 4 combined
-
-```{r}
-# Combine fig_2a and fig_2b side by side
-fig4 <- fig_4a + fig_4b + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
-  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
-
-#fig4
-
-#ggsave("4a_4b.png", plot = fig4, width = 14, height = 5, dpi = 1000)
-
-# 4a alone
-#ggsave("4a.pdf", plot = fig_4a, width = 3.46, height = 3.46)
-
-#ggsave("fig_4a_RS.pdf", plot = fig_4a_RS, width = 3.46, height = 3.46)
-
-# 4b alone
-#ggsave("4b.pdf", plot = fig_4b, width = 3.46, height = 3.46)
+ggsave("paper-figures/expt4-SBNCOS_AE_monolayer_fig4b_updated.pdf", plot = fig_SBNCOS_monolayer, width = 3.46, height = 3.46)
 ```
 
 # *SI
@@ -1000,7 +944,7 @@ pairwise_cld_4b <- cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_m
 
 pairwise_cld_4b
 
-ggsave("SI_4b_updated.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
+#ggsave("SI_4b_updated.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
 
 ```
 
@@ -1053,5 +997,5 @@ ggplot(aes(y= bd_qty, x = site, fill = filter)) +
 
 SI_4a 
 
-ggsave("SI_4a.pdf", plot = SI_4a, width = 7.09, height = 3.46)
+#ggsave("SI_4a.pdf", plot = SI_4a, width = 7.09, height = 3.46)
 ```

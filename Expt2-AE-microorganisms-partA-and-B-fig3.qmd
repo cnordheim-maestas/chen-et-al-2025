@@ -726,7 +726,7 @@ fig_SFEB_microorganisms <- eb_pw %>%
          panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) + 
   
   scale_x_discrete (labels= c("40um_filter" = "+ ", "0.22um_filter" = "-")) +
-    xlab("AE Microorganisms in Pond Water") +
+    xlab("AE microorganisms in pond water") +
     ylab("Bd quantity in supernatant and \nadherent fraction (ZE/well)") +
   
   # add controls ad x's
