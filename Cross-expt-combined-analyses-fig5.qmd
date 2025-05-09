@@ -1,5 +1,5 @@
 ---
-title: "5ab-combined-analyses"
+title: "Combined analyses"
 author: "Caitlin Nordheim-Maestas"
 format: docx
 # format:
@@ -9,6 +9,8 @@ format: docx
 #     code-fold: true
 #     toc-location: left
 ---
+
+# Compare Bd-inhibitory potency of the AE biofilms to that of the AE microorganisms
 
 # Load in data and libraries
 
@@ -27,22 +29,11 @@ library(emmeans) # for pairwise comparisons, especially on mixed effects models 
 library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
 
-# load "East Bay" experiments data
-# ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
-# fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
-# ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv"))
-# 
-# fig_2b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig2B.csv"))
-# fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
-# fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig4B.csv"))
-
-# load wrangled data
+# load wrangled data from expt2-4 quarto docs in this repo
 eb_pw_total_diff <- read.csv(here("data", "eb_pw_total_diff.csv"))
 pw_noday0 <- read.csv(here("data", "pw_noday0.csv"))
 eb_ae_bf_only <- read.csv(here("data", "eb_ae_bf_only.csv"))
 ae_noday0 <- read.csv(here("data", "ae_noday0.csv"))
-
-# 
 
 # Colors: these are from Paul Tol's colorblind friendly palette
 with_microbes_40_color <- "#999933"
@@ -50,20 +41,6 @@ no_microbes_.22_color <- "#88ccee"
 ```
 
 # Data wrangling for all datasets
-
-MAYBE I WILL EXPORT THE WRANGLED DATA FROM THE OTHER WORKFLOWS
-
-I need
-
--   eb_pw_total_diff
-
--   pw_noday0
-
--   eb_ae_bf_only
-
--   ae_noday0
-
-# COMBINE PW AND AE FOR ALL
 
 ## Fig 5 Data wrangling
 
@@ -110,64 +87,210 @@ ncos_ae_no_microbes <- ae_noday0 %>%
   mutate(rate_loss = log(Day_1) - log(Day_7)) %>% 
   dplyr::select(sample_ID, treatment, rate_loss)
   
-all_parts<- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes)
+all_parts <- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes) %>% 
+  mutate(
+    location = case_when(
+      grepl("^EB", treatment) ~ "EB",
+      grepl("^NCOS", treatment) ~ "NCOS"),
+    medium = case_when(
+      grepl("PW", treatment) ~ "PW",
+      grepl("biofilm", treatment) ~ "biofilm"))
 
 # set PW 40 um as the intercept, comparing back to that one
 all_parts$treatment <- factor(all_parts$treatment,
                           levels = c("EB_PW_40um", "NCOS_PW_40um", "EB_biofilm", "NCOS_biofilm")) 
 ```
 
-## 5A: Biofilm vs pond water with sites combined
+# Updated stats May 2025: 2 t-tests, one for each site
 
-t-test
+New plan: Renwei requests 2 t-tests, with one for each site
+
+**Results: There is no significant difference in the rate loss of Bd between AE microorganisms and AE biofilms within the SFEB sites (t = 0.31125, df = 22, p-value = 0.7585). There is also no significant difference in the rate loss of Bd between AE microorganisms and AE biofilms within the SBNCOS sites (t = -1.5014, df = 4, p-value = 0.2077) **
+
+## SFEB t-test
 
 ```{r}
-# make a column for medium
-all_parts <- all_parts %>% 
-  mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("biofilm", treatment) ~ "Biofilm"
-  ))
+sfeb <- all_parts %>% 
+  filter(grepl("eb_", treatment, ignore.case = TRUE))
+
+# test for homogeneity of variance
+leveneTest(rate_loss ~ factor(treatment), data = sfeb) # p =  0.9628; var are similar yay!
 
 # assumptions testing
-leveneTest(rate_loss ~ factor(medium), data = all_parts)
-
-# assumptions testing
-all_parts %>% 
+sfeb %>% 
  ggqqplot("rate_loss") # good
-shapiro.test(all_parts$rate_loss) # normal, yay!
-hist(all_parts$rate_loss)
+shapiro.test(sfeb$rate_loss) # normal, yay! (p-value = 0.1792)
 
-t.test(rate_loss ~ medium, data = all_parts, var.equal = TRUE)
+t.test(rate_loss ~ treatment, data = sfeb, var.equal = TRUE)
+```
+
+## NCOS t-test
+
+```{r}
+ncos <- all_parts %>% 
+  filter(grepl("ncos_", treatment, ignore.case = TRUE))
+
+# test for homogeneity of variance
+leveneTest(rate_loss ~ factor(treatment), data = ncos) # p =  0.1394; var are similar yay!
+
+str(ncos)
+
+# assumptions testing
+sfeb %>% 
+ ggqqplot("rate_loss") # good
+shapiro.test(ncos$rate_loss) # barely did not pass but the qqplot is gorgeous so we will proceed (p-value = 0.04348)...also such a teeny sample size the shapiro isn't the best fit here anyway
+
+t.test(rate_loss ~ treatment, data = ncos, var.equal = TRUE)
+```
+
+
+
+
+
+# \*PUBLICATION FIGURES
+
+```{r}
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          axis.ticks.x = element_line(color = "grey", size = 0.5),  # ensure bottom axis ticks
+          axis.ticks.y = element_line(color = "grey", size = 0.5),  # <- ensure side axis ticks
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
+    )
+}
 ```
 
 ```{r}
-f5a <- all_parts %>% 
-  mutate(medium = fct_relevel(medium, "PW", "Biofilm")) %>% 
+# sfeb_fig <- sfeb %>% 
+#   ggplot(aes(y= rate_loss, x = treatment, fill = treatment)) + 
+#     geom_boxplot() +
+#   geom_jitter(alpha = 0.3, width = 0.05) +
+#     myCustomTheme() +
+#      scale_fill_manual(values = c("EB_PW_40um" = "white",
+#                                   "EB_biofilm" = "darkgrey")) +
+#  theme(legend.position = "none",
+#         axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+#         axis.line.y = element_line(color = "grey", size = 0.5),
+#        panel.border = element_blank()) +
+#     xlab("Medium") +
+#     ylab("Reduction of Bd over 6 days") + 
+#    scale_x_discrete (labels= c("EB_PW_40um" = "microorganisms\n(n = 15)",
+#                               "EB_biofilm" = "biofilms\n(n = 9)")) +
+#     scale_y_continuous(limits = c(0, 7))
+# 
+# sfeb_fig <- sfeb_fig +
+#   labs(tag = "A") +
+#   theme(
+#     plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
+#     plot.tag.position = c(0, 1)
+#   )
+# 
+# sfeb_fig
+
+# ncos_fig <- ncos %>% 
+#   ggplot(aes(y= rate_loss, x = treatment, fill = treatment)) + 
+#     geom_boxplot() +
+#   geom_jitter(alpha = 0.3, width = 0.05) +
+#     myCustomTheme() +
+#      scale_fill_manual(values = c("NCOS_PW_40um" = "white",
+#                                   "NCOS_biofilm" = "darkgrey")) +
+#  theme(legend.position = "none",
+#         axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+#         axis.line.y = element_line(color = "grey", size = 0.5),
+#        panel.border = element_blank()) +
+#     xlab("Medium") +
+#     ylab("Reduction of Bd over 6 days") + 
+#    scale_x_discrete (labels= c("NCOS_PW_40um" = "microorganisms\n(triplicates)",
+#                               "NCOS_biofilm" = "biofilms\n(triplicates)")) +
+#       scale_y_continuous(limits = c(0, 7))
+# 
+# ncos_fig <- ncos_fig +
+#   labs(tag = "B") +
+#   theme(
+#     plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
+#     plot.tag.position = c(0, 1)
+#   )
+# 
+# ncos_fig
+```
+
+### combined figure
+
+```{r}
+combined <- all_parts %>% 
+  mutate(
+    medium = factor(medium),  # convert to factor first
+    medium = fct_relevel(medium, "PW", "Biofilm"), # pond water first
+     # rename the location so it shows up correct in the facet  
+    location = case_when(
+        location == "EB" ~ "SFEB",
+        location == "NCOS" ~ "SBNCOS",
+        TRUE ~ location)) %>%
   ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
     geom_boxplot() +
   geom_jitter(alpha = 0.3, width = 0.05) +
-    theme_classic() +
+    myCustomTheme() +
      scale_fill_manual(values = c("PW" = "white",
                                   "Biofilm" = "darkgrey")) +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
-    xlab("Treatment") +
-    ylab("Rate of Loss of Bd over 6 Days") + 
-   scale_x_discrete (labels= c("PW" = "Pond water + MO",
-                              "Biofilm" = "AE Biofilm"))
-f5a
+ theme(legend.position = "none",
+        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5),
+       panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) +
+    xlab(NULL) +
+    ylab("Reduction of Bd over 6 days") + 
+   scale_x_discrete (labels= c("PW" = "microorganisms",
+                              "Biofilm" = "biofilms")) +
+    facet_wrap(~location) +
+  scale_y_continuous(limits = c(0, 7))
+
+combined 
+
+ggsave("paper-figures/combined-expts_fig5_updated_NO SIG MARKERS.pdf", plot = combined , width = 3.46, height = 3.46)
+
+ns_data <- data.frame(
+  location = c("SFEB", "SBNCOS"),
+  x_start = 1,         # corresponds to "PW"
+  x_end = 2,           # corresponds to "Biofilm"
+  y = c(6.8,4.2),     # where on Y we want the bar
+  label = "ns"
+)
+
+fig5_withNS <- combined +
+  geom_segment(data = ns_data,
+               aes(x = x_start, xend = x_end, y = y, yend = y),
+               inherit.aes = FALSE,
+               linewidth = 0.5) +
+  geom_text(data = ns_data,
+            aes(x = 1.5, y = y + 0.2, label = label),
+            inherit.aes = FALSE,
+            size = 3,
+            fontface = "plain")
+
+fig5_withNS
+
+ggsave("paper-figures/combined-expts_fig5_updated_SIG MARKERS.pdf", plot = fig5_withNS, width = 3.46, height = 3.46)
+
 ```
 
-## 5B pairwise comparisons across treatments
+
+## SI Analysis and Fig across treatments
 
 Stats and assumption testing
 
 Exploratory viz:
 
 ```{r}
-exploratory_viz <- all_parts %>% 
+all_parts %>% 
   ggplot(aes(y= rate_loss, x = treatment)) + 
     geom_boxplot() +
   geom_jitter(alpha = 0.5, width = 0.05) +
@@ -217,67 +340,12 @@ f5b_tukey_treat <- pairs(f5b_em_treat, adjust = "tukey")
 f5b_tukey_treat
 ```
 
-# \*PUBLICATION FIGURES
-
-```{r}
-myCustomTheme <- function() {
-  theme_light() +
-    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
-          title = element_text(size = 7, face = "bold", family = "Helvetica"),
-          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
-          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
-          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
-          panel.border = element_blank(),
-          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
-          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
-          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
-          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
-    )
-}
-```
-
-## Fig 5
-
-5a
-
-```{r}
-f5a <- all_parts %>% 
-  mutate(medium = fct_relevel(medium, "PW", "Biofilm")) %>% 
-  ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
-    geom_boxplot() +
-  geom_jitter(alpha = 0.3, width = 0.05) +
-    myCustomTheme() +
-     scale_fill_manual(values = c("PW" = "white",
-                                  "Biofilm" = "darkgrey")) +
- theme(legend.position = "none",
-        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
-        axis.line.y = element_line(color = "grey", size = 0.5),
-       panel.border = element_blank()) +
-    xlab("Medium") +
-    ylab("Rate of Loss of Bd over 6 Days") + 
-   scale_x_discrete (labels= c("PW" = "Pond water + MO",
-                              "Biofilm" = "AE Biofilm"))
-f5a
-
-f5a <- f5a +
-  labs(tag = "A") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
-
-f5a
-```
-
-5b
+## SI fig
 
 ```{r}
 all_parts$treatment <- factor(all_parts$treatment) 
   
-fig5 <- all_parts %>% 
+si_alltreat <- all_parts %>% 
     mutate(site = case_when(
     grepl("NCOS", treatment) ~ "Santa Barbara",
     TRUE ~ "East Bay"  # Default to "east Bay"
@@ -309,46 +377,18 @@ sig_data_rl <- sig_data_rl %>%
     TRUE ~ "East Bay"  # Default to "east Bay"
   ))
 
-f5b <- fig5 + 
+si_alltreat  <- si_alltreat  + 
   geom_text(data = sig_data_rl, 
             aes(x = treatment, y = y_position, label = label, group = site), 
             inherit.aes = FALSE, 
             size = 2.4)  # Set fixed text size outside of aes()
 
-f5b <- f5b +
-  labs(tag = "B") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
+si_alltreat 
 
-f5b
-
-#ggsave("5b_updated.pdf", plot = f5b, width = 3.46, height = 3.46)
+ggsave("paper-figures/SI_combined-expts.pdf", plot = si_alltreat , width = 3.46, height = 3.46)
 ```
 
-Combine the figs
-
-```{r}
-# Combine fig_2a and fig_2b side by side
-fig5ab <- f5a + f5b + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
-  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
-
-#fig5ab
-
-#ggsave("5a_5b.png", plot = fig5ab, width = 10, height = 5, dpi = 1000)
-
-# 5a alone
-#ggsave("5a.pdf", plot = f5a, width = 3.46, height = 3.46)
-
-# 5b alone
-#ggsave("5b.pdf", plot = f5b, width = 3.46, height = 3.46)
-```
-
-# \* Stats tables
-
-## 5B stats
+### Stats tables
 
 anova table
 
@@ -484,4 +524,45 @@ ph5b_table <- f5b_tukey_df %>%
     ),
     locations = cells_column_labels(everything()))
 ph5b_table
+```
+# Appendix
+
+## Other analysis option Biofilm vs pond water with sites combined
+
+t-test
+
+```{r}
+# make a column for medium
+all_parts <- all_parts %>% 
+  mutate(medium = case_when(
+    grepl("PW", treatment) ~ "PW",
+    grepl("biofilm", treatment) ~ "Biofilm"
+  ))
+
+# assumptions testing
+leveneTest(rate_loss ~ factor(medium), data = all_parts)
+
+# assumptions testing
+all_parts %>% 
+ ggqqplot("rate_loss") # good
+shapiro.test(all_parts$rate_loss) # normal, yay!
+hist(all_parts$rate_loss)
+
+t.test(rate_loss ~ medium, data = all_parts, var.equal = TRUE)
+
+all_parts %>% 
+  mutate(medium = fct_relevel(medium, "PW", "Biofilm")) %>% 
+  ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.05) +
+    theme_classic() +
+     scale_fill_manual(values = c("PW" = "white",
+                                  "Biofilm" = "darkgrey")) +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 6 Days") + 
+   scale_x_discrete (labels= c("PW" = "Pond water + MO",
+                              "Biofilm" = "AE Biofilm"))
 ```
