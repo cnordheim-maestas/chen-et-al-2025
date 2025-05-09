@@ -1,7 +1,7 @@
 ---
 title: "Amphibian data for biofilm MS"
 author: "Caitlin Nordheim-Maestas"
-format: pdf
+format: docx
 ---
 
 ```{r}
