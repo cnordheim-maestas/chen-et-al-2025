@@ -10,6 +10,9 @@ format: docx
 #     toc-location: left
 ---
 
+# Experiment 3: Assessment of AE biofilms’ inhibitory impact on Bd 
+
+
 # Load in data and libraries
 
 ```{r}
@@ -28,7 +31,9 @@ library(emmeans) # for pairwise comparisons, especially on mixed effects models 
 library(ggpubr) # for making ggqq plot
 library(patchwork) # for combining figures
 
+# import data for SFEB
 ns_biofilm_bd <- read.csv(here("data", "nine-sites-biofilm-on-Bd - Sheet1.csv"))
+# import data for SBNCOS
 fig_3b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fig3B.csv"))
 
 # Colors: these are from Paul Tol's colorblind friendly palette
@@ -78,51 +83,11 @@ eb_ae_bf_only <- eb_ae %>%
   #log bd qty
   mutate(log_qty = log(bd_qty))
 
+# export clean data
 write.csv(eb_ae_bf_only, "data/eb_ae_bf_only.csv", row.names = FALSE)
 ```
 
 ## EDA
-
-Renwei barplot
-
-```{r}
-eb_ae %>%
-ggplot(aes(y= bd_qty, x = site, fill=bd_location)) + 
-    geom_col() +
-    facet_grid(.~day)+
-  theme_classic()+
-  scale_fill_manual(values = c("lightgrey", "gray45" )) +
-    theme(axis.text.x = element_text(angle = 90),
-          legend.position = "bottom") + 
-    scale_y_log10() +
-    xlab("Site") +
-   ylab("Total Bd Quantity Per Well \n (zoospore equivalents)") 
-```
-
-```{r}
-# part2 <- eb_ae_bf_only %>%
-# ggplot(aes(y= bd_qty, x = day)) + 
-#     geom_boxplot(fill = no_microbes_.22_color) +
-#     geom_jitter(alpha = 0.3, width = 0.1) +
-#     theme_classic() +
-#   scale_y_log10() +
-#    theme(legend.position = "none",
-#          strip.text = element_text(face="bold"),
-#          axis.title = element_text(face = "bold")) + 
-#     xlab("Time (days)") +
-#     ylab("Bd Quantity \n (zoospore equivalents)") +
-#   scale_x_discrete (labels= c("Day_1" = "Day 1", "Day_7" = "Day 7"))
-# 
-# # Let's add significance letters
-# significance_data <- tibble(
-#  day = factor(c("Day_1", "Day_7"), levels = c("Day_1", "Day_7")),
-#   y_position = c(1.6e+05, 1.4e+04),  # Adjust this depending on your plot's scale
-#   label = c("a", "b"))
-# 
-# part2 + 
-# geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
-#             position = position_dodge(width = 0.75), vjust = 0) 
-```
 
 ## Stats and assumption testing
 
@@ -484,11 +449,12 @@ A two-way ANOVA revealed that there was a statistically significant difference i
 # \*PUBLICATION FIGURES
 
 ```{r}
+# set up custom theme
 myCustomTheme <- function() {
   theme_light() +
     theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 7, face = "bold", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
           title = element_text(size = 7, face = "bold", family = "Helvetica"),
           plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
           legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
@@ -496,6 +462,8 @@ myCustomTheme <- function() {
           # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
           # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
           axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          axis.ticks.x = element_line(color = "grey", size = 0.5),  # ensure bottom axis ticks
+          axis.ticks.y = element_line(color = "grey", size = 0.5),  # <- ensure side axis ticks
           strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
           strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
     )
@@ -507,16 +475,18 @@ myCustomTheme <- function() {
 3A: AE Biofilm 
 
 ```{r}
-fig_3a_boxplot <- eb_ae_bf_only  %>%
+fig_SFEB_biofilm_boxplot <- eb_ae_bf_only  %>%
 ggplot(aes(y= bd_qty, x = day)) + 
     geom_boxplot(fill = no_microbes_.22_color) +
     geom_jitter(alpha = 0.3, width = 0.05) +
     myCustomTheme() +
    # scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
   scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
-                  limits = c(1e+02, 1e+06)) + 
-    xlab("Day") +
-    ylab("Bd Quantity (ZE)") +
+                # update to consistent scale per reviewer request
+                  limits = c(1e+02, 1e+08),
+                breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) + 
+    xlab("Incubation of Bd with SFEB biofilms (day)") +
+    ylab("Bd quantity in adherent fraction (ZE/well)") +
   scale_x_discrete (labels= c("Day_1" = "1", "Day_7" = "7")) +
   
    theme(legend.position = "none",
@@ -530,64 +500,23 @@ significance_data <- tibble(
   y_position = c(1.6e+05, 1.4e+04),  # Adjust this depending on your plot's scale
   label = c("a", "b"))
 
-fig_3a <- fig_3a_boxplot + 
+fig_SFEB_biofilm <- fig_SFEB_biofilm_boxplot + 
 geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
             position = position_dodge(width = 0.75), vjust = 0, size = 7 / 2.85) # /2.85 to convert to the same "pt" text sizing the axes use
 
-#fig_3a
+#fig_SFEB_biofilm
 
-fig_3a <- fig_3a +
+fig_SFEB_biofilm <- fig_SFEB_biofilm +
   labs(tag = "A") +
   theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
     plot.tag.position = c(0, 1)
   )
 
-fig_3a
+fig_SFEB_biofilm
 
 # 3a alone
-ggsave("3a_updated.pdf", plot = fig_3a, width = 3.46, height = 3.46)
-```
-
-3A: AE Biofilm Renwei scale
-
-```{r}
-fig_3a_RS_boxplot <- eb_ae_bf_only  %>%
-ggplot(aes(y= bd_qty, x = day)) + 
-    geom_boxplot(fill = no_microbes_.22_color) +
-    geom_jitter(alpha = 0.3, width = 0.05) +
-    myCustomTheme() +
-   scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) + # Custom scientific notation
-  coord_cartesian(ylim = c(10, 1e8)) + # Set y-axis range from 10 to 10^8
-    xlab("Day") +
-    ylab("Bd Quantity (ZE)") +
-  scale_x_discrete (labels= c("Day_1" = "1", "Day_7" = "7")) +
-  
-   theme(legend.position = "none",
-        panel.border = element_blank(),
-        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
-        axis.line.y = element_line(color = "grey", size = 0.5))
-
-# Let's add significance letters
-significance_data <- tibble(
- day = factor(c("Day_1", "Day_7"), levels = c("Day_1", "Day_7")),
-  y_position = c(1.6e+05, 1.4e+04),  # Adjust this depending on your plot's scale
-  label = c("a", "b"))
-
-fig_3a_RS <- fig_3a_RS_boxplot + 
-geom_text(data = significance_data, aes(x = day, y = y_position, label = label),
-            position = position_dodge(width = 0.75), vjust = 0, size = 7 / 2.85) # /2.85 to convert to the same "pt" text sizing the axes use
-
-#fig_3a
-
-fig_3a_RS <- fig_3a_RS +
-  labs(tag = "A") +
-  theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
-  )
-
-fig_3a_RS
+ggsave("paper-figures/expt3-SFEB-biofilms_fig4a_updated.pdf", plot = fig_SFEB_biofilm, width = 3.46, height = 3.46)
 ```
 
 
@@ -595,7 +524,7 @@ fig_3a_RS
 
 ```{r}
 # add column for microbes or no
-fig_3b <- ae_summary %>%
+fig_SBNCOS_biofilm <- ae_summary %>%
   # reorder to match Renwei's plot
   mutate(sample_ID = factor(sample_ID,
                             levels = c("1%TB+AEbiofilm", "MQ+AEbiofilm",
@@ -604,13 +533,13 @@ fig_3b <- ae_summary %>%
   ggplot(aes(x = day_numeric,
            y = mean,
            color = sample_ID)) +
-  geom_point(size = 2) +
-  geom_errorbar(aes(ymin = mean - se, # plot the standard error
-                    ymax = mean + se),
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = mean - se, # standard error
+                    ymax = mean + se), # standard error
                 width = 0.1) +
   geom_line() + 
   
-  # Adding the raw data as a layer with jitter
+  # Adding the raw data as a layer with jitter, commented out bc Renwei didn't like it
   # geom_point(data = ae_noday0, 
   #            aes(x = day_numeric, 
   #                y = adh, 
@@ -633,21 +562,23 @@ fig_3b <- ae_summary %>%
   #            position = position_jitter(width = 0.1, seed = 1),
   #            alpha = 0.3) +
   
-  scale_y_log10(limits = c(1e3, 1e7),
-                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8),
-                labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}) +
+  ## update scale for reviewer
+  scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
+                # update to consistent scale per reviewer request
+                  limits = c(1e+02, 1e+08),
+                breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) + 
   # vibes
-  labs(x = "Day",
-       y = "Bd Quantity (ZE)",
+  labs(x = "Incubation of Bd with SBNCOS biofilms (day)",
+       y = "Bd quantity in adherent fraction (ZE/well)",
         color = "Medium with\nAE Biofilm")+ # Title for color legend
   
   scale_color_manual(values = c("1%TB+AEbiofilm"= "#4477AA",
                                 "MQ+AEbiofilm" = "#228833",
                                 #"Added Bd" = "darkgrey",
                                 "PW+AEBiofilm" = "#AA3377"),
-                    labels = c("1%TB+AEbiofilm" = "TB Broth",
-                               "MQ+AEbiofilm" = "MQ Water",
-                               "PW+AEBiofilm" = "Filtered\nPond Water",
+                    labels = c("1%TB+AEbiofilm" = "pond water + 1% TB",
+                               "MQ+AEbiofilm" = "MQ",
+                               "PW+AEBiofilm" = "pond water",
                                 "Added Bd" = "Initial Bd")) + # Custom labels
 
  myCustomTheme()+
@@ -663,41 +594,21 @@ fig_3b <- ae_summary %>%
         axis.line.y = element_line(color = "grey", size = 0.5)) +  # Keep the y-axis line) +  # Remove margins around legend
 guides(color = guide_legend(title = NULL))
 
-#fig_3b
+#fig_SBNCOS_biofilm
 
-fig_3b <- fig_3b +
+fig_SBNCOS_biofilm <- fig_SBNCOS_biofilm +
   labs(tag = "B") +
   theme(
-    plot.tag = element_text(family = "Helvetica", size = 7, hjust = -0.1, vjust = 1),
+    plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
     plot.tag.position = c(0, 1)
   )
 
-fig_3b
-```
+fig_SBNCOS_biofilm
 
-Fig 3 combined
-
-```{r}
-# Combine fig_2a and fig_2b side by side
-fig3 <- fig_3a + fig_3b + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
-  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
-
-#fig3
-#ggsave("3a_3b.png", plot = fig3, width = 14, height = 5, dpi = 1000)
-
-# 3a alone
-#ggsave("3a.pdf", plot = fig_3a, width = 3.46, height = 3.46)
-
-#ggsave("3a_RS.pdf", plot = fig_3a_RS, width = 3.46, height = 3.46)
-
-# 3b alone
-#ggsave("3b.pdf", plot = fig_3b, width = 3.46, height = 3.46)
+ggsave("paper-figures/expt3-SBNCOS-biofilms_fig4b_updated.pdf", plot = fig_SBNCOS_biofilm, width = 3.46, height = 3.46)
 ```
 
 # *SI figures and tables
-
-## 3B stats 2way anova
 
 ### anova table
 
@@ -778,7 +689,7 @@ aov_3b_tbl_b <- anova_output %>%
 aov_3b_tbl_b
 ```
 
-## cld 3b
+## cld
 
 ```{r}
 pairwise_cld_3b <- (cld_day_3b + cld_medium_3b) / cld_day_medium_3b +
@@ -850,7 +761,7 @@ ggsave("SI_3b_updated.pdf", plot = pairwise_cld_3b, width = 7.09, height = 3.46)
 ```
 
 
-## 3a raw data
+## raw data barplot
 
 ```{r}
 SI_3a <- eb_ae %>%
@@ -930,4 +841,24 @@ ph3b_table <- all_tukey_df %>%
     ),
     locations = cells_column_labels(everything()))
 ph3b_table
+```
+
+# Appendix
+
+Playing with figures
+
+Renwei barplot
+
+```{r}
+# eb_ae %>%
+# ggplot(aes(y= bd_qty, x = site, fill=bd_location)) + 
+#     geom_col() +
+#     facet_grid(.~day)+
+#   theme_classic()+
+#   scale_fill_manual(values = c("lightgrey", "gray45" )) +
+#     theme(axis.text.x = element_text(angle = 90),
+#           legend.position = "bottom") + 
+#     scale_y_log10() +
+#     xlab("Site") +
+#    ylab("Total Bd Quantity Per Well \n (zoospore equivalents)") 
 ```

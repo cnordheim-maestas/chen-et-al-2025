@@ -681,8 +681,8 @@ Custom theme
 myCustomTheme <- function() {
   theme_light() +
     theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 7,  family = "Helvetica", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 7,  family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
           title = element_text(size = 7, face = "bold", family = "Helvetica"),
           plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
           legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
@@ -712,7 +712,9 @@ fig_SFEB_microorganisms <- eb_pw %>%
   geom_jitter(width = 0.2, alpha = 0.3) +
   # scale_y_log10(labels = function(x) {gsub("e", "E", x = scales::scientific_format()(x))}) + # Custom scientific notation
   scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
-                  limits = c(1e+02, 1e+06)) + 
+                # update to consistent scale per reviewer request
+                  limits = c(1e+02, 1e+08),
+                breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) + 
   
     facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
                                                     "Day_7" = "Day 7")))+
