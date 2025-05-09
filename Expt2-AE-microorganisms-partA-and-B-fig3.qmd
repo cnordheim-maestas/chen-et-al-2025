@@ -8,7 +8,6 @@ format: docx
 #     toc: true
 #     code-fold: true
 #     toc-location: left
-## TEST THIS ONE IS THE RIGHT ONE
 ---
 
 Data wrangling and analysis the AE microrganisms in pond water experiment using the SFEB (San Francisco East Bay) water samples for part A (nicknamed "fifteen sites" in our lab) and the follow up experiment part B with SBNCOS (Santa Barbara North Campus Open Space) pond water samples. These are the data presented in Figure 3A and 3B in the manuscript, and information is under the section "Experiment 2: Assessment of AE microorganisms’ inhibitory effects on Bd growth". 
