@@ -1,0 +1,295 @@
+---
+title: "AE Microbes (Pond water) from SFEB (9 sites)"
+author: "Caitlin Nordheim-Maestas"
+#format: docx
+format:
+  html:
+    embed-resources: true
+    toc: true
+    code-fold: true
+    toc-location: left
+---
+
+Data wrangling and analysis the AE microbes in pond water experiment using the SFEB (San Francisco East Bay) water samples (nicknamed "fifteen sites" in our lab) and the follow up experiment with SBNCOS pond water samples. These are the data presented in Figure 3A and 3B in the manuscript, and information is under the section "Experiment 2: Assessment of AE microorganisms’ inhibitory effects on Bd growth". 
+
+**Statistical question**: Is there a difference in the **rate of gain or loss of Bd over 6 days** between the **filter sizes** looking at the **TOTAL Bd**
+
+# Load in data and libraries
+
+```{r}
+#| warning: false
+
+## read in and clean data
+library(tidyverse) # for cleaning and viewing data
+library(gt) # pretty stats tables
+library(broom) # cleaning for gt
+library(here) # for importing data
+library(car) # stats tests like Levene's
+library(Hmisc) # autocalculate stat summaries in ggplot
+library(multcomp) # stats
+library(nlme) # mixed effects models
+library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
+library(ggpubr) # for making ggqq plot
+library(patchwork) # for combining figures
+
+# load "East Bay" experiment data
+fs_pw_bd <- read.csv(here("data", "fifteen-sites-PW-on-Bd - Sheet1.csv"))
+
+# Colors: these are from Paul Tol's colorblind friendly palette
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
+
+# set up custom theme for figures (note figures may be redone in separate doc for journal specs)
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 12, face = "bold", family = "Times"),
+          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
+          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
+          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+          axis.ticks = element_blank() # Remove x and y axis ticks
+    )}
+```
+
+# Data Wrangling
+
+```{r}
+# make dataframe with only field data (milliq controls added into vis later)
+eb_pw <- fs_pw_bd %>% filter(site != "sterile MQ")
+
+# dataframe for controls for labeling plot
+eb_pw_controls <- fs_pw_bd %>% 
+  filter(site =="sterile MQ") %>% 
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+   mutate(day = case_when(
+    day == 1 ~ "Day_1",
+    day == 7 ~ "Day_7"))
+
+# data type cleaning
+eb_pw$bd_location <- factor(eb_pw$bd_location, levels = c("floating", "adherent"))
+eb_pw$filter <- factor(eb_pw$filter,
+                          levels = c("40um_filter", "0.22um_filter"))
+eb_pw$day <- factor(eb_pw$day, levels = c("1", "7"),
+                            labels = c("Day_1", "Day_7"))
+eb_pw$site <- factor(eb_pw$site,
+                          levels = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ"))
+
+# get the total difference across days by combining both "locations" (adherent and supernatant) of Bd then subtracting across days
+eb_pw_total_diff <- eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  # remove uneeded columns
+  subset(select = -c(adherent,floating)) %>% 
+
+# pivot wider to calculate the rate loss
+  pivot_wider(names_from = day, values_from = combined_bd) %>%
+  # calculate the rate loss by taking the log of each before subtracting
+  mutate(rate_loss = log(Day_1) - log(Day_7))
+
+# Split into 2 data frames one for 40 um filter and one for .22 um filter for later stats assumption checks
+eb_pw_total_diff_40um <- eb_pw_total_diff %>% 
+  filter(filter =="40um_filter")
+eb_pw_total_diff.22um <- eb_pw_total_diff%>% 
+  filter(filter =="0.22um_filter")
+```
+
+# EDA
+
+## Assumption testing for stats
+
+Question: Does the difference in Bd from day 1 to day 7 differ between the two filter types (40 and 0.22 um)?
+
+The samples are essentially paired by site, so a paired t-test is most appropriate
+
+$H0:μ_{difference in Bd}=0$
+
+Assumptions:
+
+Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
+
+Assumption testing:
+
+```{r}
+# check normality of the differences across groups
+
+# numeric check
+eb_pw_40um_shapiro.test <- shapiro.test(eb_pw_total_diff_40um$rate_loss) # normal, yay!
+eb_pw_0.22um_shapiro.test <- shapiro.test(eb_pw_total_diff.22um$rate_loss) # normal, yay!
+
+# visual check
+eb_pw_40um_qq <- eb_pw_total_diff_40um %>% 
+  ggqqplot("rate_loss", title = "40 um") # normal, yay!
+
+# Histogram using ggplot2
+eb_pw_40um_hist <- eb_pw_total_diff_40um %>% 
+  ggplot(aes(x = rate_loss)) +
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "40 um") # good enough, especially with confirmed shapiro and qq
+
+# visual check
+eb_pw_0.22um_qq <- eb_pw_total_diff.22um %>% 
+  ggqqplot("rate_loss", title = "0.22 um") # normal, yay!
+
+# Histogram using ggplot2
+eb_pw_0.22um_hist <- eb_pw_total_diff.22um %>% 
+  ggplot(aes(x = rate_loss)) +
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "0.22 um") # good enough, especially with confirmed shapiro and qq
+
+# show all assumption testing visualizations together
+eb_pw_40um_qq + eb_pw_40um_hist + eb_pw_0.22um_qq + eb_pw_0.22um_hist
+
+# print shapiro test results
+eb_pw_40um_shapiro.test
+eb_pw_0.22um_shapiro.test
+```
+
+The data for the 40um filter is normally distributed (Shapiro-Wilk test, W = `r round(eb_pw_40um_shapiro.test$statistic, 5)`, p = `r round(eb_pw_40um_shapiro.test$p.value, 4)`), and so is the data for the 0.22 filter (Shapiro-Wilk test, W = `r round(eb_pw_0.22um_shapiro.test$statistic, 5)`, p = `r round(eb_pw_0.22um_shapiro.test$p.value, 4)`).
+
+# Stats
+
+```{r}
+# Run the paired t-test on the difference across the 6 days
+eb_pw_paired_ttest_result <- t.test(eb_pw_total_diff_40um$rate_loss, eb_pw_total_diff.22um$rate_loss, paired = TRUE)
+
+# print the result
+eb_pw_paired_ttest_result
+```
+
+**There is a significant difference in the change in the total quantity of Bd from Day 1 to Day 7 across the filter types (t = `r eb_pw_paired_ttest_result$statistic`, df = `r eb_pw_paired_ttest_result$parameter`, p-value = `r eb_pw_paired_ttest_result$p.value`)**
+
+The t-value is positive, which shows that the first item entered (with microbes) has a larger loss of Bd than the second item entered (no microbes.) Df of 14 is expected, because it's 15 sites.
+
+## First draft of figure 3A
+
+Note this will be recreated in "publication-figs" quarto document
+
+```{r}
+fig_2a <- eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+  
+  # create the plot
+  ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
+    geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+    scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7")))+
+  
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    myCustomTheme() +
+   theme(legend.position = "none",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+  scale_x_discrete (labels= c("40um_filter" = "+ AE Microbes", "0.22um_filter" = "- AE Microbes")) +
+    xlab("Presence of Microbes in Pond Water") +
+    ylab("Bd Quantity (ZE)") +
+  
+  # add controls ad x's
+  geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
+```
+
+```{r}
+# # Convert factor day to numeric while preserving original values
+# pw_noday0$day <- as.numeric(as.character(pw_noday0$day))
+# 
+# fig2B <- pw_summary %>% 
+#   # reorder to match Renwei's plot
+#   mutate(sample_ID = factor(sample_ID, 
+#                             levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
+#   mutate(day = as.numeric(day)) %>%  
+#   ggplot(aes(x = day, 
+#              y = mean, 
+#              color = sample_ID)) +
+#   geom_point(size = 2) +
+#   geom_errorbar(aes(ymin = mean - se, # plot the standard error
+#                     ymax = mean + se),
+#                 width = 0.1) +
+# 
+#   # Adding the raw data as a layer with jitter
+#   geom_point(data = pw_noday0, 
+#              aes(x = day, 
+#                  y = adh_plus_sup, 
+#                  color = sample_ID),  # Raw data points
+#              position = position_jitter(width = 0.1, seed = 1),
+#              alpha = 0.3) +
+#   # add control raw data too
+#   geom_point(data = pw_control_data, 
+#              aes(x = day, 
+#                  y = adh_plus_sup, 
+#                  color = "#BBBBBB"),  # Raw data points
+#              position = position_jitter(width = 0.1, seed = 1),
+#              alpha = 0.3) +
+#   
+#   scale_y_log10(limits = c(1e3, 1e8), 
+#                 breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
+#   labs(x = "Day",
+#        y = "Bd Quantity (ZE)",
+#        color = "Medium",       # Title for color legend
+#        linetype = "Microbes\nPresent"  # Title for linetype legend
+#        ) +
+#   scale_color_manual(values = c("1%TB" = "#CCBB44", 
+#                                 "MQ" = "#228833", 
+#                                 "1%TB+PW+microorganism" = "#4477AA", 
+#                                 "PW+microorganism" = "#EE6677", 
+#                                 "1%TB+PW-microorganism" = "#66CCEE",
+#                                 #"Added Bd" = "#BBBBBB" # removed bc not really a medium
+#                                 "PW-microorganism" = "#AA3377"),  
+#                     labels = c("1%TB" = "TB",
+#                                 "MQ" = "MQ",
+#                                 "1%TB+PW+microorganism" = "TB + PW + MO",
+#                                 "PW+microorganism" = "PW + MO",
+#                                 "1%TB+PW-microorganism" = "TB + PW - MO",
+#                                 "PW-microorganism" = "PW - MO",
+#                                 "Added Bd" = "Initial Bd")) + # Custom labels for the color legend
+#   
+#     geom_line(aes(linetype = microbes)) + 
+#   scale_linetype_manual(values = c("n" = "dashed", 
+#                                    "y" = "solid"),
+#                         labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
+#  myCustomTheme()+
+#   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
+#                    labels = c("Initial\nBd", "1", "3", "5", "7")) +
+#   theme(legend.position = "right",
+#         panel.grid.major.y = element_line(color = "grey"), # Add major y grid lines
+#         panel.border = element_blank())
+```
+
+# SI Figure S2 first draft
+
+Note this will be recreated in "publication-figs" quarto document
+
+```{r}
+# Barplot showing each of the SFEB sites separately, will be in supplement
+eb_pw %>%
+  # combine floating and adherent for total_Bd
+  pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+  mutate(combined_bd = adherent + floating) %>% 
+ggplot(aes(y= combined_bd, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) +
+  scale_y_log10() +
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
+                                                    "Day_7" = "Day 7"))) +
+  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+                                "0.22um_filter" = no_microbes_.22_color)) +
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) + 
+    xlab("Site") +
+    ylab("Bd Quantity \n (zoospore equivalents)") +
+  guides(fill=guide_legend(title=""))
+```

@@ -45,7 +45,7 @@ ns_ml_pw_bd <- read.csv(here("data", "nine-sites-PW-on-MLBd - Sheet1.csv")) %>%
   filter(site != "NORTH")
 ```
 
-# Fig 2A: water microbes
+# Fig 3A: water microbes
 
 ```{r}
 # remove controls
@@ -125,7 +125,7 @@ fig_2a <- partI %>%
 fig_2a
 ```
 
-# Fig 2B: water microbes
+# Fig 3B: water microbes
 
 ```{r}
 ## 2B
@@ -215,20 +215,8 @@ fig_2b <- pw_summary %>%
   
 fig_2b
 ```
-# Fig 2 combined
 
-```{r}
-# Combine fig_2a and fig_2b side by side
-fig2 <- fig_2a + fig_2b + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
-  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
-
-fig2
-
-#ggsave("2a_2b.png", plot = fig2, width = 14, height = 5, dpi = 1000)
-```
-
-# Fig 3A: AE Biofilm 
+# Fig 4A: AE Biofilm 
 
 ```{r}
 part_two <- ns_biofilm_bd
@@ -274,7 +262,7 @@ fig_3a
 ```
 
 
-# Fig 3B: AE Biofilm 
+# Fig 4B: AE Biofilm 
 
 ```{r}
 ## aquatic environmental biofilm (4b but I think its supposed to be 3b)
@@ -343,20 +331,8 @@ fig_3b <- ae_summary %>%
 
 fig_3b
 ```
-# Fig 3 combined
 
-```{r}
-# Combine fig_2a and fig_2b side by side
-fig3 <- fig_3a + fig_3b + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
-  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
-
-fig3
-
-ggsave("3a_3b.png", plot = fig3, width = 14, height = 5, dpi = 1000)
-```
-
-# Fig 4A: Monolayer biofilm
+# Fig 6A: Monolayer biofilm
 
 ```{r}
 part_three <- ns_ml_pw_bd %>% 
@@ -425,7 +401,7 @@ geom_point(data = partIII_controls, aes(x = filter, y = combined_bd), shape = 4,
 fig_4a
 ```
 
-# Fig 4B: Monolayer biofilm
+# Fig 6B: Monolayer biofilm
 
 ```{r}
 ## Monolayer (3b but I think its supposed tobe 4b)
@@ -507,15 +483,4 @@ fig_4b <- monolayer_summary %>%
 fig_4b
 ```
 
-# Fig 4 combined
 
-```{r}
-# Combine fig_2a and fig_2b side by side
-fig4 <- fig_4a + fig_4b + 
-  plot_layout(widths = c(1, 1)) +   # Ensure equal widths for both plots
-  plot_annotation(tag_levels = 'A')  # Adds "A" and "B" to the upper corners
-
-fig4
-
-#ggsave("4a_4b.png", plot = fig4, width = 14, height = 5, dpi = 1000)
-```
