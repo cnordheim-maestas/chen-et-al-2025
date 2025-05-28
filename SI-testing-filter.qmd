@@ -172,135 +172,48 @@ zoom
 ```
 
 ### combine
-```{r}
-library(cowplot)
-
-
-od600_inset <- ggdraw() +
-  draw_plot(od600) +  # base plot
-  draw_plot(zoom, x = 0.55, y = 0.45, width = 0.4, height = 0.4)  # inset location and size
-
-od600_inset
-
-```
 
 ```{r}
-od600_inset <- ggdraw() +
-  draw_plot(od600) +
-  draw_plot(zoom, x = 0.55, y = 0.45, width = 0.4, height = 0.4) +
-  draw_plot_label(label = "Zoom", x = 0.94, y = 0.85, size = 10)  # optional label
-
-od600_inset 
-```
-
-```{r}
-library(patchwork)
-od600_side_by_side <- od600 + zoom +
-  plot_layout(widths = c(3, 1), guides = "collect") & 
-  theme(legend.position = "right")
-
-od600_side_by_side
-```
-
-```{r}
-spacer <- ggplot() + theme_void()
-
-# remove legends
-od600_nolegend <- od600 + theme(legend.position = "none")
-zoom_nolegend <- zoom + theme(legend.position = "none")
-
-# create bottom-right aligned zoom (adjust y if needed)
-zoom_bottom_right <- ggdraw() +
-  draw_plot(zoom_nolegend, x = 0, y = -0.15, width = 1, height = 0.5)
-
-# combine: add a spacer between the plots
-combined <- plot_grid(
-  od600_nolegend,
-  spacer,
-  zoom_bottom_right,
-  nrow = 1,
-  rel_widths = c(1.5, 0.2, 1),  # control spacing: second number is the gap
-  align = "h",
-  axis = "tb"
-)
-
-combined
-
-
-
-
-# save the final figure
-#ggsave("/SI_od600_zoom_bottom_right.pdf", combined, width = 5.5, height = 3.46)
-
-
-```
-
-```{r}
-# put legend only on od600 and move it to the upper right corner inside the plot
+# main plot with legend inside upper right corner
 od600_legend_topright <- od600 + 
   theme(
-    legend.position = c(1.6, 0.98),  # near top right inside the plot area
-    legend.justification = c("right", "top"),  # anchor the position
+    legend.position = c(1.6, 0.98),  # inside top-right of the full layout
+    legend.justification = c("right", "top"),
     legend.background = element_rect(fill = "white", color = NA),
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 12)
   )
 
-# remove legend from zoom
+# zoom plot without legend
 zoom_nolegend <- zoom + theme(legend.position = "none")
 
-# zoom placement
+# inset zoom in bottom right
 zoom_bottom_right <- ggdraw() +
   draw_plot(zoom_nolegend, x = 0, y = -0.15, width = 1, height = 0.5)
 
 # blank spacer
 spacer <- ggplot() + theme_void()
 
-# combine
-combined <- plot_grid(
-  od600_legend_topright,
-  spacer,
-  zoom_bottom_right,
-  nrow = 1,
-  rel_widths = c(1.5, 0.2, 1),
-  align = "h",
-  axis = "tb"
-)
-
-combined
-
-```
-
-```{r}
-library(cowplot)
-
-# 1. remove legends
-od600_nolegend <- od600 + theme(legend.position = "none")
-zoom_nolegend <- zoom + theme(legend.position = "none")
-
-# 2. inset the zoom in the bottom right
-zoom_bottom_right <- ggdraw() +
-  draw_plot(zoom_nolegend, x = 0, y = -0.25, width = 1, height = 0.5)
-
-# 3. spacer (blank space between plots)
-spacer <- ggplot() + theme_void()
-
-# 4. build the side-by-side plot
+# combine to make base plot
 base_plot <- plot_grid(
-  od600_nolegend,
-  spacer,
-  zoom_bottom_right,
+  od600_legend_topright, # plot on left all data
+  spacer, # spacer of blank space
+  zoom_bottom_right, # zoomed in inset
   nrow = 1,
-  rel_widths = c(1.5, 0.2, 1),
+  rel_widths = c(1.5, 0.2, 1), # relative widths in final
   align = "h",
   axis = "tb"
 )
 
-# 5. overlay connecting diagonal lines
-ggdraw(base_plot) +
-  # line 1: from lower-right of main plot to top-left of zoom
+# draw inset lines
+final_plot <- ggdraw(base_plot) +
   draw_line(x = c(0.54, 0.63), y = c(0.19, 0.28), color = "black", size = 0.4) +
-  # line 2: from just to the left of that point to top-right of zoom
   draw_line(x = c(0.54, 0.63), y = c(0.18, 0.10), color = "black", size = 0.4)
+
+final_plot
+
+# optional save
+#ggsave("paper-figures/SI_od600_with_inset.pdf", final_plot, width = 7, height = 4.2)
+
 ```
 
