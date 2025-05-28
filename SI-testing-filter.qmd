@@ -1,0 +1,306 @@
+---
+title: "Testing the filter experiment"
+author: "Caitlin Nordheim-Maestas"
+format: docx
+# format:
+#   html:
+#     embed-resources: true
+#     toc: true
+#     code-fold: true
+#     toc-location: left
+---
+
+# Testing filter for response to reviewers
+
+I am attaching the raw OD₆₀₀ data. The suffixes -1, -2, -3, and -4 indicate four replicate measurements from the same culture. Some values are negative because all readings were blank-corrected using 1% tryptone broth (a common practice for this type of data).
+I would like to generate two panels:
+One showing both 40 µm and 0.22 µm filtration data.
+Another showing only the 0.22 µm data with a magnified view for better visualization.
+
+```{r}
+#| warning: false
+
+## read in and clean data
+library(tidyverse) # for cleaning and viewing data
+library(gt) # pretty stats tables
+library(broom) # cleaning for gt
+library(here) # for importing data
+library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
+library(ggpubr) # for making ggqq plot
+library(patchwork) # for combining figures
+
+# data
+# SFEB
+od <- read.csv(here("data", "OD600_pondwater_May2025.csv"))
+
+# Colors: these are from Paul Tol's colorblind friendly palette
+with_microbes_40_color <- "#999933"
+no_microbes_.22_color <- "#88ccee"
+
+# set up custom theme
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 12, face = "bold", family = "Times"),
+          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
+          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
+          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+          axis.ticks = element_blank() # Remove x and y axis ticks
+    )}
+```
+
+
+## Data clean
+
+```{r}
+# Get only rows with data
+od_clean <- od %>%
+  filter(Day.0 != "", # where the first column which was autoassigned Day.0 is not blank
+         !str_detect(Day.0, "Day")) %>% # remove rows where in that column it has the word "day" as those are redundant column headers
+  select(1:9) %>% # keep only first 9 columns (the rest are blank)
+  rename(site = Day.0) %>% # rename the first column since it actually has site info
+  mutate(across(-site, as.numeric)) %>%  # make everything numeric except site
+ mutate(day = rep(0:4, each = 3)) %>% # add column for day, first 3 rows are 0, next 3 are 1 etc until 4
+  relocate(day, .before = site)  # move day column before site
+
+# make it long with a column for filter type and replicate and a column for the od 600 data
+od_dat <- od_clean %>%
+  pivot_longer(
+    cols = starts_with("X"), # all columns that start with "X"
+    names_to = "filter_rep", # name of new column holding original column names
+    values_to = "od_600")  %>% # name of new column with values
+    mutate(
+    filter = case_when(
+      str_detect(filter_rep, "40") ~ "forty_um",
+      str_detect(filter_rep, "0.22") ~ "zero_point_22_um",
+      TRUE ~ NA_character_)) %>% 
+    mutate(rep = str_sub(filter_rep, -1)) %>%  # take last number and make it replicate num
+  select(-filter_rep) %>% 
+    relocate(od_600, .after = last_col())
+```
+
+## Data vis
+
+### 
+
+```{r}
+od_summary <- od_dat %>%
+  group_by(day, site, filter) %>%
+  summarise(
+    mean_od = mean(od_600, na.rm = TRUE),
+    se_od = sd(od_600, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"
+  )
+
+od600 <- ggplot(od_summary, aes(x = day, y = mean_od, color = site, linetype = filter)) +
+  geom_point(size = 2) +
+  geom_line(aes(group = interaction(site, filter))) +
+  geom_errorbar(aes(ymin = mean_od - se_od, ymax = mean_od + se_od), width = 0.1) +
+  labs(
+    x = "Culture duration (days)",
+    y = "OD 600",
+    color = "Site",
+    linetype = "Filter"
+  ) +
+scale_color_manual(
+  values = c("NCOS" = "#0077bb", "Cabin" = "#ee7733", "Gramps" = "#009988"), 
+  labels = c("NCOS" = "SBNCOS", "Cabin" = "Cabin", "Gramps" = "Gramps")
+) +
+  myCustomTheme() +
+  scale_y_continuous(breaks = seq(-0.1, 1, by = 0.1)) +
+   theme(
+    panel.grid.major.x = element_blank(),     # remove vertical lines
+    panel.grid.minor.x = element_blank(),     # remove minor verticals
+    panel.grid.major.y = element_line(color = "gray80"),  # keep horizontal lines
+    panel.grid.minor.y = element_blank()      # optional: hide minor y-lines
+  ) +
+    scale_linetype_manual(
+    values = c("forty_um" = "solid", "zero_point_22_um" = "dashed"),
+    labels = c("forty_um" = "40 µm", "zero_point_22_um" = "0.22 µm")
+  )
+
+od600
+```
+
+## save
+
+```{r}
+ggsave("paper-figures/SI_od600.pdf", plot = od600, width = 3.46, height = 3.46)
+```
+
+### zoom in on 0.22 filter
+
+```{r}
+zoom <- od_summary %>% 
+  filter(filter == "zero_point_22_um") %>%
+  ggplot(aes(x = day, y = mean_od, color = site, linetype = filter)) +
+  geom_point(size = 2) +
+  geom_line(aes(group = interaction(site, filter))) +
+  geom_errorbar(aes(ymin = mean_od - se_od, ymax = mean_od + se_od, linetype = NULL), width = 0.1) +
+  labs(
+    x = "Culture duration (days)",
+    y = NULL,
+    color = NULL,
+    linetype = "Filter"
+  ) +
+scale_color_manual(
+  values = c("NCOS" = "#0077bb", "Cabin" = "#ee7733", "Gramps" = "#009988"), 
+  labels = c("NCOS" = "SBNCOS", "Cabin" = "Cabin", "Gramps" = "Gramps")
+) +
+  myCustomTheme() +
+scale_y_continuous(limits = c(-0.005, 0.015), breaks = seq(-0.005, 0.015, by = 0.005)) +
+   theme(
+    panel.grid.major.x = element_blank(),     # remove vertical lines
+    panel.grid.minor.x = element_blank(),     # remove minor verticals
+    panel.grid.major.y = element_line(color = "gray80"),  # keep horizontal lines
+    panel.grid.minor.y = element_blank()      # optional: hide minor y-lines
+  ) +
+    scale_linetype_manual(
+    values = c("forty_um" = "solid", "zero_point_22_um" = "dashed"),
+    labels = c("forty_um" = "40 µm", "zero_point_22_um" = "0.22 µm")
+  ) + 
+  theme(legend.position = "none") 
+
+zoom
+```
+
+### combine
+```{r}
+library(cowplot)
+
+
+od600_inset <- ggdraw() +
+  draw_plot(od600) +  # base plot
+  draw_plot(zoom, x = 0.55, y = 0.45, width = 0.4, height = 0.4)  # inset location and size
+
+od600_inset
+
+```
+
+```{r}
+od600_inset <- ggdraw() +
+  draw_plot(od600) +
+  draw_plot(zoom, x = 0.55, y = 0.45, width = 0.4, height = 0.4) +
+  draw_plot_label(label = "Zoom", x = 0.94, y = 0.85, size = 10)  # optional label
+
+od600_inset 
+```
+
+```{r}
+library(patchwork)
+od600_side_by_side <- od600 + zoom +
+  plot_layout(widths = c(3, 1), guides = "collect") & 
+  theme(legend.position = "right")
+
+od600_side_by_side
+```
+
+```{r}
+spacer <- ggplot() + theme_void()
+
+# remove legends
+od600_nolegend <- od600 + theme(legend.position = "none")
+zoom_nolegend <- zoom + theme(legend.position = "none")
+
+# create bottom-right aligned zoom (adjust y if needed)
+zoom_bottom_right <- ggdraw() +
+  draw_plot(zoom_nolegend, x = 0, y = -0.15, width = 1, height = 0.5)
+
+# combine: add a spacer between the plots
+combined <- plot_grid(
+  od600_nolegend,
+  spacer,
+  zoom_bottom_right,
+  nrow = 1,
+  rel_widths = c(1.5, 0.2, 1),  # control spacing: second number is the gap
+  align = "h",
+  axis = "tb"
+)
+
+combined
+
+
+
+
+# save the final figure
+#ggsave("/SI_od600_zoom_bottom_right.pdf", combined, width = 5.5, height = 3.46)
+
+
+```
+
+```{r}
+# put legend only on od600 and move it to the upper right corner inside the plot
+od600_legend_topright <- od600 + 
+  theme(
+    legend.position = c(1.6, 0.98),  # near top right inside the plot area
+    legend.justification = c("right", "top"),  # anchor the position
+    legend.background = element_rect(fill = "white", color = NA),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12)
+  )
+
+# remove legend from zoom
+zoom_nolegend <- zoom + theme(legend.position = "none")
+
+# zoom placement
+zoom_bottom_right <- ggdraw() +
+  draw_plot(zoom_nolegend, x = 0, y = -0.15, width = 1, height = 0.5)
+
+# blank spacer
+spacer <- ggplot() + theme_void()
+
+# combine
+combined <- plot_grid(
+  od600_legend_topright,
+  spacer,
+  zoom_bottom_right,
+  nrow = 1,
+  rel_widths = c(1.5, 0.2, 1),
+  align = "h",
+  axis = "tb"
+)
+
+combined
+
+```
+
+```{r}
+library(cowplot)
+
+# 1. remove legends
+od600_nolegend <- od600 + theme(legend.position = "none")
+zoom_nolegend <- zoom + theme(legend.position = "none")
+
+# 2. inset the zoom in the bottom right
+zoom_bottom_right <- ggdraw() +
+  draw_plot(zoom_nolegend, x = 0, y = -0.25, width = 1, height = 0.5)
+
+# 3. spacer (blank space between plots)
+spacer <- ggplot() + theme_void()
+
+# 4. build the side-by-side plot
+base_plot <- plot_grid(
+  od600_nolegend,
+  spacer,
+  zoom_bottom_right,
+  nrow = 1,
+  rel_widths = c(1.5, 0.2, 1),
+  align = "h",
+  axis = "tb"
+)
+
+# 5. overlay connecting diagonal lines
+ggdraw(base_plot) +
+  # line 1: from lower-right of main plot to top-left of zoom
+  draw_line(x = c(0.54, 0.63), y = c(0.19, 0.28), color = "black", size = 0.4) +
+  # line 2: from just to the left of that point to top-right of zoom
+  draw_line(x = c(0.54, 0.63), y = c(0.18, 0.10), color = "black", size = 0.4)
+```
+
