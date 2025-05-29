@@ -176,8 +176,8 @@ od600_legend_topright <- od600 +
     legend.position = c(1.6, 0.98),  # inside top-right of the full layout
     legend.justification = c("right", "top"),
     legend.background = element_rect(fill = "white", color = NA),
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 10)
+    legend.title = element_text(size = 12, face = "plain"),
+    legend.text = element_text(size = 10, face = "plain")
   )
 
 # zoom plot without legend
