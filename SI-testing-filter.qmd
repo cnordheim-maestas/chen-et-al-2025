@@ -33,27 +33,25 @@ library(patchwork) # for combining figures
 # SFEB
 od <- read.csv(here("data", "OD600_pondwater_May2025.csv"))
 
-# Colors: these are from Paul Tol's colorblind friendly palette
-with_microbes_40_color <- "#999933"
-no_microbes_.22_color <- "#88ccee"
-
 # set up custom theme
 myCustomTheme <- function() {
   theme_light() +
-    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
-          title = element_text(size = 12, face = "bold", family = "Times"),
-          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
-          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
-          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
-          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
-          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
-          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
-          axis.ticks = element_blank() # Remove x and y axis ticks
-    )}
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 12, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 12,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 7, face = "bold", family = "Helvetica"),
+          plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
+          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
+          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
+          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
+          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
+          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          axis.ticks.x = element_line(color = "grey", size = 0.5),  # ensure bottom axis ticks
+          axis.ticks.y = element_line(color = "grey", size = 0.5),  # <- ensure side axis ticks
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
+    )
+}
 ```
 
 
@@ -87,8 +85,6 @@ od_dat <- od_clean %>%
 ```
 
 ## Data vis
-
-### 
 
 ```{r}
 od_summary <- od_dat %>%
@@ -157,10 +153,10 @@ scale_color_manual(
   myCustomTheme() +
 scale_y_continuous(limits = c(-0.005, 0.015), breaks = seq(-0.005, 0.015, by = 0.005)) +
    theme(
-    panel.grid.major.x = element_blank(),     # remove vertical lines
-    panel.grid.minor.x = element_blank(),     # remove minor verticals
-    panel.grid.major.y = element_line(color = "gray80"),  # keep horizontal lines
-    panel.grid.minor.y = element_blank()      # optional: hide minor y-lines
+    panel.grid.major.x = element_blank(), # remove vertical lines
+    panel.grid.minor.x = element_blank(), # remove minor verticals
+    panel.grid.major.y = element_line(color = "gray80"), # keep horizontal lines
+    panel.grid.minor.y = element_blank()  # optional: hide minor y-lines
   ) +
     scale_linetype_manual(
     values = c("forty_um" = "solid", "zero_point_22_um" = "dashed"),
@@ -181,7 +177,7 @@ od600_legend_topright <- od600 +
     legend.justification = c("right", "top"),
     legend.background = element_rect(fill = "white", color = NA),
     legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12)
+    legend.text = element_text(size = 10)
   )
 
 # zoom plot without legend
@@ -213,7 +209,7 @@ final_plot <- ggdraw(base_plot) +
 final_plot
 
 # optional save
-#ggsave("paper-figures/SI_od600_with_inset.pdf", final_plot, width = 7, height = 4.2)
+ggsave("paper-figures/SI_od600_with_inset.pdf", final_plot, width = 7, height = 4.2)
 
 ```
 
