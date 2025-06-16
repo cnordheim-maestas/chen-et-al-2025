@@ -71,15 +71,16 @@ ves_long <- ves_may %>%
     cols = c(RACA, RADR, BUBO, PSRE, TAXX),
     names_to = "amphibian_spp",
     values_to = "ves_count") %>% 
-   filter(ves_count != 0)  # drop 0s
+   filter(ves_count != 0) %>%  # drop 0s
+  add_row(code = "NCOS", temp = NA, amphibian_spp = "PSRE", ves_count = NA) # add a row for NCOS so it will left join
 
 # add to swab data
-bd_ves <- swab_summary %>%
-  left_join(ves_long, by = c("code", "amphibian_spp"))
+bd_ves <- ves_long %>%
+  left_join(swab_summary, by = c("code", "amphibian_spp")) %>% 
+  mutate(date = case_when(
+    code == "PRPND004" ~ "5/8/22",
+    TRUE ~ date))
 ```
-
-
-
 
 # Table
 
@@ -131,82 +132,40 @@ table
 gtsave(table, "amphib_table.pdf", vwidth = 1600, vheight = 1000)
 ```
 
-### summary sentence
-
-Note - no frogs caught at P4, but I guess we saw a toad in the VES
+# Summary sentence
 
 ```{r}
+# how many sites are there samples in SFEB
 n_total_sites <- ves_may %>%
   distinct(site_code) %>%
-  nrow()
+  nrow() # should be 9
 
-n_sites_with_swabs <- swab_summary %>%
+# how many sites had observed frogs
+n_sites_frogs_observed <- bd_ves %>%
+  filter(code != "NCOS") %>%
+  filter(!is.na(count)) %>%
   distinct(code) %>%
-  nrow()
+  nrow() # should be 9
 
-percent_sites_with_swabs <- round(100 * n_sites_with_swabs / n_total_sites, 1)
+# percent of sites with frogs
+percent_sites_with_frogs <- round(100 * n_sites_frogs_observed / n_total_sites, 1)
 
-total_frogs <- sum(swab_summary2$n_frogs, na.rm = TRUE)
-total_bd_pos <- sum(swab_summary2$bd_positive, na.rm = TRUE)
+# bd prevalence data
+total_frogs <- sum(eb_summary$n_frogs, na.rm = TRUE)
+total_bd_pos <- sum(eb_summary$bd_positive, na.rm = TRUE)
 overall_prevalence <- round(100 * total_bd_pos / total_frogs, 1)
 
+# print the statement
 glue::glue(
-  "Amphibians were caught at {percent_sites_with_swabs}% of SFEB sites in May 2022, ",
-  "and Bd was detected on frogs with an overall prevalence of {overall_prevalence}% (n = {total_frogs} amphibians)."
-)
+  "Amphibians were found at {percent_sites_with_frogs}% of SFEB sites in May 2022, ",
+  "and Bd was detected on frogs with an overall prevalence of {overall_prevalence}% (n = {total_frogs} amphibians).")
 
-glue::glue(
-  "Amphibians were found at 100% of SFEB sites in May 2022, ",
-  "and Bd was detected on frogs with an overall prevalence of {overall_prevalence}% (n = {total_frogs} amphibians)."
-)
-```
-
-```{r}
-n_total_sites <- ves_may %>%
-  distinct(site_code) %>%
-  nrow()
-
-
-n_sites_with_frogs <- ves_may %>%
-  mutate(taxx_juvenile = as.numeric(taxx_juvenile)) %>%
-  rowwise() %>%
-  mutate(total_frogs = sum(c_across(raca_adult:taxx_juvenile), na.rm = TRUE)) %>%
-  ungroup() %>%
-  filter(total_frogs > 0) %>%
-  nrow()
-
-
-percent_sites_with_frogs <- round(100 * n_sites_with_frogs / n_total_sites, 1)
-
-```
-
-
-# Appendix
-
-```{r}
-ncos <- tibble(
-  sample_id        = paste0("idr_", 1228:1233),
-  sampling_id      = "May_22",
-  sample_type      = "swab",
-  code             = "NCOS",
-  property         = "North Campus Open Space",
-  date             = "2/3/21",
-  amphibian_spp    = "PSRE",
-  amphibian_svl    = c(31, 33, 28, 33, 34, 34),
-  amphibian_weight = c(2, 3, 1.5, 2, 2.5, 3.5),
-  amphibian_sex    = c("male", "male", NA, "male", "male", "male"),
-  amphibian_age    = c("adult", "adult", "juvenile", "adult", "adult", "adult"),
-  amphibian_notes  = NA_character_,
-  pcr_ct           = c(NA, NA, NA, NA, 28.24, NA),
-  pcr_qty          = c(NA, NA, NA, NA, 9.14, NA),
-  pcr_ipc_ct       = NA_real_,
-  pcr_inhibited    = 0,
-  infected         = c(0, 0, 0, 0, 1, 0),
-  zsp_eq           = c(NA, NA, NA, NA, 731.15, NA),
-  vernal           = 0
-)
-
-write_csv(ncos, "ncos_data.csv")
-
+# if we want to say number of sites where amphibians were CAUGHT (not what was asked)
+# n_sites_with_swabs <- eb_summary %>%
+#   group_by(code) %>%
+#   distinct(code) %>%
+#   nrow()
+# 
+# percent_sites_with_swabs <- round(100 * n_sites_with_swabs / n_total_sites, 1)
 ```
 
