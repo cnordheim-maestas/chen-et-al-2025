@@ -4,306 +4,133 @@ author: "Caitlin Nordheim-Maestas"
 format: docx
 ---
 
+Goal: Make table of amphibian abundance, Bd prevalence per site per species for supplementary materials & calculate xx % of sites had frogs at the time, and the fraction of frogs we detected Bd on for the main paper
+
+# Load libraries & data
+
 ```{r}
 #| warning: false
 #| message: false
 
 library(tidyverse) # for cleaning and viewing data
 library(gt) # pretty stats tables
-library(broom) # cleaning for gt
+library(broom) # cleaning for gt function
 library(here) # for importing data
 library(lubridate) # for date cleaning and use
-```
 
-# Swabs
-
-```{r}
 # import wrangled data
 swab_may22 <- read.csv(here("amphib-data", "swab_may2022_ninesites.csv"))
-swab_mj <- read.csv(here("amphib-data", "swab_mar-jun22_filtered.csv"))
-
-# #wrangle data that match our sampling
-
-# swab_may22 <- read.csv(here("amphib-data", "allmonths_swabs_updated 2024-10-28.csv")) %>%
-#   filter(code %in% c(
-#     "CABIN", "WEST", "GRAMPS",
-#     "GDPND005", "GDPND009", "GDPND006",
-#     "PRPND004", "PRPND009", "PRPND010"
-#   )) %>%
-#      filter(sampling_id %in% c(
-#      "May_22"
-#    ))
-# write.csv(swab_may22, "swab_may2022_ninesites.csv", row.names = FALSE)
-# 
-# 
-# swab_mj <- read.csv(here("amphib-data", "allmonths_swabs_updated 2024-10-28.csv")) %>%
-#   filter(code %in% c(
-#     "CABIN", "WEST", "GRAMPS",
-#      "GDPND005", "GDPND009", "GDPND006",
-#     "PRPND004", "PRPND009", "PRPND010"
-#   )) %>%
-#     filter(sampling_id %in% c(
-#     "Mar_22", "May_22", "Jun_22"
-#   ))
-# write.csv(swab_mj, "swab_mar-jun22_filtered.csv", row.names = FALSE)
+swab_ncos <- read.csv(here("amphib-data", "ncos_data.csv"))
+ves_may <- read.csv(here("amphib-data", "ves_may22.csv"))
 ```
 
+# Data wrangling
 
-## Calculate Bd prev per site
-
-### May 2022
+## swab data
 
 ```{r}
-swab_summary <- swab_may22 %>% 
-group_by(code) %>%
+# SFEB data collected in May 2022
+eb_summary <- swab_may22 %>% 
+  group_by(code, amphibian_spp, date) %>% # group by site (aka code) and species
   summarise(
-    n_frogs = n(),
-    bd_positive = sum(infected == 1),
-    prevalence = round(100 * bd_positive / n_frogs, 1),
-    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)
-  )
-str(swab_summary)
-
-swab_summary %>% 
-   gt() %>%
-  cols_label(
-    code = "Site",
-    n_frogs = "Number Swabbed",
-    bd_positive = "Bd Positive",
-    prevalence = "Bd Prevalence (%)",
-    avg_load_bd_pos = "Avg Bd Load (ZE)"
-  ) %>%
-  tab_header(
-    title = "Summary of Bd Infection by Site: May 2022"
-  ) %>%
-  fmt_number(
-    columns = c(prevalence, avg_load_bd_pos),
-    decimals = 0
-  ) %>%
-  tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_column_labels(everything())
-  )
-```
-
-### By species and site
-```{r}
-swab_summary2 <- swab_may22 %>% 
-group_by(code, amphibian_spp) %>%
-  summarise(
-    n_frogs = n(),
-    bd_positive = sum(infected == 1),
-    prevalence = round(100 * bd_positive / n_frogs, 1),
-    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)
-  ) %>% 
+    n_frogs = n(), # total frogs swabbed in that site and spp
+    bd_positive = sum(infected == 1), # number of bd+ frogs
+    prevalence = round(100 * bd_positive / n_frogs, 1), # % bd+ prevalence
+    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)) %>% # avg load for bd+ frogs only
   mutate(
-    avg_load_bd_pos = ifelse(is.nan(avg_load_bd_pos), NA, avg_load_bd_pos)
-  )
+    avg_load_bd_pos = ifelse(is.nan(avg_load_bd_pos), NA, avg_load_bd_pos))  # replace nan with na if no bd+ frogs
 
-swab_summary2 %>%
+swab_ncos_summary <- swab_ncos %>% 
+  group_by(code, amphibian_spp, date) %>% # group by site (aka code) and species
+  summarise(
+    n_frogs = n(), # total frogs swabbed in that site and spp
+    bd_positive = sum(infected == 1), # number of bd+ frogs
+    prevalence = round(100 * bd_positive / n_frogs, 1), # % bd+ prevalence
+    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)) %>% # avg load for bd+ frogs only
+  mutate(
+    avg_load_bd_pos = ifelse(is.nan(avg_load_bd_pos), NA, avg_load_bd_pos))  # replace nan with na if no bd+ frogs
+
+swab_summary <- bind_rows(swab_ncos_summary, eb_summary)
+```
+
+## VES data
+
+```{r}
+# make the df long
+ves_long <- ves_may %>%
+  dplyr::select(-raxx_adult_or_juvenile) %>%  # remove column of unidentified ranids
+  mutate( # sums across the lifestages
+    RACA = raca_adult + raca_juvenile,
+    RADR = radr_adult + radr_juvenile,
+    BUBO = bubo_adult + bubo_juvenile,
+    PSRE = psre_adult + psre_juvenile,
+    TAXX = taxx_adult + taxx_juvenile) %>%
+  select(code = site_code, # make name match the bd df
+        RACA, RADR, BUBO, PSRE, TAXX, temp) %>%  # select only needed columns
+  pivot_longer(
+    cols = c(RACA, RADR, BUBO, PSRE, TAXX),
+    names_to = "amphibian_spp",
+    values_to = "ves_count") %>% 
+   filter(ves_count != 0)  # drop 0s
+
+# add to swab data
+bd_ves <- swab_summary %>%
+  left_join(ves_long, by = c("code", "amphibian_spp"))
+```
+
+
+
+
+# Table
+
+```{r}
+table <- bd_ves %>%
+  relocate(ves_count, .before = temp) %>% 
+   # replace species codes with scientific names
+  mutate(amphibian_spp = case_when(
+    amphibian_spp == "BUBO" ~ "A. boreas",
+    amphibian_spp == "PSRE" ~ "P. regilla",
+    amphibian_spp == "RACA" ~ "R. catesbeiana",
+    amphibian_spp == "RADR" ~ "R. draytonii",
+    TRUE ~ amphibian_spp 
+  )) %>%
   arrange(code, amphibian_spp) %>%
-  mutate(site = code) %>%
-  group_by(site) %>%
-  mutate(site = ifelse(row_number() == 1, site, "")) %>%
+  group_by(code) %>%
   ungroup() %>%
-  select(site, amphibian_spp, n_frogs, bd_positive, prevalence, avg_load_bd_pos) %>%
   gt() %>%
   cols_label(
-    site = "Site",
+    code = "Site",
+    date = "Date",
     amphibian_spp = "Species",
     n_frogs = md("Count<br>Swabbed"),
     bd_positive = md("Count<br>Bd+"),
     prevalence = md("Bd<br>Prev (%)"),
-    avg_load_bd_pos = md("Ave Bd<br>Load (ZE)")
-  ) %>%
+    avg_load_bd_pos = md("Ave Bd<br>Load (ZE)"),
+    ves_count = md("Count<br>Observed"),
+    temp = md("Water<br>Temp (°C)")) %>%
   fmt_number(
-    columns = c(prevalence, avg_load_bd_pos),
-    decimals = 0
-  ) %>%
-  tab_header(
-    title = "Frog Bd Sampling and Bd Prevalence by Site and Species (May 2022)"
-  ) %>%
+    columns = c(prevalence, avg_load_bd_pos, temp),
+    decimals = 0) %>%
+  tab_header(title = "Amphibian Bd Sampling, Observations, Water Temperature (May 2022)") %>%
   tab_style(
     style = cell_text(weight = "bold"),
-    locations = cells_column_labels(everything())
-  ) %>%
-tab_style(
-  style = cell_text(align = "left"),
-  locations = cells_column_labels(everything())
-)
-
-
-
-
-```
-
-```{r}
-swab_summary2 %>%
-  arrange(code, amphibian_spp) %>%
-  mutate(site = code) %>%
-  group_by(site) %>%
-  mutate(site = ifelse(row_number() == 1, site, "")) %>%
-  ungroup() %>%
-  select(site, amphibian_spp, n_frogs, bd_positive, prevalence, avg_load_bd_pos) %>%  # remove code, reorder
-  gt() %>%
-  cols_label(
-site = "Site",
-  amphibian_spp = "Species",
-  n_frogs = md("Count<br>Swabbed"),
-  bd_positive = md("Count<br>Bd+"),
-  prevalence = md("Bd<br>Prev (%)"),
-  avg_load_bd_pos = md("Ave Bd<br>Load (ZE)")
-  ) %>%
-  fmt_number(
-    columns = c(prevalence, avg_load_bd_pos),
-    decimals = 0
-  ) %>%
-  tab_header(
-    title = "Frog Bd Sampling and Bd Prevalence by Site (May 2022)"
-  ) %>%
+    locations = cells_column_labels(everything())) %>%
   tab_style(
-    style = cell_text(weight = "bold"),
-    locations = cells_column_labels(everything())
-  ) %>%
-  tab_style(
-    style = cell_text(align = "center"),
-    locations = cells_body(columns = site)
+    style = cell_text(align = "left"),
+    locations = cells_column_labels(everything())) %>% 
+  opt_table_font(font = list(gt::google_font(name = "Helvetica"))) %>% 
+   tab_options(
+    table.width = pct(100),
+    table.font.size = px(10),   
+    column_labels.padding = px(2),
+    data_row.padding = px(2)
   )
 
+table
+
+gtsave(table, "amphib_table.pdf", vwidth = 1600, vheight = 1000)
 ```
 
-### Mar - June 2022
-
-```{r}
-swab_summary_mj <- swab_mj %>% 
-group_by(code) %>%
-  summarise(
-    n_frogs = n(),
-    bd_positive = sum(infected == 1),
-    prevalence = round(100 * bd_positive / n_frogs, 1),
-    avg_load_bd_pos = round(mean(zsp_eq[infected == 1], na.rm = TRUE), 2)
-  )
-
-swab_summary_mj %>% 
-   gt() %>%
-  cols_label(
-    code = "Site",
-    n_frogs = "Number Swabbed",
-    bd_positive = "Bd Positive",
-    prevalence = "Bd Prevalence (%)",
-    avg_load_bd_pos = "Avg Bd Load (ZE)"
-  ) %>%
-  tab_header(
-    title = "Summary of Bd Infection by Site: Mar-Jun 2022"
-  ) %>%
-  fmt_number(
-    columns = c(prevalence, avg_load_bd_pos),
-    decimals = 0
-  ) %>%
-  tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_column_labels(everything())
-  )
-```
-
-# Visual Encounter Survey
-
-```{r}
-#wrangle data that match our sampling
-ves_may <- read.csv(here("amphib-data", "cln_survey_data2025-04-21.csv")) %>%
-   mutate(date = ymd(date)) %>%  # convert character to Date
-  filter(month(date) == 5 & year(date) == 2022) %>% 
-  filter(site_code %in% c(
-    "CABIN", "WEST", "GRAMPS",
-    "GDPND005", "GDPND009", "GDPND006",
-    "PRPND004", "PRPND009", "PRPND010"
-  )) %>% 
-   select(
-    site_code, date,
-    raca_adult, raca_juvenile,
-    radr_adult, radr_juvenile,
-    raxx_adult_or_juvenile,
-    bubo_adult, bubo_juvenile,
-    psre_adult, psre_juvenile,
-    taxx_adult, taxx_juvenile,
-    temp
-  ) %>% 
-  mutate(taxx_juvenile = as.numeric(taxx_juvenile))
-
-#write.csv(ves_may, "ves_may22_filtered.csv", row.names = FALSE)
-
-ves_mj <- read.csv(here("amphib-data", "cln_survey_data2025-04-21.csv")) %>%
-   mutate(date = ymd(date)) %>%  # convert character to Date
-  filter(month(date) %in% c(3, 5, 6) & year(date) == 2022) %>% 
-  filter(site_code %in% c(
-    "CABIN", "WEST", "GRAMPS",
-    "GDPND005", "GDPND009", "GDPND006",
-    "PRPND004", "PRPND009", "PRPND010"
-  )) %>% 
-   select(
-    site_code, date,
-    raca_adult, raca_juvenile,
-    radr_adult, radr_juvenile,
-    raxx_adult_or_juvenile,
-    bubo_adult, bubo_juvenile,
-    psre_adult, psre_juvenile,
-    taxx_adult, taxx_juvenile,
-    temp
-  )
-
-ves_spring_2022_summary <- ves_mj %>%
-  mutate(taxx_juvenile = as.numeric(taxx_juvenile)) %>% 
-  group_by(site_code) %>%
- summarise(
-    across(
-      c(raca_adult, raca_juvenile, radr_adult, radr_juvenile,
-        raxx_adult_or_juvenile, bubo_adult, bubo_juvenile,
-        psre_adult, psre_juvenile, taxx_adult, taxx_juvenile),
-      ~sum(.x, na.rm = TRUE),
-      .names = "{.col}_summed"
-    ),
-    avg_temp = mean(temp, na.rm = TRUE),
-    .groups = "drop"
-  )
-```
-
-VES tables
-
-```{r}
-ves_may %>% 
-  select(-date) %>% 
-  gt() %>%
-  cols_label(
-    site_code = "Site",
-    raca_adult = "RACA Adult",
-    raca_juvenile = "RACA Juvenile",
-    radr_adult = "RADR Adult",
-    radr_juvenile = "RADR Juvenile",
-    raxx_adult_or_juvenile = "RAXX",
-    bubo_adult = "BUBO Adult",
-    bubo_juvenile = "BUBO Juvenile",
-    psre_adult = "PSRE Adult",
-    psre_juvenile = "PSRE Juvenile",
-    taxx_adult = "TAXX Adult",
-    taxx_juvenile = "TAXX Juvenile",
-    temp = "Temp (°C)"
-  ) %>%
-  fmt_number(
-    columns = -c(site_code),
-    decimals = 0
-  ) %>%
-  tab_header(
-    title = "Amphibian Visual Encounter Survey and Water Temperature (May 2022)"
-  ) %>%
-  tab_style(
-    style = cell_text(weight = "bold"),
-    locations = cells_column_labels(everything())
-  )
-```
 ### summary sentence
 
 Note - no frogs caught at P4, but I guess we saw a toad in the VES
@@ -313,7 +140,7 @@ n_total_sites <- ves_may %>%
   distinct(site_code) %>%
   nrow()
 
-n_sites_with_swabs <- swab_summary2 %>%
+n_sites_with_swabs <- swab_summary %>%
   distinct(code) %>%
   nrow()
 
@@ -354,4 +181,32 @@ percent_sites_with_frogs <- round(100 * n_sites_with_frogs / n_total_sites, 1)
 ```
 
 
+# Appendix
+
+```{r}
+ncos <- tibble(
+  sample_id        = paste0("idr_", 1228:1233),
+  sampling_id      = "May_22",
+  sample_type      = "swab",
+  code             = "NCOS",
+  property         = "North Campus Open Space",
+  date             = "2/3/21",
+  amphibian_spp    = "PSRE",
+  amphibian_svl    = c(31, 33, 28, 33, 34, 34),
+  amphibian_weight = c(2, 3, 1.5, 2, 2.5, 3.5),
+  amphibian_sex    = c("male", "male", NA, "male", "male", "male"),
+  amphibian_age    = c("adult", "adult", "juvenile", "adult", "adult", "adult"),
+  amphibian_notes  = NA_character_,
+  pcr_ct           = c(NA, NA, NA, NA, 28.24, NA),
+  pcr_qty          = c(NA, NA, NA, NA, 9.14, NA),
+  pcr_ipc_ct       = NA_real_,
+  pcr_inhibited    = 0,
+  infected         = c(0, 0, 0, 0, 1, 0),
+  zsp_eq           = c(NA, NA, NA, NA, 731.15, NA),
+  vernal           = 0
+)
+
+write_csv(ncos, "ncos_data.csv")
+
+```
 

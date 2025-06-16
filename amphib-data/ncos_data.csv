@@ -1,0 +1,7 @@
+sample_id,sample_type,code,property,date,amphibian_spp,amphibian_svl,amphibian_weight,amphibian_sex,amphibian_age,amphibian_notes,pcr_ct,pcr_qty,pcr_ipc_ct,pcr_inhibited,infected,zsp_eq,vernal
+idr_1228,swab,NCOS,North Campus Open Space,2/3/21,PSRE,31,2,male,adult,NA,NA,NA,NA,0,0,NA,0
+idr_1229,swab,NCOS,North Campus Open Space,2/3/21,PSRE,33,3,male,adult,NA,NA,NA,NA,0,0,NA,0
+idr_1230,swab,NCOS,North Campus Open Space,2/3/21,PSRE,28,1.5,NA,juvenile,NA,NA,NA,NA,0,0,NA,0
+idr_1231,swab,NCOS,North Campus Open Space,2/3/21,PSRE,33,2,male,adult,NA,NA,NA,NA,0,0,NA,0
+idr_1232,swab,NCOS,North Campus Open Space,2/3/21,PSRE,34,2.5,male,adult,NA,28.24,9.14,NA,0,1,731.15,0
+idr_1233,swab,NCOS,North Campus Open Space,2/3/21,PSRE,34,3.5,male,adult,NA,NA,NA,NA,0,0,NA,0
