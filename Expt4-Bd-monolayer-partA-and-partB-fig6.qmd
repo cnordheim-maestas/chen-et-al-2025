@@ -12,6 +12,8 @@ format: docx
 
 # Experiment 4: Assessment of AE microorganisms’ effect on monolayer-associated Bd cells 
 
+Data wrangling and analysis the Bd monolayer experiment using the SFEB (San Francisco East Bay) water samples for part A  and the follow up experiment part B with SBNCOS (Santa Barbara North Campus Open Space) pond water samples. These are the data presented in Figure 7A and 7B in the manuscript, and information is under the section "Experiment 4". 
+
 ```{r}
 #| warning: false
 
@@ -20,7 +22,7 @@ library(tidyverse) # for cleaning and viewing data
 library(gt) # pretty stats tables
 library(broom) # cleaning for gt
 library(here) # for importing data
-library(car) # stats tests like Levene's
+library(car) # stats tests 
 library(multcompView) # view cld
 library(multcomp) # stats
 library(nlme) # mixed effects models
@@ -38,7 +40,7 @@ fig_4b_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fi
 with_microbes_40_color <- "#999933"
 no_microbes_.22_color <- "#88ccee"
 
-# set up custom theme
+# set up custom theme for exploratory data
 myCustomTheme <- function() {
   theme_light() +
     theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
@@ -72,17 +74,16 @@ Is there a difference in the **gain or loss of ADHERENT Bd over 6 days** between
 ```{r}
 eb_monolayer <- ns_ml_pw_bd %>% 
   filter(site != "MQ") %>% # remove control
-  filter(bd_location == "adherent") # only want adherent Bd data
+  filter(bd_location == "adherent") # only want adherent Bd data (decision by Renwei, most relevant to our scientific question)
 
 # keep control for labeling plot
 eb_ml_controls <- ns_ml_pw_bd %>% 
   filter(site =="MQ") %>% # controls only
-  filter(bd_location == "adherent") # only want adherent Bd data
+  filter(bd_location == "adherent") # only want adherent Bd data for controls too
 
 # Data type cleaning
 eb_monolayer$site <- factor(eb_monolayer$site,
                                 levels = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010"))
-eb_monolayer$bd_location <- factor(eb_monolayer$bd_location, levels = c("supernatant", "adherent"))
 eb_monolayer$day <- factor(eb_monolayer$day, levels = c("Day_1", "Day_7")) 
 
 # get the total difference across days by combining both locations of Bd then subtracting across days
@@ -92,36 +93,14 @@ eb_monolayer_diff <- eb_monolayer %>%
   # calculate the rate loss by taking the log of each before subtracting
   mutate(rate_loss = log(Day_1) - log(Day_7))
 
-# Step 2: create subsets for each treatment
+# Create subsets for each treatment
 eb_monolayer_diff_40um <- eb_monolayer_diff %>% 
   filter(filter =="40um_filter")
 eb_monolayer_diff.22um <- eb_monolayer_diff %>% 
   filter(filter =="0.22um_filter")
-
 ```
 
 ## EDA SFEB Monolayer
-
-Renwei barplot
-
-```{r}
-eb_monolayer %>%
-ggplot(aes(y= bd_qty, x = site, fill = filter)) + 
-    geom_col(position = position_dodge()) +
-  scale_y_log10() +
-    facet_wrap(~day)+
-  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
-                                "0.22um_filter" = no_microbes_.22_color)) +
-    theme_classic() +
-   theme(axis.text.x = element_text(angle = 90),
-        legend.position = "bottom",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) + 
-    xlab("Site") +
-    ylab("Bd Quantity \n (zoospore equivalents)") +
-  guides(fill=guide_legend(title=""))
-
-```
 
 Boxplot
 
@@ -154,31 +133,25 @@ geom_point(data = eb_ml_controls, aes(x = filter, y = bd_qty), shape = 4, size =
 
 Question:
 
-Does the difference in Bd from day 1 to day 7 differ between the two filter types?
+Question: Does the rate loss in Bd from day 1 to day 7 (aka Bd-inhibitory potency) differ between the two filter types (40 and 0.22 um; aka AE microorganisms + and  AE microorganisms -)?
 
 The samples are essentially paired by site, so a paired t-test is most appropriate
 
-$H0:μ_{difference in Bd}=0$
+$H0:μ_{rate loss of Bd}=0$
 
-Assumptions:
-
-Assumes that the observations from each group represent a random sample from the population. Assumes that the difference of the two observations follow a normal distribution.
-
-Test: Paired t-test on the difference in total Bd between day 1 and 7
+Test: Paired t-test on rate loss of Bd between day 1 and 7
 
 ```{r}
 # check normality of the differences across groups
 # With microbes (40 um)
 eb_monolayer_diff_40um %>% 
  ggqqplot("rate_loss", title = "40um") # normal
-shapiro.test(eb_monolayer_diff_40um$rate_loss) # normal, yay!
-hist(eb_monolayer_diff_40um$rate_loss) # looks good
+shapiro.test(eb_monolayer_diff_40um$rate_loss) # numeric check using shapiro wilks test, a p > 0.05 says the data is indeed normal
 
 # Without microbes (0.22 um)
 eb_monolayer_diff.22um%>% 
  ggqqplot("rate_loss", title = "0.22um") # looks good
-shapiro.test(eb_monolayer_diff.22um$rate_loss) # normal, yay!
-hist(eb_monolayer_diff$rate_loss) # looks good
+shapiro.test(eb_monolayer_diff.22um$rate_loss) # numeric check using shapiro wilks test, a p > 0.05 says the data is indeed normal
 
 # visualize the comparison I am making
 eb_monolayer_diff %>%
@@ -187,6 +160,8 @@ ggplot(aes(y= rate_loss, x = filter)) +
   geom_jitter() +
   ggtitle("Visualizing comparison for paired t-test on the rate_loss")
 ```
+
+# Stats SFEB
 
 ```{r}
 # Step 3: run the paired t-test on the difference
@@ -213,7 +188,7 @@ eb_monolayer <- eb_monolayer %>%
 
 # Exploration: normality of transformed data
 eb_monolayer %>% 
- ggqqplot("log_bd") # gorgeous
+ ggqqplot("log_bd") # normal yay
 ```
 
 Assumptions testing
@@ -223,8 +198,8 @@ par(mfrow = c(2,2))
 # build model
 mod6 <- lme(log_bd~day*factor(filter), random = ~1|site, data=eb_monolayer)
 # model assumptions
-plot(mod6) # passes homogeneity of variances
-qqPlot(resid(mod6), main="QQ Plot of Residuals") # passes normality of resids
+plot(mod6) # passes homogeneity of variances yay
+qqPlot(resid(mod6), main="QQ Plot of Residuals") # passes normality of resids yay
 ```
 
 Interpret
@@ -233,7 +208,7 @@ Interpret
 summary(mod6)
 anova(mod6)
 
-emmeans::emmeans(mod6, pairwise ~ day * filter) # pairwise comparisons
+emmeans::emmeans(mod6, pairwise ~ day * filter) # pairwise comparison
 ```
 
 Bd abundance was indeed significantly lower on day 1 in the presence of AE microorganisms compared to its abundance in microorganism-depleted pond water `(Day_1 0.22um_filter - Day_1 40um_filter p <.0001)`
@@ -318,92 +293,9 @@ ml_noday0 <- ml_noday0 %>%
 
 ## EDA SBNCOS
 
-Note: only the ADHERENT Bd here!
-
-### Renwei's figure
-
-![](data/4b_monolayer.jpg){width="4in"}
-
-### ggplot version: replicating Renwei's ML
-
-```{r}
-rc <- monolayer_summary %>% 
-  # reorder to match Renwei's plot
-  mutate(sample_ID = factor(sample_ID, 
-                            levels = c("TB+PW+microbes","PW+microbes",
-                                        "TB+PW-microbes", "PW-microbes"))) %>% 
-  ggplot(aes(x = day_numeric, 
-           y = mean_adh, 
-           color = sample_ID)) +
-  geom_point(size = 2) +
-  geom_errorbar(aes(ymin = mean_adh - se, # plot the standard error
-                    ymax = mean_adh + se),
-                width = 0.1) +
-    geom_line(aes(linetype = microbes)) + 
-  scale_y_log10(limits = c(1e4, 1e8), 
-                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8)) +
-  # vibes
-  labs(x = "Day",
-       y = "Bd Quantity per sample (ZE/well)",
-       title = "Monolayer",
-       caption = "supernatant plus adherent visualized here") +
-  scale_color_manual(values = c("TB+PW+microbes" = "palegreen4", 
-                                "PW+microbes" = "magenta", 
-                                "TB+PW-microbes" = "chocolate4", 
-                                "PW-microbes" = "purple")) + # Assign specific colors to match RC's plot
-  scale_linetype_manual(values = c("n" = "dashed", 
-                                   "y" = "solid")) +
-  theme_minimal() +
-  theme(
-    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-    panel.grid.minor.x = element_blank()) + # Remove minor vertical grid lines
-  scale_x_continuous(breaks = c(0, 1, 3, 5, 7))
-```
-
-## Caitlin's version ML
-
-```{r}
-cnm <- monolayer_summary %>% 
-  # reorder to match Renwei's plot
-  mutate(sample_ID = factor(sample_ID, 
-                            levels = c("TB+PW+microbes","PW+microbes",
-                                        "TB+PW-microbes", "PW-microbes"))) %>% 
-  ggplot(aes(x = day_numeric, 
-           y = mean_adh, 
-           color = sample_ID)) +
-  geom_point(size = 2) +
-  geom_errorbar(aes(ymin = mean_adh - se, # plot the standard error
-                    ymax = mean_adh + se),
-                width = 0.1) +
-    geom_line(aes(linetype = microbes)) + 
-  scale_y_log10(limits = c(1e4, 1e8), 
-                breaks = c(1e4, 1e5, 1e6, 1e7, 1e8)) +
-  
-  # vibes
-  labs(x = "Day",
-       y = "Bd in mono-Bd biofilm (ZE/well)",
-       color = "Medium",       # Title for color legend
-       linetype = "Microbes Present") +
-  scale_color_manual(values = c("TB+PW+microbes" = "#4477AA", 
-                                "PW+microbes" = "#EE6677", 
-                                "TB+PW-microbes" = "#66CCEE", 
-                                "PW-microbes" = "#AA3377"), 
-                    
-                     labels = c("TB+PW+microbes" = "TB + PW + MO",
-                               "PW+microbes" = "PW + MO",
-                               "TB+PW-microbes" = "TB + PW - MO",
-                                "PW-microbes" = "PW - MO")) + # Custom labels
- myCustomTheme()+
- scale_linetype_manual(values = c("n" = "dashed", 
-                                   "y" = "solid"),
-                        labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
-  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
-                   labels = c("Initial\nBd", "1", "3", "5", "7"))
-```
-
 visualize y var: bd load
 
-Commented out to save space, log transformed is better
+Commented out to save space, but spoiler alert: log transformed is better
 
 ```{r}
 # # untransformed
