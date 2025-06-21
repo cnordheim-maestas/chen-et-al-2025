@@ -223,63 +223,52 @@ Bd abundance was indeed significantly lower on day 1 in the presence of AE micro
 monolayer <- fig_4b_raw %>% 
   rename(sample_ID = sample.ID) %>% 
   rename(adh_plus_sup = ahd_plus_sup) %>% 
-  # rename sample_id to only include treatment, not day
+  # rename sample_id to only include treatment, not day (we have a column for day already)
   mutate(sample_ID = str_replace(sample_ID, "-D[0-9]+$", "")) %>% 
 
   # add columns for components y/n
   mutate(microbes = case_when(
     str_detect(sample_ID, "\\+microbes") ~ "y",
-    TRUE ~ "n"
-  )) %>% 
+    TRUE ~ "n")) %>% 
   # add column for TB or no
   mutate(TB = case_when(
     str_detect(sample_ID, "TB") ~ "y",
-    TRUE ~ "n"
-  )) %>% 
-  # add column for PW or no
-  mutate(PW = case_when(
-    str_detect(sample_ID, "PW") ~ "y",
-    TRUE ~ "n"
-  )) %>%
+    TRUE ~ "n")) %>% 
     mutate(day = case_when(
     day == 1 ~ "Day_1",
     day == 3 ~ "Day_3",
     day == 5 ~ "Day_5",
     day == 7 ~ "Day_7",
-    day == 0 ~ "Day_0"  # In case you want to include Day_0 as well
-  )) %>% 
+    day == 0 ~ "Day_0")) %>% 
   mutate(day = factor(day)) %>% 
-  # add numeric for plotting
-  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day))))
+  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day)))) # add day numeric for plotting
 
 monolayer_summary <- monolayer %>% 
   group_by(day, sample_ID) %>% 
   reframe(mean_adh = mean(adh), # calculate the mean
-            n = length(adh), # count the number of observations
+            n = length(adh), # count the number of observations within the day and sample id
             df = n - 1, # calculate the degrees of freedom
             sd = sd(adh), # calculate the standard deviation
             se = sd/sqrt(n), # calculate the standard error
           ) %>% 
+  # re-create above columns, but in the summary df
   mutate(microbes = case_when(
     str_detect(sample_ID, "\\+microbes") ~ "y",TRUE ~ "n")) %>% 
   # add column for TB or no
   mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
-  # add column for PW or no
-  mutate(PW = case_when(str_detect(sample_ID, "PW") ~ "y", TRUE ~ "n")) %>% 
   mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day))))
 
+# no day 0, this is the "initial Bd", not part of the analysis
 ml_noday0 <- monolayer %>%
   filter(day != "Day_0") %>%
   mutate(log_adh = log(adh)) %>% 
-# quick check: we want day as a FACTOR
   mutate(day = as.factor(day))
-str(ml_noday0$day)
 
-# set PW-microbes as reference (no milliQ here)
-ml_noday0$sample_ID <- factor(ml_noday0$sample_ID)
-ml_noday0$sample_ID <- relevel(ml_noday0$sample_ID, ref = "PW-microbes")
+# set PW-microbes as reference (no milliQ control here)
+ml_noday0$sample_ID <- factor(ml_noday0$sample_ID) # set as factor
+ml_noday0$sample_ID <- relevel(ml_noday0$sample_ID, ref = "PW-microbes") # assign reference
 
-# change the names in microbes and tb so there arent 2 levels with y and n
+# change the names in microbes and tb so there arent 2 levels with y and n (oops that was shortsighted of me!)
 ml_noday0 <- ml_noday0 %>% 
   mutate(
     microbes = case_when(
@@ -313,11 +302,9 @@ Commented out to save space, but spoiler alert: log transformed is better
 
 ## Stats SBNCOS
 
-y var: amount of Bd
+y var: amount of Bd (log transformed)
 
-x vars: day, treatment, microbes y/n, pw y/n, tb y/n
-
-Best model: Bd \~ day\*microbes\*TB
+Model: Bd \~ day\*microbes\*TB
 
 Question: Does the amount of Bd in the sample differ across the treatments of presence of microbes, TB, and day?
 
@@ -371,40 +358,26 @@ summary(aov_4b)
 AIC(aov_4b) # 132.8989 better than null
 ```
 
-Post hoc
+## Post hoc
+
+Using a Tukey test on the anova model
 
 ```{r}
 TukeyHSD(aov_4b)
-
-# posthoc using emmeans
-# use emmeans package to get the t value
-# Perform pairwise comparisons for 'day'
-f4b_em_day <- emmeans(aov_4b, ~ day)
-f4b_tukey_day <- pairs(f4b_em_day, adjust = "tukey")
-f4b_tukey_day
-
-# Perform pairwise comparisons for 'microbes'
-f4b_em_microbes <- emmeans(aov_4b, ~ microbes)
-f4b_tukey_microbes <- pairs(f4b_em_microbes, adjust = "tukey")
-f4b_tukey_microbes
-
-# Perform pairwise comparisons for microbes:TB (interaction)
-f4b_em_int_microbe_TB <- emmeans(aov_4b, ~ microbes * TB)
-f4b_tukey_int_microbe_TB <- pairs(f4b_em_int_microbe_TB, adjust = "tukey")
-f4b_tukey_int_microbe_TB 
-
-# Perform pairwise comparisons for microbes:day (interaction)
-f4b_em_int_microbe_day <- emmeans(aov_4b, ~ microbes * day)
-f4b_tukey_int_microbe_day <- pairs(f4b_em_int_microbe_day, adjust = "tukey")
-f4b_tukey_int_microbe_day 
 ```
 
-### cld
+Now let's get this in a format to visualize this data. I will use the emmeans function to extract the estimated marginal means using a tukey adjustment, and from that, will use R to differentiate between the ones with significant differences, and show that with a compact letter display (cld) plot for each comparison type.
 
 ```{r}
-# Compute CLD letters for 'day'
+# emmeans and cld (compact letter display)
+
+#..............................day...............................
+
+# perform tukey pairwise comparisons across day only & get cld letters
 cld_day <- emmeans(aov_4b, pairwise ~ day, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
+
+# make a plot of estimated marginal means with CLD letters for each day
 cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   geom_point(size = 1) +  # Plot the estimated means
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
@@ -418,86 +391,105 @@ cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_day_4b
 
-# Compute CLD letters for 'microbes'
+#.........................microbes...............................
+
 cld_microbes <- emmeans(aov_4b, pairwise ~ microbes, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_microbes_4b <- ggplot(cld_microbes, aes(x = microbes, y = emmean)) +
   geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") + 
   xlab("Microbes present") +
   ylab("Estimated Marginal Means") +
     scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Microbes") +
   scale_x_discrete(labels= c("1%TB+AEbiofilm" = "1%TB", "PW+AEBiofilm" = "PW - MO", "MQ+AEbiofilm" = "MQ")) +
- myCustomTheme() +  # Use minimal theme for clean look
+ myCustomTheme() +  
 theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_microbes_4b 
 
-# Compute CLD letters for 'day * microbes'
+#.....................day*microbes...............................
+
 cld_day_microbes <- emmeans(aov_4b, pairwise ~ day * microbes, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
-# Create the plot with custom labels for 'TB'
+
 cld_day_microbes_4b <- ggplot(cld_day_microbes, aes(x = day, y = emmean)) +
-  geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
-facet_wrap(~ factor(microbes)) +  # Custom facet labels and order
+  geom_point(size = 1) +  
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) + 
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  
+facet_wrap(~ factor(microbes)) + 
   xlab("Day") +
   ylab("Estimated Marginal Means") +
     scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Day * Microbes") +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
- myCustomTheme() +  # Use minimal theme for clean look
+ myCustomTheme() +  
 theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_day_microbes_4b
 
-# Compute CLD letters for 'microbes * TB'
+#.....................microbes*tb...............................
+
 cld_TB_microbes <- emmeans(aov_4b, pairwise ~ TB * microbes, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
-# Create the plot with custom labels for 'TB'
+
 cld_TB_microbes_4b <- ggplot(cld_TB_microbes, aes(x = TB, y = emmean)) +
-  geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
-facet_wrap(~ factor(microbes)) +  # Custom facet labels and order
+  geom_point(size = 1) +  
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") + 
+facet_wrap(~ factor(microbes)) + 
   xlab("TB Presence") +
   ylab("Estimated Marginal Means") +
     scale_y_continuous(labels = scales::label_number(accuracy = 1)) +
   ggtitle("Microbes * TB") +
  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
- myCustomTheme() +  # Use minimal theme for clean look
+ myCustomTheme() + 
 theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_TB_microbes_4b
 
+# plot them all together
 # cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b
 ```
+
+```{r}
+# get the stats for each comparison
+f4b_tukey_day <- emmeans(aov_4b, pairwise ~ day, adjust = "tukey")$contrasts
+f4b_tukey_microbes <- emmeans(aov_4b, pairwise ~ microbes, adjust = "tukey")$contrasts
+f4b_tukey_microbe_TB <- emmeans(aov_4b, pairwise ~ microbes * TB, adjust = "tukey")$contrasts
+f4b_tukey_microbe_day <- emmeans(aov_4b, pairwise ~ microbes * day, adjust = "tukey")$contrasts
+
+# print the values
+f4b_tukey_day
+f4b_tukey_microbes
+f4b_tukey_microbe_TB
+f4b_tukey_microbe_day
+```
+
 
 # *Publication figures
 
 ```{r}
 # set up custom theme
 myCustomTheme <- function() {
-  theme_light() +
-    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+  theme_light() + # base theme with light background
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"), # set font for axis tick labels
+          axis.title.x = element_text(margin = margin(t = 10),  # add spacing between x-axis label and plot
+                                      size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), # add spacing between y-axis label and plot
+                                      size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
           title = element_text(size = 7, face = "bold", family = "Helvetica"),
           plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
-          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
-          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
-          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
-          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
-          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          legend.text = element_text(size = 7, family = "Helvetica"), # increase legend text size
+          panel.grid = element_blank(),  # remove all gridlines (major and minor, x and y)
+          # axis.line.x = element_line(color = "grey"),  # uncomment if axis lines are needed
+          # axis.line.y = element_line(color = "grey"),  # uncomment if axis lines are needed
+          axis.ticks = element_line(color = "grey", size = 0.5),   # keep tick markers
           axis.ticks.x = element_line(color = "grey", size = 0.5),  # ensure bottom axis ticks
-          axis.ticks.y = element_line(color = "grey", size = 0.5),  # <- ensure side axis ticks
-          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
-    )
-}
+          axis.ticks.y = element_line(color = "grey", size = 0.5),  # ensure side axis ticks
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"),  # formatting for facet labels
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5))}  # set background of facet strips to white with grey border
 ```
 
-## SFEB Monolayer
+## Fig 7A SFEB Monolayer
 
 ```{r}
 fig_SFEB_monolayer <- eb_monolayer %>% 
@@ -533,9 +525,9 @@ fig_SFEB_monolayer <- fig_SFEB_monolayer +
 
 fig_SFEB_monolayer
 
-ggsave("paper-figures/expt4-SFEB_AE_monolayer_fig4a_updated.pdf", plot = fig_SFEB_monolayer, width = 3.46, height = 3.46)
+#ggsave("paper-figures/expt4-SFEB_AE_monolayer_fig4a_updated.pdf", plot = fig_SFEB_monolayer, width = 3.46, height = 3.46)
 ```
-
+## Fig 7B SBNCOS monolayer
 
 ```{r}
 fig_SBNCOS_monolayer <- monolayer_summary %>% 
@@ -551,14 +543,6 @@ fig_SBNCOS_monolayer <- monolayer_summary %>%
                     ymax = mean_adh + se),
                 width = 0.1) +
     geom_line(aes(linetype = microbes), show.legend = FALSE) + 
-  
-  # # raw data
-  #  geom_point(data = ml_noday0, 
-  #            aes(x = day_numeric, 
-  #                y = adh_plus_sup, 
-  #                color = sample_ID),  # Raw data points
-  #            position = position_jitter(width = 0.1, seed = 1),
-  #            alpha = 0.3) +
   scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
                 # update to consistent scale per reviewer request
                   limits = c(1e+02, 1e+08),
@@ -602,181 +586,92 @@ fig_SBNCOS_monolayer <- fig_SBNCOS_monolayer +
     plot.tag.position = c(0, 1)
   )
 
-ggsave("paper-figures/expt4-SBNCOS_AE_monolayer_fig4b_updated.pdf", plot = fig_SBNCOS_monolayer, width = 3.46, height = 3.46)
+fig_SBNCOS_monolayer 
+
+#ggsave("paper-figures/expt4-SBNCOS_AE_monolayer_fig4b_updated.pdf", plot = fig_SBNCOS_monolayer, width = 3.46, height = 3.46)
 ```
 
 # *SI
 
-## anova table
+## S8: SFEB
 
 ```{r}
-# anova table
-anova_output4b <- tidy(aov_4b)
+# df for control data
+eb_ml_controls <- eb_ml_controls %>%
+  mutate(site = case_when(
+    site == "MQ" ~ "sterile MQ",  # rename mq to sterile mq so it's clear
+    TRUE ~ site)) %>% 
+  mutate(filter = case_when(
+    filter == "40um_filter" ~ "sterile MQ 40um_filter",  # re-label filter as sterile control
+    filter == "0.22um_filter" ~ "sterile MQ 0.22um_filter",  # same for other filter
+    TRUE ~ filter)) 
 
-aov_4b_tbl <- anova_output4b %>%
-  dplyr::select(term, df, sumsq, meansq, statistic, p.value) %>%
-  gt() %>%
-  tab_header(
-    title = "4b ANOVA Table"
-  ) %>%
-  fmt_number(
-    columns = c(sumsq, meansq, statistic),
-    decimals = 2
-  ) %>%
-  cols_label(
-    term = "Term",
-    df = "Df",
-    sumsq = "Sum Sq",
-    meansq = "Mean Sq",
-    statistic = "F value",
-    p.value = "P-value"
-  ) %>%  # scientific number format for values <0.001 in p values
-  fmt_scientific(
-    columns = c(p.value),
-    decimals = 1,
-    rows = p.value < 0.001
-  ) %>%
-  # 3 decimals for p values >=0.001
-  fmt_number(
-    columns = c(p.value),
-    decimals = 3,
-    rows = p.value >= 0.001
-  )
-aov_4b_tbl
+# drop column, don't need it, will allow for combining df's
+eb_monolayer_nolog <- eb_monolayer %>%
+  dplyr::select(-log_bd)  
 
-# prettier, simplified
-anova_output4b <- tidy(aov_4b)
+# cmbine df's of experimental data and controls together
+combined_data_4 <- bind_rows(
+  eb_monolayer_nolog,  # main data
+  eb_ml_controls)  # control data already formatted
 
-# Modify term to include degrees of freedom in *italics*
-anova_output4b <- anova_output4b %>%
-  mutate(term = gsub(":", " x ", term)) %>% 
-  mutate (term = paste0(term, " (*df = ", df, ", ", anova_output4b[df == max(df), "df"], "*)")) %>%
-  filter(term != "Residuals (*df = 32, 32*)")
+##### plot it
 
-# Create the gt table with selected columns
-aov_4b_tbl_b <- anova_output4b %>%
-  dplyr::select(term, statistic, p.value) %>%
-  gt() %>%
-  tab_header(
-    title = "4b ANOVA Table"
-  ) %>%
-  fmt_markdown(
-    columns = c(term)
-  ) %>%
-  fmt_number(
-    columns = c(statistic),
-    decimals = 2
-  ) %>%
-  cols_label(
-    term = "",
-    statistic = "F value",
-    p.value = "P-value"
-  ) %>%
-  fmt_scientific(
-    columns = c(p.value),
-    decimals = 1,
-    rows = p.value < 0.001
-  ) %>%
-  fmt_number(
-    columns = c(p.value),
-    decimals = 3,
-    rows = p.value >= 0.001
-  )
+SI_4a <- combined_data_4 %>%
+  ggplot(aes(y = bd_qty, x = site, fill = filter)) +  
+  geom_col(position = position_dodge()) +  # side-by-side bars so filters don't stack
 
-aov_4b_tbl_b
+  # log y axis
+  scale_y_continuous(
+    expand = c(0.01, 0.01),  # small padding around bars
+    trans = "log",  # log scale 
+    breaks = c(1e+01, 1e+03, 1e+05),  # specific breaks
+    labels = scales::label_scientific()) +  # use scientific notation (the E's)
+
+  # order sites by property 
+  scale_x_discrete(limits = c(
+    "CABIN", "GRAMPS", "WEST",
+    "GDPND005", "GDPND006", "GDPND009",
+    "PRPND004", "PRPND009", "PRPND010",
+    "sterile MQ")) +  # put sterile MQ at the end
+
+  # facet by day
+  facet_wrap(~day, labeller = labeller(
+    day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +  # prettier facet labels
+
+  # assign custom colors to each filter type
+  scale_fill_manual(values = c(
+    "40um_filter" = with_microbes_40_color, 
+    "0.22um_filter" = no_microbes_.22_color, 
+    "sterile MQ 40um_filter" = "darkgray",  
+    "sterile MQ 0.22um_filter" = "lightgray")) + 
+
+  # apply my custom theme & some extra tweaks
+  myCustomTheme() + 
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),  # rotate site names
+    legend.position = "bottom",  # move legend under plot
+    panel.border = element_rect(color = "gray", size = 0.5, fill = NA),  # outline each facet
+    legend.text = element_text(size = 5),  # small font in legend
+    legend.key.size = unit(0.4, "cm"),  # shrink legend keys
+    legend.spacing.y = unit(0.1, "cm"),  # tighter spacing between legend items
+    legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) +  # remove extra padding
+  xlab("site") +  # x axis label
+  ylab("bd quantity \n (zoospore equivalents)") +  # y axis label (with line break)
+  guides(fill = guide_legend(title = ""))  # remove legend title
+
+SI_4a
+
 ```
 
-## post hoc
+## S9: SBNCOS
 
 ```{r}
-# post hoc table
-# Convert Tukey emmeans results to data frames
-f4b_tukey_day_df <- as.data.frame(f4b_tukey_day)
-f4b_tukey_microbes_df <- as.data.frame(f4b_tukey_microbes)
-f4b_tukey_int_microbe_day_df <- as.data.frame(f4b_tukey_int_microbe_day)
-f4b_tukey_int_microbe_TB_df <- as.data.frame(f4b_tukey_int_microbe_TB)
-
-# Add labels to indicate which factor the comparison refers to
-f4b_tukey_day_df  <- f4b_tukey_day_df  %>% mutate(factor = "Day")
-f4b_tukey_microbes_df <- f4b_tukey_microbes_df %>% mutate(factor = "Medium")
-f4b_tukey_int_microbe_day_df <- f4b_tukey_int_microbe_day_df %>% mutate(factor = "Day x microbes")
-f4b_tukey_int_microbe_TB_df <- f4b_tukey_int_microbe_TB_df %>% mutate(factor = "Microbes x TB")
-
-f4b_all_tukey_df <- bind_rows(f4b_tukey_day_df, f4b_tukey_microbes_df, f4b_tukey_int_microbe_TB_df, f4b_tukey_int_microbe_day_df)
-
-f4b_all_tukey_df <- f4b_all_tukey_df %>% 
-  mutate(contrast = gsub("MO present TB absent", "microbes only", contrast),
-         contrast = gsub("MO present TB present", "both microbes and TB", contrast),
-         contrast = gsub("MO absent TB absent", "neither microbes nor TB", contrast),
-         contrast = gsub("MO absent TB present", "TB only", contrast))
-
-
-ph4b_table <- f4b_all_tukey_df %>%
-  dplyr::select(factor, contrast, estimate, SE, df, t.ratio, p.value) %>%
-  gt() %>%
-  # change column names
-  cols_label(
-    factor = "Comparison",
-    contrast = "Group Comparison",
-    estimate = "Estimate",
-    SE = "Standard Error",
-    df = "Degrees of Freedom",
-    t.ratio = "t-Ratio",
-    p.value = "p-value"
-  ) %>%
-  # update header for table
-  tab_header(
-    title = "4b Emmeans Post-hoc Test Results"
-  ) %>%
-  # 3 decimal places
-  fmt_number(
-    columns = c(estimate, SE, t.ratio),
-    decimals = 3
-  ) %>%
-  # scientific number format for values <0.001 in p values
-  fmt_scientific(
-    columns = c(p.value),
-    decimals = 1,
-    rows = p.value < 0.001
-  ) %>%
-  # 3 decimals for p values >=0.001
-  fmt_number(
-    columns = c(p.value),
-    decimals = 3,
-    rows = p.value >= 0.001
-  ) %>%
-  #make the headers bold
-  tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_column_labels(everything()))
-
-ph4b_table
-```
-
-## cld
-
-```{r}
-# cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b
-
-pairwise_cld_4b <- cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b +
-  plot_annotation(tag_levels = 'A')
-
-# Display the combined plot
-pairwise_cld_4b 
-
-#ggsave("SI_4b.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
-
-#ggsave("4b_pairwise_cld.png", plot = pairwise_cld_4b , width = 14, height = 8, dpi = 1000)
-```
-
-## Renwei y axis specs
-```{r}
+# set consistent y-axis limits and breaks for all cld plots
 global_y_limits <- c(9, 18)
 global_y_breaks <- seq(10, 18, by = 2)
 
-# Compute CLD letters for 'day'
+# compact letter display plot for day
 cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   geom_point(size = 1) +
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
@@ -789,7 +684,7 @@ cld_day_4b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   myCustomTheme() +
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 
-# Compute CLD letters for 'microbes'
+# compact letter display plot for microbes
 cld_microbes_4b <- ggplot(cld_microbes, aes(x = microbes, y = emmean)) +
   geom_point(size = 1) +
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
@@ -802,7 +697,7 @@ cld_microbes_4b <- ggplot(cld_microbes, aes(x = microbes, y = emmean)) +
   myCustomTheme() +
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 
-# Compute CLD letters for 'day * microbes'
+# compact letter display plot for day * microbes
 cld_day_microbes_4b <- ggplot(cld_day_microbes, aes(x = day, y = emmean)) +
   geom_point(size = 1) +
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
@@ -816,7 +711,7 @@ cld_day_microbes_4b <- ggplot(cld_day_microbes, aes(x = day, y = emmean)) +
   myCustomTheme() +
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 
-# Compute CLD letters for 'microbes * TB'
+# compact letter display plot for microbes * TB
 cld_TB_microbes_4b <- ggplot(cld_TB_microbes, aes(x = TB, y = emmean)) +
   geom_point(size = 1) +
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
@@ -833,7 +728,6 @@ cld_TB_microbes_4b <- ggplot(cld_TB_microbes, aes(x = TB, y = emmean)) +
 # Combine all plots
 pairwise_cld_4b <- cld_day_4b + cld_microbes_4b + cld_day_microbes_4b + cld_TB_microbes_4b +
   plot_annotation(tag_levels = 'A')
-
 pairwise_cld_4b
 
 #ggsave("SI_4b_updated.pdf", plot = pairwise_cld_4b, width = 7.09, height = 3.46)
@@ -841,53 +735,101 @@ pairwise_cld_4b
 ```
 
 
-## 4a Raw EB data barplot
+# Appendix
+
+Not used in publication but I like these so I'll keep them here
+
+## anova table
 
 ```{r}
-# Combine the two datasets (eb_pw and eb_pw_controls)
-eb_ml_controls <- eb_ml_controls %>%
-  mutate(site = case_when(
-    site == "MQ" ~ "sterile MQ",
-    TRUE ~ site )) %>% 
-  mutate(filter = case_when(
-    filter == "40um_filter" ~ "sterile MQ 40um_filter",
-    filter == "0.22um_filter" ~ "sterile MQ 0.22um_filter",
-    TRUE ~ filter
-  ))
+anova_output4b <- tidy(aov_4b)  # get model output as a tibble
 
-eb_monolayer_nolog <- eb_monolayer %>% 
-  dplyr::select(-log_bd)
+anova_output4b <- anova_output4b %>%
+  mutate(term = gsub(":", " x ", term)) %>%  # clean up interaction terms
+  mutate(term = paste0(term, " (*df = ", df, ", ", anova_output4b[df == max(df), "df"], "*)")) %>%  # move degrees of freedom into first column with the "term"
+  filter(term != "Residuals (*df = 32, 32*)")  # drop residual row from table, accounted for in the max (df) above
 
-combined_data_4 <- bind_rows(
-  eb_monolayer_nolog,
-  eb_ml_controls) # controls data is already in the required format
+aov_4b_tbl_b <- anova_output4b %>%
+  dplyr::select(term, statistic, p.value) %>%  # just keep what's needed
+  gt() %>%
+  tab_header(title = "4b ANOVA Table") %>%  # give the table a title
+  fmt_markdown(columns = term) %>%  # render df as italics; tells gt to interpret markdown formatting in the specified column(s), so the *'s above will be italics
+  fmt_number(columns = statistic, decimals = 2) %>%  # round f value
+  cols_label(  # relabel for clean display
+    term = "",
+    statistic = "F value",
+    p.value = "P-value") %>%
+  fmt_scientific(columns = p.value, decimals = 1, rows = p.value < 0.001) %>%  # sci format for tiny p-value
+  fmt_number(columns = p.value, decimals = 3, rows = p.value >= 0.001)  # normal format for rest of the p values
 
-SI_4a <- combined_data_4 %>%
-ggplot(aes(y= bd_qty, x = site, fill = filter)) + 
-    geom_col(position = position_dodge()) +
-  scale_y_continuous(expand = c(0.01, 0.01),
-                        trans = "log",  # Natural logarithmic scale
-                       breaks = c(1e+01, 1e+03, 1e+05),  # Set exact breaks
-                       labels = scales::label_scientific()) +  # Use scientific notation 1e+01, 1e+03, 1e+05
-   scale_x_discrete(limits = c("CABIN", "GRAMPS", "WEST", "GDPND005", "GDPND006", "GDPND009", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  
-    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +
-  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
-                                "0.22um_filter" = no_microbes_.22_color,
-                                "sterile MQ 40um_filter" = "darkgray",
-                                "sterile MQ 0.22um_filter" = "lightgray")) +
-   myCustomTheme() + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        legend.position = "bottom",
-        panel.border = element_rect(color = "gray", size = 0.5, fill = NA),
-        legend.text = element_text(size = 5),  # Set legend text font size to 5pt
-        legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
-        legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
-        legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) + 
-    xlab("Site") +
-    ylab("Bd Quantity \n (zoospore equivalents)") +
-  guides(fill=guide_legend(title=""))
+aov_4b_tbl_b 
+```
 
-SI_4a 
+## post hoc
 
-#ggsave("SI_4a.pdf", plot = SI_4a, width = 7.09, height = 3.46)
+```{r}
+# # post hoc table
+# # Convert Tukey emmeans results to data frames
+# f4b_tukey_day_df <- as.data.frame(f4b_tukey_day)
+# f4b_tukey_microbes_df <- as.data.frame(f4b_tukey_microbes)
+# f4b_tukey_int_microbe_day_df <- as.data.frame(f4b_tukey_int_microbe_day)
+# f4b_tukey_int_microbe_TB_df <- as.data.frame(f4b_tukey_int_microbe_TB)
+# 
+# # Add labels to indicate which factor the comparison refers to
+# f4b_tukey_day_df  <- f4b_tukey_day_df  %>% mutate(factor = "Day")
+# f4b_tukey_microbes_df <- f4b_tukey_microbes_df %>% mutate(factor = "Medium")
+# f4b_tukey_int_microbe_day_df <- f4b_tukey_int_microbe_day_df %>% mutate(factor = "Day x microbes")
+# f4b_tukey_int_microbe_TB_df <- f4b_tukey_int_microbe_TB_df %>% mutate(factor = "Microbes x TB")
+# 
+# f4b_all_tukey_df <- bind_rows(f4b_tukey_day_df, f4b_tukey_microbes_df, f4b_tukey_int_microbe_TB_df, f4b_tukey_int_microbe_day_df)
+# 
+# f4b_all_tukey_df <- f4b_all_tukey_df %>% 
+#   mutate(contrast = gsub("MO present TB absent", "microbes only", contrast),
+#          contrast = gsub("MO present TB present", "both microbes and TB", contrast),
+#          contrast = gsub("MO absent TB absent", "neither microbes nor TB", contrast),
+#          contrast = gsub("MO absent TB present", "TB only", contrast))
+# 
+# 
+# ph4b_table <- f4b_all_tukey_df %>%
+#   dplyr::select(factor, contrast, estimate, SE, df, t.ratio, p.value) %>%
+#   gt() %>%
+#   # change column names
+#   cols_label(
+#     factor = "Comparison",
+#     contrast = "Group Comparison",
+#     estimate = "Estimate",
+#     SE = "Standard Error",
+#     df = "Degrees of Freedom",
+#     t.ratio = "t-Ratio",
+#     p.value = "p-value"
+#   ) %>%
+#   # update header for table
+#   tab_header(
+#     title = "4b Emmeans Post-hoc Test Results"
+#   ) %>%
+#   # 3 decimal places
+#   fmt_number(
+#     columns = c(estimate, SE, t.ratio),
+#     decimals = 3
+#   ) %>%
+#   # scientific number format for values <0.001 in p values
+#   fmt_scientific(
+#     columns = c(p.value),
+#     decimals = 1,
+#     rows = p.value < 0.001
+#   ) %>%
+#   # 3 decimals for p values >=0.001
+#   fmt_number(
+#     columns = c(p.value),
+#     decimals = 3,
+#     rows = p.value >= 0.001
+#   ) %>%
+#   #make the headers bold
+#   tab_style(
+#     style = list(
+#       cell_text(weight = "bold")
+#     ),
+#     locations = cells_column_labels(everything()))
+# 
+# ph4b_table
 ```
