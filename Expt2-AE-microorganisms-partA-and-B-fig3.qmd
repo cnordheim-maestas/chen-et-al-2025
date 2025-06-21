@@ -22,7 +22,7 @@ library(tidyverse) # for cleaning and viewing data
 library(gt) # pretty stats tables
 library(broom) # cleaning for gt
 library(here) # for importing data
-library(car) # stats tests like Levene's
+library(car) # stats tests
 library(Hmisc) # autocalculate stat summaries in ggplot
 library(multcomp) # stats
 library(nlme) # mixed effects models
