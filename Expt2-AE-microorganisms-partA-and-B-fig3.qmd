@@ -41,6 +41,24 @@ sbncos_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fi
 # Colors: these are from Paul Tol's colorblind friendly palette
 with_microbes_40_color <- "#999933"
 no_microbes_.22_color <- "#88ccee"
+
+# custom theme for EDA
+myCustomTheme <- function() {
+  theme_light() +
+    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
+          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
+          title = element_text(size = 12, face = "bold", family = "Times"),
+          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
+          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
+          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
+          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
+          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
+          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
+          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
+          axis.ticks = element_blank() # Remove x and y axis ticks
+    )}
 ```
 
 # Part A: SFEB Microorganisms
@@ -748,7 +766,6 @@ SBNCOS_AE_microorgranisms_fig3b
 #.............................prep data..............................
 
 # reformat the controls dataset: rename filters to match the style of sterile MQ samples
-eb_pw_controls <- eb_pw_controls %>%
 eb_pw_controls <- eb_pw_controls %>%
   mutate(filter = case_when(
     filter == "40um_filter" ~ "sterile MQ 40um_filter",
