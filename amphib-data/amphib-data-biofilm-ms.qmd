@@ -95,6 +95,7 @@ table <- bd_ves %>%
     amphibian_spp == "RADR" ~ "R. draytonii",
     TRUE ~ amphibian_spp 
   )) %>%
+  mutate(code = factor(code, levels = c(setdiff(sort(unique(code)), "NCOS"), "NCOS"))) %>% # move NCOS row to bottom
   arrange(code, amphibian_spp) %>%
   group_by(code) %>%
   ungroup() %>%
