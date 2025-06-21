@@ -41,24 +41,6 @@ sbncos_raw <- read.csv(here("data", "final_NCOS_2024_reformatted_for_R.xlsx - Fi
 # Colors: these are from Paul Tol's colorblind friendly palette
 with_microbes_40_color <- "#999933"
 no_microbes_.22_color <- "#88ccee"
-
-# set up custom theme for figures (note figures may be redone in separate doc for journal specs)
-myCustomTheme <- function() {
-  theme_light() +
-    theme(axis.text = element_text(size = 12, family = "Times", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 14, face = "bold", family = "Times", color = "black"), # Add space between y-axis label and axis
-          title = element_text(size = 12, face = "bold", family = "Times"),
-          plot.caption = element_text(size = 10, face = "italic", family = "Times"),
-          legend.text = element_text(size = 10, family = "Times"), # Increase legend text size
-          panel.grid.major.x = element_blank(), # Remove major vertical grid lines
-          panel.grid.minor.x = element_blank(), # Remove minor vertical grid lines
-          panel.grid.major.y = element_blank(), # Remove major horizontal grid lines
-          panel.grid.minor.y = element_blank(), # Remove minor horizontal grid lines
-          strip.text = element_text(size = 12, face = "bold", family = "Times", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey"), # Set strip background to white, # color = "black"
-          axis.ticks = element_blank() # Remove x and y axis ticks
-    )}
 ```
 
 # Part A: SFEB Microorganisms
@@ -118,13 +100,13 @@ Exploratory data analysis
 
 ## Assumption testing for stats
 
-Question: Does the rate loss in Bd from day 1 to day 7 differ between the two filter types (40 and 0.22 um; aka AE microorganisms + and  AE microorganisms -)?
+Question: Does the rate loss in Bd from day 1 to day 7 (aka Bd-inhibitory potency) differ between the two filter types (40 and 0.22 um; aka AE microorganisms + and  AE microorganisms -)?
 
 The samples are paired by site, so a paired t-test is most appropriate. The null hypothesis of our paired t-test is:
 
 $H0:μ_{rate loss of Bd}=0$
 
-**Statistical question**: Is there a difference in the **rate of gain or loss of Bd over 6 days** between the **filter sizes** (looking at the TOTAL BD from each well)
+**Statistical question**: Is there a difference in the **rate of gain or loss of Bd over 6 days** (aka Bd-inhibitory potency) between the **filter sizes** (looking at the TOTAL BD from each well)
 
 Assumption testing:
 
@@ -192,23 +174,23 @@ The t-value is positive, which shows that the first item entered (40 um filter a
 
 ```{r}
 pw <- sbncos_raw %>% 
-# add column for microbes presence yes or no
-  mutate(microbes = case_when(
+# add column for microbes presence yes or no this will be used in visualization, but not the stats
+  mutate(microbes = case_when( 
     str_detect(sample_ID, "\\+microorganism") ~ "y", # if the raw data has microorganism in the sample id then it has microorganisms
     TRUE ~ "n" # otherwise, it does not
   )) %>% 
-# add column for water_treatment
+# add column for water_treatment (this WILL be in the stats)
   mutate(water_treatment = case_when(
-    sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water", # these sample id's had a base of sterile water
-    sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO", # these sample id's had pond water with microorganisms still present
-    sample_ID %in% c("1%TB+PW-microorganism", "PW-microorganism") ~ "PW-MO" # these sample id's had filtered pond water aka pond water without microorganisms
+    sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water", # these treatments had a base of sterile water (aka MQ). if the sample id contains one of these treatments in the id, then we know the water treatment
+    sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO", # same as above, except these sample id's had pond water with microorganisms still present, so pond water + microorganism (PW+MO)
+    sample_ID %in% c("1%TB+PW-microorganism", "PW-microorganism") ~ "PW-MO" # same as above, except these sample id's had filtered pond water aka pond water without microorganisms(PW-MO)
   )) %>% 
-# add column for TB or no
+# add column for TB (tryptone broth) or no (this WILL be in the stats)
   mutate(TB = case_when(
     str_detect(sample_ID, "TB") ~ "y", # if the raw data has TB in the sample id then it has TB
     TRUE ~ "n" # otherwise, it does not
   )) %>% 
-  # update day column to have the word Day in it
+  # update day column to have the word Day in it (this WILL be in the stats)
     mutate(day = case_when(
     day == 1 ~ "Day_1",
     day == 3 ~ "Day_3",
@@ -221,19 +203,21 @@ pw <- sbncos_raw %>%
 
 ## make a summary dataframe for ggplot creation
 pw_summary <- pw %>% 
-  group_by(day, sample_ID) %>% 
-  reframe(mean = mean(adh_plus_sup), # calculate the mean
-            n = length(adh_plus_sup), # count the number of observations
+  group_by(day, sample_ID) %>% # this groups all the replicates of the same day and treatmenttogether
+  # note: adh_plus_sup means: total bd in the well (adherent plus supernatant material)
+  reframe(mean = mean(adh_plus_sup), # calculate the mean 
+            n = length(adh_plus_sup), # count the number of observations within the day and sample id
             df = n - 1, # calculate the degrees of freedom
             sd = sd(adh_plus_sup), # calculate the standard deviation
-            se = sd/sqrt(n), # calculate the standard error
-          ) %>% 
+            se = sd/sqrt(n)) %>%  # calculate the standard error
+          
   ## Now that it is in a new summarized format, recreate the columns made above
-  mutate(microbes = case_when(
-    str_detect(sample_ID, "\\+microorganism") ~ "y",TRUE ~ "n")) %>% 
-  # add column for TB or no
-  mutate(TB = case_when(str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
-  # add column for PW or no
+  mutate(microbes = case_when( # make column for microbes y or n
+    str_detect(sample_ID, "\\+microorganism") ~ "y",TRUE ~ "n")) %>% # if the sample id contains \+microorganism then it has the microorganism, otherwise it doesnt. \\ is needed because it begins with symbol "+"
+  # add column for TB (tryptone broth) or no
+  mutate(TB = case_when(
+    str_detect(sample_ID, "TB") ~ "y", TRUE ~ "n")) %>% 
+  # add column for water treatment
    mutate(water_treatment = case_when(
     sample_ID %in% c("1%TB", "MQ", "Added Bd") ~ "sterile-water",
     sample_ID %in% c("1%TB+PW+microorganism", "PW+microorganism") ~ "PW+MO",
@@ -243,88 +227,42 @@ pw_summary <- pw %>%
 
 # dataframe of only controls, controls will be plotted separately on the plot
 pw_control_data <- pw %>%
-  filter(day == "Day_0") %>% 
-  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day)))) %>% 
-  dplyr::select(day, adh_plus_sup, day_numeric)
+  filter(day == "Day_0") %>% # day 0 are the "controls" here, the day Bd was added, only include these
+  mutate(day_numeric = as.numeric(gsub("Day_", "", as.character(day)))) %>% # make column for day
+  dplyr::select(day, adh_plus_sup, day_numeric) # select only relevant columns
 
 # dataframe without controls, controls will be plotted separately on the plot
 pw_noday0 <- pw %>%
-  filter(day != "Day_0") %>%
+  filter(day != "Day_0") %>% # day 0 are the "controls" here, we dont want these
   # log transform
-   # note: no zeroes so no +1 to the log needed
+   # note: no zeroes so no +1 to the log needed. log function is the natural log. 
   mutate(log_adh_plus_sup = log(adh_plus_sup)) %>% 
   mutate(day = factor(day, 
-          levels = c("Day_1", "Day_3", "Day_5", "Day_7")))
+          levels = c("Day_1", "Day_3", "Day_5", "Day_7"))) # set day as a factor, set levels for plotting
 
-# set MQ as reference for sample ID
-pw_noday0$sample_ID <- factor(pw_noday0$sample_ID)
-pw_noday0$sample_ID <- relevel(pw_noday0$sample_ID, ref = "MQ")
+# set MQ (sterile water MilliQ) as reference for sample ID
+pw_noday0$sample_ID <- factor(pw_noday0$sample_ID) # set as factor
+pw_noday0$sample_ID <- relevel(pw_noday0$sample_ID, ref = "MQ") # set as reference
 
 # set sterile water as reference water treatment
-pw_noday0$water_treatment <- factor(pw_noday0$water_treatment)
-pw_noday0$water_treatment <- relevel(pw_noday0$water_treatment, ref = "sterile-water")
+pw_noday0$water_treatment <- factor(pw_noday0$water_treatment) # set as factor
+pw_noday0$water_treatment <- relevel(pw_noday0$water_treatment, ref = "sterile-water") # set as reference
 
 # set no TB as reference
-pw_noday0$TB <- factor(pw_noday0$TB)
-pw_noday0$TB <- relevel(pw_noday0$TB, ref = "n")
+pw_noday0$TB <- factor(pw_noday0$TB) # set as factor
+pw_noday0$TB <- relevel(pw_noday0$TB, ref = "n") # set as reference
 
 # set no microbes as reference
-pw_noday0$microbes <- factor(pw_noday0$microbes)
-pw_noday0$microbes <- relevel(pw_noday0$microbes, ref = "n")
+pw_noday0$microbes <- factor(pw_noday0$microbes) # set as factor
+pw_noday0$microbes <- relevel(pw_noday0$microbes, ref = "n") # set as reference
 
-# export clean data for figure in another quarto doc
+# export clean data 
 write.csv(pw_noday0, "data/pw_noday0.csv", row.names = FALSE)
 ```
 
-# Playing with figs
+## SBNCOS EDA
 
-Renwei's figure
-
-
-```{r}
-#| include: false
-#| message: false
-### gut check: ggplot version: replicating Renwei's
-
-rc <- pw_summary %>% 
-  # reorder to match Renwei's plot
-  mutate(sample_ID = factor(sample_ID, 
-                            levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd")),
-         # Create a new column to identify 'initial Bd'
-         is_initial_Bd = ifelse(day == "Day_0", "initial Bd", "other")) %>% 
-  
-  ggplot(aes(x = day_numeric, 
-           y = mean, 
-           color = sample_ID)) +
-  geom_point(aes(shape = is_initial_Bd), size = 2, show.legend = FALSE) + # Use shape without adding to the legend
-  geom_errorbar(aes(ymin = mean - se, # plot the standard error
-                    ymax = mean + se),
-                width = 0.1) +
-  geom_line(aes(linetype = microbes)) + 
-  scale_y_log10(limits = c(1e3, 1e8), 
-                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
-  # vibes
-  labs(x = "Day",
-       y = "Bd Quantity per sample (ZE/well)",
-       title = "Sanity check: Replicating Renwei version exactly",
-       caption = "supernatant plus adherent visualized here") +
-  scale_color_manual(values = c("1%TB" = "goldenrod", 
-                                "MQ" = "blue", 
-                                "1%TB+PW+microorganism" = "darkolivegreen3", 
-                                "PW+microorganism" = "magenta", 
-                                "1%TB+PW-microorganism" = "palegreen4", 
-                                "PW-microorganism" = "palevioletred1",
-                                "Added Bd" = "darkgrey")) + # Assign specific colors to match RC's plot
-  scale_linetype_manual(values = c("n" = "dashed", 
-                                   "y" = "solid")) +
-  scale_shape_manual(values = c("initial Bd" = 4, "other" = 16)) + # Assign 'X' shape to initial Bd
-  theme_minimal() +
-  scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
-                     labels = c("initial Bd", "1", "3", "5", "7"))
-rc
-```
-
-Caitlin's version
+General visualization
 
 ```{r}
 #| message: false
@@ -332,51 +270,51 @@ Caitlin's version
 #| output: false
 
 pw_summary %>% 
-  # reorder to match Renwei's plot
+ # reorder sample_ID factor levels to match Renwei's plot
   mutate(sample_ID = factor(sample_ID, 
                             levels = c("1%TB", "MQ", "1%TB+PW+microorganism", "PW+microorganism", "1%TB+PW-microorganism", "PW-microorganism", "Added Bd"))) %>% 
 
-  ggplot(aes(x = day_numeric, 
-           y = mean, 
-           color = sample_ID)) +
-  geom_point(size = 2) +
+# plot it!
+  ggplot(aes(x = day_numeric, # x = numeric day
+           y = mean, # y = mean Bd quantity per treatment per day
+           color = sample_ID)) +  # color points and lines by treatment
+  geom_point(size = 2) +  # plot points for means
   geom_errorbar(aes(ymin = mean - se, # plot the standard error
                     ymax = mean + se),
                 width = 0.1) +
-  scale_y_log10(limits = c(1e3, 1e8), 
-                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +
-  # vibes
- # vibes
+   # log scale for y-axis
+  scale_y_log10(limits = c(1e3, 1e8), # set y-axis range
+                breaks = c(1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +  # breaks for y-axis ticks
+  # labels
   labs(x = "Day",
        y = "Bd Quantity per sample (ZE/well)",
-       color = "Medium",       # Title for color legend
-       linetype = "Microbes Present"  # Title for linetype legend
-       ) +
+       color = "Medium", # color legend title
+       linetype = "Microbes Present" ) + # linetype legend title
   scale_color_manual(values = c("1%TB" = "#CCBB44", 
                                 "MQ" = "#228833", 
                                 "1%TB+PW+microorganism" = "#4477AA", 
                                 "PW+microorganism" = "#EE6677", 
                                 "1%TB+PW-microorganism" = "#66CCEE",
-                                #"Added Bd" = "#BBBBBB" # removed bc not really a medium
-                                "PW-microorganism" = "#AA3377"),  # Assign specific colors to match RC's plot
-                    labels = c("1%TB" = "TB",
+                                "PW-microorganism" = "#AA3377"), 
+                    # Custom labels for the color legend
+                     labels = c("1%TB" = "TB",
                                 "MQ" = "MQ",
                                 "1%TB+PW+microorganism" = "TB + PW + MO",
                                 "PW+microorganism" = "PW + MO",
                                 "1%TB+PW-microorganism" = "TB + PW - MO",
                                 "PW-microorganism" = "PW - MO",
-                                "Added Bd" = "Initial Bd")) + # Custom labels for the color legend
+                                "Added Bd" = "Initial Bd")) + 
+  # add lines to connect points across days
     geom_line(aes(linetype = microbes)) + 
+  # manually assign line types based on presence/absence of microbes
   scale_linetype_manual(values = c("n" = "dashed", 
                                    "y" = "solid"),
                         labels = c("n" = "N", "y" = "Y")) +  # Change labels to uppercase N and Y
- myCustomTheme()+
+  # custom x-axis breaks and labels, replace 0 with "Initial Bd"
   scale_x_continuous(breaks = c(0, 1, 3, 5, 7),
-                   labels = c("Initial\nBd", "1", "3", "5", "7"))
-  theme(legend.position = "right") # Adjust the legend position to overlap with the plot
+                   labels = c("Initial\nBd", "1", "3", "5", "7")) +
+  theme(legend.position = "right")
 ```
-
-## SBNCOS EDA
 
 visualize y variable: bd load
 
@@ -419,7 +357,7 @@ log transformed will get me closer to normal, so we will use that in the models!
 
 ```
 
-## SBNCOS Stats & assumption testing
+## SBNCOS Assumption testing: ANOVA
 
 Most appropriate comparison for study design: day\*microbes\*water_treatment
 
@@ -436,31 +374,28 @@ Model: 3-way anova
 ```{r}
 null <- lm(log_adh_plus_sup ~ 1,
   data = pw_noday0)
-AIC(null) #326.4356
+AIC(null) #326.4356, this is higher than the 
 ```
 
 ## ANOVA with interactions: Bd \~ day\*TB\*water_treatment
 
-*Note: this ANOVA does not have perfectly normally distributed residuals, but it is the best tool we have to answer our question*
-
-Note: Kruskall Wallace isn't the best move here because we aim to analyze interactions, if I cut the interactions, a non-interaction anova does have the perfect residuals, so no need for a KW at all!
+Note: this ANOVA does not have perfectly normally distributed residuals, but it is the best tool we have to answer our question. A Kruskall Wallace isn't the best move here because we aim to analyze interactions, if I cut the interactions, a non-interaction anova does have the perfect residuals, so no need for a KW at all!
 
 ```{r}
-# log transformed
+# create the model
 aov_sbncos <- aov(log_adh_plus_sup ~ day*TB*water_treatment,
   data = pw_noday0)
 
 # diagnostic plot
 par(mfrow = c(2,2))
-plot(aov_sbncos) # qq is not ideal
-AIC(aov_sbncos) # better than null 127.7922
+plot(aov_sbncos) # diagnostic plot
+AIC(aov_sbncos) # better than null 127.7922!
 
-# make qq in car with 95% CI
+# make qqplot to look at normality of residuals in car package with 95% CI
 qqPlot(aov_sbncos$residuals) # not ideal
 hist(aov_sbncos$residuals) # but this looks great!!
-shapiro.test(aov_sbncos$residuals) # does not pass but shapiro isnt really appropriate here because n > 50
 
-# try a sqrt transformed, did not work!
+# tried a sqrt transformed, did not work! 
 # mod5 <- aov(sqrt(adh_plus_sup) ~ day*TB*water_treatment,
 #   data = pw_noday0)
 # 
@@ -482,85 +417,116 @@ summary(aov_sbncos)
 
 ### post hoc
 
+Using a Tukey test on the anova model
+
 ```{r}
 # post hoc
 TukeyHSD(aov_sbncos)
+```
 
-# emmeans and cld
+Now let's get this in a format to visualize this data. I will use the emmeans function to extract the estimated marginal means using a tukey adjustment, and from that, will use R to differentiate between the ones with significant differences, and show that with a compact letter display (cld) plot for each comparison type.
 
-# Compute CLD letters for 'day'
+```{r}
+# emmeans and cld (compact letter display)
+
+#..............................day...............................
+
+# perform tukey pairwise comparisons across day only & et cld letters
 cld_day <- emmeans(aov_sbncos, pairwise ~ day, adjust = "tukey") %>% 
-  cld(Letters = letters, reverse = TRUE)
+  # add compact letter display (cld) to group days that are not significantly different
+  cld(Letters = letters, reverse = TRUE) # reverse = TRUE ensures "a" goes to the highest mean
+
+# make a plot of estimated marginal means with CLD letters for each day
 cld_day_2b <- ggplot(cld_day, aes(x = day, y = emmean)) +
   geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
-  xlab("Day") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
-  ggtitle("Day") +
-  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  myCustomTheme()+
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) + # add 95% confidence intervals
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") + # add cld group letters above points
+  xlab("Day") + # axis label
+  ylab("Estimated Marginal Means") + # axis label
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # format y-axis: whole numbers onl
+  ggtitle("Day") + # panel title
+  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) + # clean up x-axis labels
+  myCustomTheme()+ # apply my custom theme
+  theme(axis.title.y = element_text(margin = margin(r = 1))) # give y-axis label a little breathing room
+
 cld_day_2b
 
-# Compute CLD letters for 'TB'
+#..............................TB...............................
+## same as above but for another factor, see "day" example for code comments
+
+# perform tukey pairwise comparisons across TB only & get cld letters
 cld_TB <- emmeans(aov_sbncos, pairwise ~ TB, adjust = "tukey") %>%
   cld(Letters = letters)
+
+# make a plot of estimated marginal means with CLD letters for TB yes or no
 cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
   geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") + 
   xlab("TB") +
   ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ 
   ggtitle("TB") +
   myCustomTheme() +
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_TB_2b 
 
-# Compute CLD letters for 'water_treatment'
+#............................water treatment...............................
+## same as above but for another factor, see "day" example for code comments
+
+# perform tukey pairwise comparisons across TB only & get cld letters
 cld_water_treatment <- emmeans(aov_sbncos, pairwise ~ water_treatment, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
+
+# make a plot of estimated marginal means with CLD letters
 cld_water_treatment_2b <-ggplot(cld_water_treatment, aes(x = water_treatment, y = emmean)) +
   geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") +  # Add CLD letters
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  
+  geom_text(aes(label = .group), nudge_y = 0.5, size = 1.75, color = "black") + 
   xlab("Water Treatment") +
   ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ 
   ggtitle("Water Treatment") +
   myCustomTheme()+
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_water_treatment_2b
 
-# Compute CLD letters for 'TB * day'
+
+#............................TB * day............................
+
+## perform tukey pairwise comparisons across the interaction of TB presence and day
 cld_day_TB <- emmeans(aov_sbncos, pairwise ~ TB * day, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
+
+## make labels for the TB facet panels (n = absent, y = present)
 tb_labels <- c("n" = "TB absent", "y" = "TB present")
-# Create the plot with custom labels for 'TB'
-cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
-  facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +  # Facet by TB with custom labels
+
+## make a plot of estimated marginal means across day, faceted by TB presence
+cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) + 
+  geom_point(size = 1) +  # plot estimated marginal means for each TB * day combo
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # add 95% confidence intervals
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  
+  facet_wrap(~ TB,  # facet by TB 
+             labeller = as_labeller(tb_labels)) + # and apply custom labels
   xlab("Day") +
   ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
+  scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # format y-axis: whole numbers only
   ggtitle("TB * Day") +
   scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
   myCustomTheme()+
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_tb_day_int_2b
 
-# Compute CLD letters for 'water_treatment * day'
+ #........................water treat * day.......................
+## same as above but for another interaction, see TB * day example for code comments
+
 cld_water_treatment_day <- emmeans(aov_sbncos, pairwise ~ water_treatment * day, adjust = "tukey") %>%
   cld(Letters = letters, reverse = TRUE)
 cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day), y = emmean)) +
   geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
-  facet_wrap(~ water_treatment) +  # Facet by water_treatment
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  
+  facet_wrap(~ water_treatment) +  
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
@@ -570,16 +536,17 @@ cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day)
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_watertreat_day_int_2b 
 
-# third order...prepare for chaos
-# Compute CLD letters for 'water_treatment * day'
+#....................third order comparisons.....................
+## same as above but for another interaction, see TB * day example for code comments
+
 cld_water_thirdorder <- emmeans(aov_sbncos, pairwise ~ water_treatment * day * TB, adjust = "tukey") %>%
   cld(Letters = letters)
 tb_labels <- c("n" = "TB absent", "y" = "TB present")
 cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 1) +  # Plot the estimated means
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # Error bars
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # Add CLD letters
-  facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +  # Facet by water_treatment with custom labels for TB
+  geom_point(size = 1) +  
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  #
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  
+  facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +  
   xlab("Day") +
   ylab("Estimated Marginal Means") +
   scale_y_continuous(labels = scales::label_number(accuracy = 1))+ # no decimals y axis
@@ -588,83 +555,28 @@ cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y =
   myCustomTheme()+
   theme(axis.title.y = element_text(margin = margin(r = 1)))
 cld_water_thirdorder_2b 
+```
 
-# get the stats for each comparison
+Get the posthoc values
+
+```{r}
+# get the stats for posthoc (ph) each comparison
 ph_2b_day <- emmeans(aov_sbncos, pairwise ~ day, adjust = "tukey")$contrasts
 ph_2b_TB <- emmeans(aov_sbncos, pairwise ~ TB, adjust = "tukey")$contrasts
 ph_2b_water_treatment <- emmeans(aov_sbncos, pairwise ~ water_treatment, adjust = "tukey")$contrasts 
 ph_2b_day_TB <- emmeans(aov_sbncos, pairwise ~ TB * day, adjust = "tukey")$contrasts
 ph_2b_water_treatment_day <- emmeans(aov_sbncos, pairwise ~ water_treatment * day, adjust = "tukey")$contrasts
 ph_2b_water_thirdorder <- emmeans(aov_sbncos, pairwise ~ water_treatment * day * TB, adjust = "tukey")$contrasts
-```
 
-## Reviewer request: GLM with log link function on untransformed data
+# print the values
+ph_2b_day 
+ph_2b_TB
+ph_2b_water_treatment
+ph_2b_day_TB 
+ph_2b_water_treatment_day
+ph_2b_water_thirdorder
 
-## GLM untransformed Bd \~ day\*TB\*water_treatment
-
-```{r}
-## Try Poisson
-# round the data in new column for a poisson family
-pw_noday0$adh_plus_sup_rounded <- round(pw_noday0$adh_plus_sup)
-
-# normal distribution, should be relatively the same as the anova
-mod_pois_glm <- glm(adh_plus_sup_rounded ~ day * TB * water_treatment,
-                data = pw_noday0,
-                family =  poisson(link = "log"))
-
-summary(mod_pois_glm) # ok this is sketchy, I dont think it converged... look at those teeny SE and everythign being highly significant
-
-## Try gaussian
-mod_gaus_glm <- glm(adh_plus_sup ~ day * TB * water_treatment,
-                data = pw_noday0,
-                family =  gaussian(link = "log"))
-
-summary(mod_gaus_glm) # looks more reasonable than pois
-
-```
-
-Comparisons using gaussian glm 
-
-```{r}
-# all comparisons
-em <- emmeans(mod_gaus_glm, ~ day * TB * water_treatment)
-# Perform the Tukey test for pairwise comparisons
-pairwise_comparisons <- contrast(em, method = "pairwise", adjust = "tukey")
-summary(pairwise_comparisons)
-
-## First order comparisons
-
-# Pairwise comparisons for 'day'
-# None are sig
-pairwise_day_gaus_glm <- emmeans(mod_gaus_glm, pairwise ~ day, adjust = "tukey")
-pairwise_day_gaus_glm # df infinity?? definitely sketchy
-plot(pairwise_day_gaus_glm)
-
-# Pairwise comparisons for 'TB'
-pairwise_TB_gaus_glm <- emmeans(mod_gaus_glm, pairwise ~ TB, adjust = "tukey")
-pairwise_TB_gaus_glm
-plot(pairwise_TB_gaus_glm)
-
-# Pairwise comparisons for 'water_treatment'
-pairwise_water_treatment_2b <- emmeans(mod_gaus_glm, pairwise ~ water_treatment, adjust = "tukey")
-pairwise_water_treatment_2b
-plot(pairwise_water_treatment_2b)
-
-## second order comparisons
-
-# day:TB
-pairwise_day_TB_2b <- emmeans(mod_gaus_glm, pairwise ~ TB * day, adjust = "tukey")
-pairwise_day_TB_2b
-plot(pairwise_day_TB_2b)
-
-# day:water_treatment
-pairwise_water_treatment_day_2b <- emmeans(mod_gaus_glm, pairwise ~ water_treatment * day, adjust = "tukey")
-pairwise_water_treatment_day_2b
-plot(pairwise_water_treatment_day_2b)
-
-pairwise_day_2b <- emmeans(mod_gaus_glm, pairwise ~ day, adjust = "tukey")
-pairwise_day_2b # df infinity?? definitely sketchy
-plot(pairwise_day_2b, xlim = c(8, 16))
+# These all match the previous estimates from the other package TukeyHSD(aov_sbncos) and show the same trends
 ```
 
 # *Publication figures
@@ -672,78 +584,73 @@ plot(pairwise_day_2b, xlim = c(8, 16))
 Custom theme
 
 ```{r}
-# install.packages("extrafont")
-# library(extrafont)
-# font_import(pattern = "Arial")
-# loadfonts(device = "pdf")
-
 # set up custom theme
 myCustomTheme <- function() {
-  theme_light() +
-    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"),
-          axis.title.x = element_text(margin = margin(t = 10), size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
-          axis.title.y = element_text(margin = margin(r = 10), size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
+  theme_light() + # base theme with light background
+    theme(axis.text = element_text(size = 7, family = "Helvetica", color = "black"), # set font for axis tick labels
+          axis.title.x = element_text(margin = margin(t = 10),  # add spacing between x-axis label and plot
+                                      size = 7, face = "plain", family = "Helvetica", color = "black"), # Add space between x-axis label and axis
+          axis.title.y = element_text(margin = margin(r = 10), # add spacing between y-axis label and plot
+                                      size = 7,  face = "plain", family = "Helvetica", color = "black"), # Add space between y-axis label and axis
           title = element_text(size = 7, face = "bold", family = "Helvetica"),
           plot.caption = element_text(size = 7, face = "italic", family = "Helvetica"),
-          legend.text = element_text(size = 7, family = "Helvetica"), # Increase legend text size
-          panel.grid = element_blank(),  # Remove all grid lines (both major and minor)
-          # axis.line.x = element_line(color = "grey"),  # Keep the x-axis line
-          # axis.line.y = element_line(color = "grey"),  # Keep the y-axis line
-          axis.ticks = element_line(color = "grey", size = 0.5),   # Keep tick markers
+          legend.text = element_text(size = 7, family = "Helvetica"), # increase legend text size
+          panel.grid = element_blank(),  # remove all gridlines (major and minor, x and y)
+          # axis.line.x = element_line(color = "grey"),  # uncomment if axis lines are needed
+          # axis.line.y = element_line(color = "grey"),  # uncomment if axis lines are needed
+          axis.ticks = element_line(color = "grey", size = 0.5),   # keep tick markers
           axis.ticks.x = element_line(color = "grey", size = 0.5),  # ensure bottom axis ticks
-          axis.ticks.y = element_line(color = "grey", size = 0.5),  # <- ensure side axis ticks
-          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"), # Set strip text style
-          strip.background = element_rect(fill = "white", color = "grey", size = 0.5)  # Set strip background to white, outline grey
-    )
-}
+          axis.ticks.y = element_line(color = "grey", size = 0.5),  # ensure side axis ticks
+          strip.text = element_text(size = 7, face = "bold", family = "Helvetica", color = "black"),  # formatting for facet labels
+          strip.background = element_rect(fill = "white", color = "grey", size = 0.5))}  # set background of facet strips to white with grey border
 ```
 
 # SFEB microorganisms (3A)
 
 ```{r}
 fig_SFEB_microorganisms <- eb_pw %>%
-  # combine floating and adherent for total_Bd
+  # combine floating and adherent for combined_bd
   pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-  mutate(combined_bd = adherent + floating) %>% 
+  mutate(combined_bd = adherent + floating) %>% # create a new column that combines floating and adherent fractions
   
   # create the plot
   ggplot(aes(y= combined_bd, x = filter, fill = filter)) + 
     geom_boxplot() +
-  geom_jitter(width = 0.2, alpha = 0.3) +
-  # scale_y_log10(labels = function(x) {gsub("e", "E", x = scales::scientific_format()(x))}) + # Custom scientific notation
-  scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, 
-                # update to consistent scale per reviewer request
-                  limits = c(1e+02, 1e+08),
-                breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) + 
-  
-    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1",
-                                                    "Day_7" = "Day 7")))+
-  
-  scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
+    geom_jitter(width = 0.2, alpha = 0.3) +  # overlay individual points, add some transparency
+    scale_y_log10(labels = function(x) {gsub("e", "E", scales::scientific_format()(x))}, # show scientific notation as 1E3, 1E6, etc
+      # update to consistent scale across all figures per reviewer request
+      limits = c(1e+02, 1e+08), # set y-axis limits
+      breaks = c(1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)) +  # y-axis tick breaks
+    
+    facet_wrap(~day, # facet by day
+               labeller = labeller(day = c("Day_1" = "Day 1", # make labels pretty
+                                            "Day_7" = "Day 7"))) +
+    # assign custom fill colors to each filter treatment
+    scale_fill_manual(values = c("40um_filter" = with_microbes_40_color, 
                                 "0.22um_filter" = no_microbes_.22_color)) +
     myCustomTheme() +
-   theme(legend.position = "none",
-         panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) + 
+    theme(legend.position = "none", # remove legend
+         panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) +  # add border around each panel
   
-  scale_x_discrete (labels= c("40um_filter" = "+ ", "0.22um_filter" = "-")) +
+    # re-label x-axis ticks for clarity ("+" = microbes present, "-" = no microbes)
+    scale_x_discrete (labels= c("40um_filter" = "+ ", "0.22um_filter" = "-")) +
     xlab("AE microorganisms in pond water") +
     ylab("Bd quantity in supernatant and \nadherent fraction (ZE/well)") +
   
-  # add controls ad x's
+  # add controls as x's
   geom_point(data = eb_pw_controls, aes(x = filter, y = combined_bd), shape = 4, size = 2)
 
+# add plot tag label
 fig_SFEB_microorganisms <- fig_SFEB_microorganisms +
   labs(tag = "A") +
   theme(
-    plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1),
-    plot.tag.position = c(0, 1)
+    plot.tag = element_text(family = "Helvetica", size = 20, face = "plain", hjust = -0.1, vjust = 1), # position and style for the tag
+    plot.tag.position = c(0, 1) # place in top-left corner
   )
 
 fig_SFEB_microorganisms
 
-ggsave("paper-figures/expt2-SFEB_AE_microorgranisms_fig3a_updated.pdf", plot = fig_SFEB_microorganisms, width = 3.46, height = 3.46)
-
-
+#ggsave("paper-figures/expt2-SFEB_AE_microorgranisms_fig3a_updated.pdf", plot = fig_SFEB_microorganisms, width = 3.46, height = 3.46)
 ```
 
 
@@ -766,14 +673,14 @@ SBNCOS_AE_microorgranisms_fig3b <- pw_summary %>%
   # geom_point(data = pw_noday0, 
   #            aes(x = day_numeric, 
   #                y = adh_plus_sup, 
-  #                color = sample_ID),  # Raw data points
+  #                color = sample_ID), 
   #            position = position_jitter(width = 0.1, seed = 1),
   #            alpha = 0.3) +
   # # add control raw data too
   # geom_point(data = pw_control_data, 
   #            aes(x = day_numeric, 
   #                y = adh_plus_sup, 
-  #                color = "#BBBBBB"),  # Raw data points
+  #                color = "#BBBBBB"),  
   #            position = position_jitter(width = 0.1, seed = 1),
   #            alpha = 0.3) +
 
@@ -830,10 +737,198 @@ SBNCOS_AE_microorgranisms_fig3b <- SBNCOS_AE_microorgranisms_fig3b +
 
 SBNCOS_AE_microorgranisms_fig3b
 
-ggsave("paper-figures/expt2-SBNCOS_AE_microorgranisms_fig3b_updated.pdf", plot = SBNCOS_AE_microorgranisms_fig3b, width = 3.46, height = 3.46)
+#ggsave("paper-figures/expt2-SBNCOS_AE_microorgranisms_fig3b_updated.pdf", plot = SBNCOS_AE_microorgranisms_fig3b, width = 3.46, height = 3.46)
 ```
 
 # *SI figures and tables
+
+## S4: barplot
+
+```{r}
+#.............................prep data..............................
+
+# reformat the controls dataset: rename filters to match the style of sterile MQ samples
+eb_pw_controls <- eb_pw_controls %>%
+eb_pw_controls <- eb_pw_controls %>%
+  mutate(filter = case_when(
+    filter == "40um_filter" ~ "sterile MQ 40um_filter",
+    filter == "0.22um_filter" ~ "sterile MQ 0.22um_filter",
+    TRUE ~ filter
+  ))
+
+# combine main dataset and controls into one
+combined_data <- bind_rows(
+  eb_pw %>%
+    # combine floating and adherent for total Bd
+    pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
+    mutate(combined_bd = adherent + floating),
+  eb_pw_controls # controls data is already in the required format
+)
+
+#.............................make plot..............................
+
+fig_SI2A <- combined_data %>%
+  ggplot(aes(y = combined_bd, x = site, fill = filter)) + 
+    geom_col(position = position_dodge()) + # use side-by-side columns for filter types within each site
+    scale_y_continuous(
+      expand = c(0.01, 0.01),  # small expansion so bars aren't cut off
+      trans = "log",  # natural log scale
+      breaks = c(1e+01, 1e+03, 1e+05),  # show these tick marks
+      labels = function(x) {gsub("e", "E", scales::label_scientific()(x))}) +  # use 1E1 format
+    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) + # facet by day (Day 1 and Day 7)
+    scale_x_discrete(limits = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  # order x-axis (sites) so sterile MQ is last
+    scale_fill_manual(values = c( # colors
+      "40um_filter" = with_microbes_40_color, 
+      "0.22um_filter" = no_microbes_.22_color,
+      "sterile MQ 40um_filter" = "darkgray",
+      "sterile MQ 0.22um_filter" = "lightgray" )) +
+    myCustomTheme() + 
+   theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),  # rotate x-axis labels
+    legend.position = "bottom",  # move legend below plot
+    panel.border = element_rect(color = "gray", size = 0.5, fill = NA),  # add subtle border around panel
+    legend.text = element_text(size = 5),  # shrink legend text
+    legend.key.size = unit(0.4, "cm"),  # shrink legend key size
+    legend.spacing.y = unit(0.1, "cm"),  # reduce vertical space between legend items
+    legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) +  # remove outer margin from legend
+    xlab("Pond") +
+    ylab("Bd Quantityin supernatant and\nadherent fraction (ZE/well)") +
+    guides(fill = guide_legend(title = ""))   # remove legend title
+
+fig_SI2A
+
+#ggsave("paper-figures/SI_FigS2.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
+```
+
+## S5: posthoc
+
+Note this one has global y limits and breaks to ensure consistency and help with comparisons
+
+```{r}
+#.......................... global axis settings ..........................
+
+# set consistent y-axis limits and breaks for all cld plots
+global_y_limits <- c(8, 16.5)
+global_y_breaks <- seq(8, 16, by = 2)
+global_y_limits <- c(8, 16.5)
+global_y_breaks <- seq(8, 16, by = 2)
+
+#..............................day...............................
+# make a plot of estimated marginal means with CLD letters for each day
+cld_day_2b <- ggplot(cld_day, aes(x = day, y = emmean)) +
+  geom_point(size = 1) +  # plot the estimated means
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +  # add 95% confidence intervals
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +  # add cld group letters above points
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), 
+                     limits = global_y_limits, breaks = global_y_breaks) +  # consistent y-axis
+  ggtitle("Day") +
+  scale_x_discrete(labels= c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +  # simplify x-axis labels
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))  # add breathing room
+
+#..............................TB...............................
+## same as above but for another factor, see "day" example for code comments
+cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  xlab("TB") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("TB") +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+#............................water treatment...............................
+## same as above but for another factor, see "day" example for code comments
+cld_water_treatment_2b <- ggplot(cld_water_treatment, aes(x = water_treatment, y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  xlab("Water Treatment") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Water Treatment") +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+#............................TB * day............................
+
+## make labels for the TB facet panels (n = absent, y = present)
+tb_labels <- c("n" = "TB absent", "y" = "TB present")
+
+## make a plot of estimated marginal means across day, faceted by TB presence
+cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("TB * Day") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+
+#.....................water treat * day.........................
+## same as above but for another interaction, see TB * day example for code comments
+cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
+  facet_wrap(~ water_treatment) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
+  ggtitle("Water Treatment * Day") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+#......................combine all panels.........................
+## use patchwork to arrange all cld plots into one figure
+pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) /
+                   (cld_tb_day_int_2b + cld_watertreat_day_int_2b) +
+                   plot_annotation(tag_levels = 'A')
+
+pairwise_cld_2b
+
+
+#ggsave("paper-figures/SI_2b_updated.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
+```
+
+```{r}
+global_y_limits <- c(7, 19)
+global_y_breaks <- seq(8, 18, by = 2)
+
+cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y = emmean)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
+  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
+  facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +
+  xlab("Day") +
+  ylab("Estimated Marginal Means") +
+  scale_y_continuous(
+    labels = scales::label_number(accuracy = 1), 
+    limits = global_y_limits, 
+    breaks = global_y_breaks
+  ) +
+  ggtitle("Water Treatment * Day * TB") +
+  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
+  myCustomTheme() +
+  theme(axis.title.y = element_text(margin = margin(r = 1)))
+
+cld_water_thirdorder_2b
+
+#ggsave("paper-figures/SI_2b_thirdorder_updated.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
+
+```
+
+# Appendix
 
 ## Anova table
 
@@ -915,189 +1010,6 @@ aov_sbncos_tbl_b <- anova_output %>%
 
 aov_sbncos_tbl_b
 ```
-
-
-## cld plots
-
-```{r}
-pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) / (cld_tb_day_int_2b + cld_watertreat_day_int_2b) +
-  plot_annotation(tag_levels = 'A')
-
-# Display the combined plot
-pairwise_cld_2b
-
-#ggsave("paper-figures/SI_2b.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
-
-cld_water_thirdorder_2b 
-
-#ggsave("paper-figures/SI_2b_thirdorder.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
-```
-
-## Renwei y axis specs
-
-```{r}
-global_y_limits <- c(8, 16.5)
-global_y_breaks <- seq(8, 16, by = 2)
-
-# Plot for 'day'
-cld_day_2b <- ggplot(cld_day, aes(x = day, y = emmean)) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
-  xlab("Day") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
-  ggtitle("Day") +
-  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  myCustomTheme() +
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
-
-# Plot for 'TB'
-cld_TB_2b <- ggplot(cld_TB, aes(x = TB, y = emmean)) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
-  xlab("TB") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
-  ggtitle("TB") +
-  myCustomTheme() +
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
-
-# Plot for 'water_treatment'
-cld_water_treatment_2b <- ggplot(cld_water_treatment, aes(x = water_treatment, y = emmean)) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
-  xlab("Water Treatment") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
-  ggtitle("Water Treatment") +
-  myCustomTheme() +
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
-
-# Plot for 'TB * day'
-tb_labels <- c("n" = "TB absent", "y" = "TB present")
-cld_tb_day_int_2b <- ggplot(cld_day_TB, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
-  facet_wrap(~ TB, labeller = as_labeller(tb_labels)) +
-  xlab("Day") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
-  ggtitle("TB * Day") +
-  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  myCustomTheme() +
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
-
-
-# Plot for 'water_treatment * day'
-cld_watertreat_day_int_2b <- ggplot(cld_water_treatment_day, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
-  geom_text(aes(label = .group), nudge_y = 1, size = 1.75, color = "black") +
-  facet_wrap(~ water_treatment) +
-  xlab("Day") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), limits = global_y_limits, breaks = global_y_breaks) +
-  ggtitle("Water Treatment * Day") +
-  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  myCustomTheme() +
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
-
-pairwise_cld_2b <- (cld_day_2b + cld_TB_2b + cld_water_treatment_2b) /
-                   (cld_tb_day_int_2b + cld_watertreat_day_int_2b) +
-                   plot_annotation(tag_levels = 'A')
-
-pairwise_cld_2b
-
-
-#ggsave("paper-figures/SI_2b_updated.pdf", plot = pairwise_cld_2b, width = 7.09, height = 3.46)
-
-```
-
-```{r}
-global_y_limits <- c(7, 19)
-global_y_breaks <- seq(8, 18, by = 2)
-
-cld_water_thirdorder_2b <- ggplot(cld_water_thirdorder, aes(x = factor(day), y = emmean)) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2) +
-  geom_text(aes(label = .group), nudge_y = 1.5, size = 1.75, color = "black") +
-  facet_wrap(TB ~ water_treatment, labeller = labeller(TB = tb_labels)) +
-  xlab("Day") +
-  ylab("Estimated Marginal Means") +
-  scale_y_continuous(
-    labels = scales::label_number(accuracy = 1), 
-    limits = global_y_limits, 
-    breaks = global_y_breaks
-  ) +
-  ggtitle("Water Treatment * Day * TB") +
-  scale_x_discrete(labels = c("Day_1" = "1", "Day_3" = "3", "Day_5" = "5", "Day_7" = "7")) +
-  myCustomTheme() +
-  theme(axis.title.y = element_text(margin = margin(r = 1)))
-
-cld_water_thirdorder_2b
-
-#ggsave("paper-figures/SI_2b_thirdorder_updated.pdf", plot = cld_water_thirdorder_2b , width = 7.09, height = 3.46)
-
-```
-
-## Figure S2 Raw EB poond water data barplot
-
-```{r}
-# Combine the two datasets (eb_pw and eb_pw_controls)
-eb_pw_controls <- eb_pw_controls %>%
-  mutate(filter = case_when(
-    filter == "40um_filter" ~ "sterile MQ 40um_filter",
-    filter == "0.22um_filter" ~ "sterile MQ 0.22um_filter",
-    TRUE ~ filter
-  ))
-
-combined_data <- bind_rows(
-  eb_pw %>%
-    # combine floating and adherent for total Bd
-    pivot_wider(names_from = bd_location, values_from = bd_qty) %>%
-    mutate(combined_bd = adherent + floating),
-  eb_pw_controls # controls data is already in the required format
-)
-
-fig_SI2A <- combined_data %>%
-  ggplot(aes(y = combined_bd, x = site, fill = filter)) + 
-    geom_col(position = position_dodge()) +
-scale_y_continuous(expand = c(0.01, 0.01),
-  trans = "log",  # Natural logarithmic scale
-                       breaks = c(1e+01, 1e+03, 1e+05),  # Set exact breaks
-                      # labels = scales::label_scientific(),
-   labels = function(x) {gsub("e", "E", scales::label_scientific()(x))}
-  ) +  # Use scientific notation 1e+01, 1e+03, 1e+05
-  #scale_y_log10() + #same thing, but created weird spacing in the facet so using abpve method
-    facet_wrap(~day, labeller = labeller(day = c("Day_1" = "Day 1", "Day_7" = "Day 7"))) +
-    scale_x_discrete(limits = c("BARN", "CABIN", "NORTH", "GRAMPS", "WEST", "GDPND004", "GDPND005", "GDPND006", "GDPND008", "GDPND009", "PRPND002", "PRPND003", "PRPND004", "PRPND009", "PRPND010", "sterile MQ")) +  # Order "MQ" last
-    scale_fill_manual(values = c(
-      "40um_filter" = with_microbes_40_color, 
-      "0.22um_filter" = no_microbes_.22_color,
-      "sterile MQ 40um_filter" = "darkgray",
-      "sterile MQ 0.22um_filter" = "lightgray"
-    )) +
-    myCustomTheme() + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-        legend.position = "bottom",
-        panel.border = element_rect(color = "gray", size = 0.5, fill = NA),
-        legend.text = element_text(size = 5),  # Set legend text font size to 5pt
-        legend.key.size = unit(0.4, "cm"),  # Reduce size of legend keys
-        legend.spacing.y = unit(0.1, "cm"),  # Reduce vertical spacing between legend items
-        legend.margin = margin(t = 0, r = 0, b = 0, l = 0)) + # Remove margins around legend) + # Keep the x-axis line, make ~2.35 pt
-    xlab("Pond") +
-    ylab("Bd Quantityin supernatant and\nadherent fraction (ZE/well)") +
-    guides(fill = guide_legend(title = ""))
-
-fig_SI2A
-
-#ggsave("paper-figures/SI_FigS2.pdf", plot = fig_SI2A, width = 7.09, height = 3.46)
-```
-
 
 ## 2b posthoc table
 
