@@ -22,7 +22,7 @@ library(tidyverse) # for cleaning and viewing data
 library(gt) # pretty stats tables
 library(broom) # cleaning for gt
 library(here) # for importing data
-library(car) # stats tests like Levene's
+library(car) # stats tests 
 library(multcomp) # stats
 library(multcompView) # view cld
 library(emmeans) # for pairwise comparisons, especially on mixed effects models and glms
@@ -41,8 +41,6 @@ no_microbes_.22_color <- "#88ccee"
 ```
 
 # Data wrangling for all datasets
-
-## Fig 5 Data wrangling
 
 ```{r}
 # data wrangling for comparisons across experiments
@@ -66,7 +64,7 @@ ncos_pw_WITH_microbes <- pw_noday0 %>%
   dplyr::select(sample_ID, treatment, rate_loss)
 
 ## Field bf
-fieldbf_no_microbes <- eb_ae_bf_only %>%
+fieldbf_no_microbes <- eb_ae_bf_only %>% # no need to filter, the only treatment is no microbe water
   filter(day != "Day_0") %>% 
    dplyr::select(day, site, bd_qty) %>% 
   pivot_wider(names_from = day, values_from = bd_qty) %>%
@@ -76,9 +74,9 @@ fieldbf_no_microbes <- eb_ae_bf_only %>%
   mutate(treatment = "EB_biofilm") %>% 
   dplyr::select(sample_ID, treatment, rate_loss)
 
-## NCOS version fig 3B ae bf with no microbes
+## NCOS version 3B ae bf with no microbes
 ncos_ae_no_microbes <- ae_noday0 %>% 
-  filter(sample_ID == "PW+AEBiofilm") %>% 
+  filter(sample_ID == "PW+AEBiofilm") %>% # this is a "pond water" treatment of filtered pond water
   filter(day != "Day_3" & day != "Day_5") %>%
   dplyr::select(day, sample_ID, replicate, adh) %>% 
  pivot_wider(names_from = day, values_from = adh) %>%
@@ -88,8 +86,7 @@ ncos_ae_no_microbes <- ae_noday0 %>%
   dplyr::select(sample_ID, treatment, rate_loss)
   
 all_parts <- bind_rows(pw_WITH_microbes, fieldbf_no_microbes, ncos_pw_WITH_microbes, ncos_ae_no_microbes) %>% 
-  mutate(
-    location = case_when(
+  mutate(location = case_when(
       grepl("^EB", treatment) ~ "EB",
       grepl("^NCOS", treatment) ~ "NCOS"),
     medium = case_when(
@@ -101,51 +98,62 @@ all_parts$treatment <- factor(all_parts$treatment,
                           levels = c("EB_PW_40um", "NCOS_PW_40um", "EB_biofilm", "NCOS_biofilm")) 
 ```
 
-# Updated stats May 2025: 2 t-tests, one for each site
+# Stats and assumption testing
 
-New plan: Renwei requests 2 t-tests, with one for each site
-
-**Results: There is no significant difference in the rate loss of Bd between AE microorganisms and AE biofilms within the SFEB sites (t = 0.31125, df = 22, p-value = 0.7585). There is also no significant difference in the rate loss of Bd between AE microorganisms and AE biofilms within the SBNCOS sites (t = -1.5014, df = 4, p-value = 0.2077) **
-
-## SFEB t-test
+## Exploratory viz:
 
 ```{r}
-sfeb <- all_parts %>% 
-  filter(grepl("eb_", treatment, ignore.case = TRUE))
-
-# test for homogeneity of variance
-leveneTest(rate_loss ~ factor(treatment), data = sfeb) # p =  0.9628; var are similar yay!
-
-# assumptions testing
-sfeb %>% 
- ggqqplot("rate_loss") # good
-shapiro.test(sfeb$rate_loss) # normal, yay! (p-value = 0.1792)
-
-t.test(rate_loss ~ treatment, data = sfeb, var.equal = TRUE)
+all_parts %>% 
+  ggplot(aes(y= rate_loss, x = treatment)) + 
+    geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.05) +
+    theme_classic() +
+   theme(legend.position = "bottom",
+         strip.text = element_text(face="bold"),
+         axis.title = element_text(face = "bold")) +
+    xlab("Treatment") +
+    ylab("Rate of Loss of Bd over 7 Days") + 
+  ggtitle("Exploratory visualization, not final plot")
 ```
 
-## NCOS t-test
+## Assumptions testing
 
 ```{r}
-ncos <- all_parts %>% 
-  filter(grepl("ncos_", treatment, ignore.case = TRUE))
-
-# test for homogeneity of variance
-leveneTest(rate_loss ~ factor(treatment), data = ncos) # p =  0.1394; var are similar yay!
-
-str(ncos)
-
-# assumptions testing
-sfeb %>% 
- ggqqplot("rate_loss") # good
-shapiro.test(ncos$rate_loss) # barely did not pass but the qqplot is gorgeous so we will proceed (p-value = 0.04348)...also such a teeny sample size the shapiro isn't the best fit here anyway
-
-t.test(rate_loss ~ treatment, data = ncos, var.equal = TRUE)
+par(mfrow = c(2,2))
+aov_5b <- aov(rate_loss~treatment, data=all_parts)
+plot(aov_5b) # diagnostic plot
 ```
 
+## interpret
 
+```{r}
+# with microbe depleted
+summary(aov_5b) # sig effect of treatment
+```
 
+## posthoc
 
+```{r}
+TukeyHSD(aov_5b)
+
+# get compact letter display from the tukey using glht (general linear hypotheses test)
+post_hoc_rateloss <- glht(aov_5b, 
+                 linfct = mcp(treatment = "Tukey")) # run Tukey
+summary(post_hoc_rateloss) # show the comparisons
+cld(post_hoc_rateloss) # get compact letter display
+
+# export cld results as a dataframe
+cld_results_rateloss <- cld(post_hoc_rateloss)  # get compact letter display (CLD) groupings for treatment comparisons
+labels_rl <- cld_results_rateloss$mcletters$Letters  # extract grouping letters from cld object
+treatments_rl <- names(labels_rl)  # get the treatment names corresponding to the letters
+labels_rl <- as.character(labels_rl)  # set as character
+
+# df with significance data for the rate loss, will use in plotting
+sig_data_rl <- tibble(
+  treatment = treatments_rl, # treatment names from the CLD results
+  y_position = c(7,4,6.5,4), # y position (adjusted manually)
+  label = labels_rl) # CLD group letters for each treatment
+```
 
 # \*PUBLICATION FIGURES
 
@@ -224,123 +232,7 @@ myCustomTheme <- function() {
 # ncos_fig
 ```
 
-### combined figure
-
-```{r}
-combined <- all_parts %>% 
-  mutate(
-    medium = factor(medium),  # convert to factor first
-    medium = fct_relevel(medium, "PW", "Biofilm"), # pond water first
-     # rename the location so it shows up correct in the facet  
-    location = case_when(
-        location == "EB" ~ "SFEB",
-        location == "NCOS" ~ "SBNCOS",
-        TRUE ~ location)) %>%
-  ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
-    geom_boxplot() +
-  geom_jitter(alpha = 0.3, width = 0.05) +
-    myCustomTheme() +
-     scale_fill_manual(values = c("PW" = "white",
-                                  "Biofilm" = "darkgrey")) +
- theme(legend.position = "none",
-        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
-        axis.line.y = element_line(color = "grey", size = 0.5),
-       panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) +
-    xlab(NULL) +
-    ylab("Reduction of Bd over 6 days") + 
-   scale_x_discrete (labels= c("PW" = "microorganisms",
-                              "Biofilm" = "biofilms")) +
-    facet_wrap(~location) +
-  scale_y_continuous(limits = c(0, 7))
-
-combined 
-
-ggsave("paper-figures/combined-expts_fig5_updated_NO SIG MARKERS.pdf", plot = combined , width = 3.46, height = 3.46)
-
-ns_data <- data.frame(
-  location = c("SFEB", "SBNCOS"),
-  x_start = 1,         # corresponds to "PW"
-  x_end = 2,           # corresponds to "Biofilm"
-  y = c(6.8,4.2),     # where on Y we want the bar
-  label = "ns"
-)
-
-fig5_withNS <- combined +
-  geom_segment(data = ns_data,
-               aes(x = x_start, xend = x_end, y = y, yend = y),
-               inherit.aes = FALSE,
-               linewidth = 0.5) +
-  geom_text(data = ns_data,
-            aes(x = 1.5, y = y + 0.2, label = label),
-            inherit.aes = FALSE,
-            size = 3,
-            fontface = "plain")
-
-fig5_withNS
-
-ggsave("paper-figures/combined-expts_fig5_updated_SIG MARKERS.pdf", plot = fig5_withNS, width = 3.46, height = 3.46)
-
-```
-
-
-## SI Analysis and Fig across treatments
-
-Stats and assumption testing
-
-Exploratory viz:
-
-```{r}
-all_parts %>% 
-  ggplot(aes(y= rate_loss, x = treatment)) + 
-    geom_boxplot() +
-  geom_jitter(alpha = 0.5, width = 0.05) +
-    theme_classic() +
-   theme(legend.position = "bottom",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
-    xlab("Treatment") +
-    ylab("Rate of Loss of Bd over 7 Days") + 
-  ggtitle("Exploratory visualization, not final plot")
-```
-
-Assumptions testing
-
-```{r}
-par(mfrow = c(2,2))
-aov_5b <- aov(rate_loss~treatment, data=all_parts)
-plot(aov_5b)
-```
-
-interpret
-
-```{r}
-# with microbe depleted
-summary(aov_5b) # sig effect of treatment
-TukeyHSD(aov_5b)
-
-post_hoc_rateloss <- glht(aov_5b, # with your ANOVA model
-                 linfct = mcp(treatment = "Tukey"))
-summary(post_hoc_rateloss)
-cld(post_hoc_rateloss) 
-
-# export cld results as a dataframe
-cld_results_rateloss <- cld(post_hoc_rateloss)
-labels_rl <- cld_results_rateloss$mcletters$Letters
-treatments_rl <- names(labels_rl)
-labels_rl <- as.character(labels_rl)
-
-sig_data_rl <- tibble(
-  treatment = treatments_rl,
-  y_position = c(7,4,6.5,4),
-  label = labels_rl)
-
-## emmeans for posthoc
-f5b_em_treat <- emmeans(aov_5b, ~ treatment)
-f5b_tukey_treat <- pairs(f5b_em_treat, adjust = "tukey")
-f5b_tukey_treat
-```
-
-## SI fig
+## Fig 6
 
 ```{r}
 all_parts$treatment <- factor(all_parts$treatment) 
@@ -385,8 +277,11 @@ si_alltreat  <- si_alltreat  +
 
 si_alltreat 
 
-ggsave("paper-figures/SI_combined-expts.pdf", plot = si_alltreat , width = 3.46, height = 3.46)
+#ggsave("paper-figures/SI_combined-expts.pdf", plot = si_alltreat , width = 3.46, height = 3.46)
 ```
+
+
+# Appendix
 
 ### Stats tables
 
@@ -469,100 +364,100 @@ aov_5b_tbl_b <- anova_output %>%
 aov_5b_tbl_b
 ```
 
-pairwise
+## Alternate data method: Updated stats May 2025: 2 t-tests, one for each site
+
+New plan: Renwei requests 2 t-tests, with one for each site
+
+**Results: There is no significant difference in the rate loss of Bd between AE microorganisms and AE biofilms within the SFEB sites (t = 0.31125, df = 22, p-value = 0.7585). There is also no significant difference in the rate loss of Bd between AE microorganisms and AE biofilms within the SBNCOS sites (t = -1.5014, df = 4, p-value = 0.2077) **
+
+## SFEB t-test
 
 ```{r}
-f5b_tukey_df <-as.data.frame(f5b_tukey_treat)
-f5b_tukey_df <- f5b_tukey_df %>% 
-  mutate(factor = "Treatment")
+sfeb <- all_parts %>% 
+  filter(grepl("eb_", treatment, ignore.case = TRUE))
 
-unique(f5b_tukey_df$contrast)
-
-f5b_tukey_df <- f5b_tukey_df %>% 
-  mutate(contrast = gsub("NCOS_PW_40um", "SB PW Microbes", contrast),
-         contrast = gsub("NCOS_biofilm", "SB Biofilm", contrast),
-         contrast = gsub("EB_PW_40um", "EB PW Microbes", contrast),
-         contrast = gsub("EB_biofilm", "EB Biofilm", contrast))
-
-ph5b_table <- f5b_tukey_df %>%
-  dplyr::select(contrast, estimate, SE, df, t.ratio, p.value) %>%
-  gt() %>%
-  # change column names
-  cols_label(
-    contrast = "Comparison",
-    estimate = "Estimate",
-    SE = "Standard Error",
-    df = "Degrees of Freedom",
-    t.ratio = "t-Ratio",
-    p.value = "p-value"
-  ) %>%
-  # update header for table
-  tab_header(
-    title = "5b Emmeans Post-hoc Test Results"
-  ) %>%
-  # 3 decimal places
-  fmt_number(
-    columns = c(estimate, SE, t.ratio),
-    decimals = 3
-  ) %>%
-  # scientific number format for values <0.001 in p values
-  fmt_scientific(
-    columns = c(p.value),
-    decimals = 1,
-    rows = p.value < 0.001
-  ) %>%
-  # 3 decimals for p values >=0.001
-  fmt_number(
-    columns = c(p.value),
-    decimals = 3,
-    rows = p.value >= 0.001
-  ) %>%
-  #make the headers bold
-  tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_column_labels(everything()))
-ph5b_table
-```
-# Appendix
-
-## Other analysis option Biofilm vs pond water with sites combined
-
-t-test
-
-```{r}
-# make a column for medium
-all_parts <- all_parts %>% 
-  mutate(medium = case_when(
-    grepl("PW", treatment) ~ "PW",
-    grepl("biofilm", treatment) ~ "Biofilm"
-  ))
+# test for homogeneity of variance
+leveneTest(rate_loss ~ factor(treatment), data = sfeb) # p =  0.9628; var are similar yay!
 
 # assumptions testing
-leveneTest(rate_loss ~ factor(medium), data = all_parts)
-
-# assumptions testing
-all_parts %>% 
+sfeb %>% 
  ggqqplot("rate_loss") # good
-shapiro.test(all_parts$rate_loss) # normal, yay!
-hist(all_parts$rate_loss)
+shapiro.test(sfeb$rate_loss) # normal, yay! (p-value = 0.1792)
 
-t.test(rate_loss ~ medium, data = all_parts, var.equal = TRUE)
+t.test(rate_loss ~ treatment, data = sfeb, var.equal = TRUE)
+```
 
-all_parts %>% 
-  mutate(medium = fct_relevel(medium, "PW", "Biofilm")) %>% 
+## NCOS t-test
+
+```{r}
+ncos <- all_parts %>% 
+  filter(grepl("ncos_", treatment, ignore.case = TRUE))
+
+# test for homogeneity of variance
+leveneTest(rate_loss ~ factor(treatment), data = ncos) # p =  0.1394; var are similar yay!
+
+str(ncos)
+
+# assumptions testing
+sfeb %>% 
+ ggqqplot("rate_loss") # good
+shapiro.test(ncos$rate_loss) # barely did not pass but the qqplot is gorgeous so we will proceed (p-value = 0.04348)...also such a teeny sample size the shapiro isn't the best fit here anyway
+
+t.test(rate_loss ~ treatment, data = ncos, var.equal = TRUE)
+```
+
+```{r}
+combined <- all_parts %>% 
+  mutate(
+    medium = factor(medium),  # convert to factor first
+    medium = fct_relevel(medium, "PW", "Biofilm"), # pond water first
+     # rename the location so it shows up correct in the facet  
+    location = case_when(
+        location == "EB" ~ "SFEB",
+        location == "NCOS" ~ "SBNCOS",
+        TRUE ~ location)) %>%
   ggplot(aes(y= rate_loss, x = medium, fill = medium)) + 
     geom_boxplot() +
   geom_jitter(alpha = 0.3, width = 0.05) +
-    theme_classic() +
+    myCustomTheme() +
      scale_fill_manual(values = c("PW" = "white",
                                   "Biofilm" = "darkgrey")) +
-   theme(legend.position = "none",
-         strip.text = element_text(face="bold"),
-         axis.title = element_text(face = "bold")) +
-    xlab("Treatment") +
-    ylab("Rate of Loss of Bd over 6 Days") + 
-   scale_x_discrete (labels= c("PW" = "Pond water + MO",
-                              "Biofilm" = "AE Biofilm"))
+ theme(legend.position = "none",
+        axis.line.x = element_line(color = "grey", size = 0.5),  # Keep the x-axis line
+        axis.line.y = element_line(color = "grey", size = 0.5),
+       panel.border = element_rect(color = "gray", size = 0.5, fill = NA)) +
+    xlab(NULL) +
+    ylab("Reduction of Bd over 6 days") + 
+   scale_x_discrete (labels= c("PW" = "microorganisms",
+                              "Biofilm" = "biofilms")) +
+    facet_wrap(~location) +
+  scale_y_continuous(limits = c(0, 7))
+
+combined 
+
+#ggsave("paper-figures/combined-expts_fig5_updated_NO SIG MARKERS.pdf", plot = combined , width = 3.46, height = 3.46)
+
+ns_data <- data.frame(
+  location = c("SFEB", "SBNCOS"),
+  x_start = 1,         # corresponds to "PW"
+  x_end = 2,           # corresponds to "Biofilm"
+  y = c(6.8,4.2),     # where on Y we want the bar
+  label = "ns"
+)
+
+fig5_withNS <- combined +
+  geom_segment(data = ns_data,
+               aes(x = x_start, xend = x_end, y = y, yend = y),
+               inherit.aes = FALSE,
+               linewidth = 0.5) +
+  geom_text(data = ns_data,
+            aes(x = 1.5, y = y + 0.2, label = label),
+            inherit.aes = FALSE,
+            size = 3,
+            fontface = "plain")
+
+fig5_withNS
+
+#ggsave("paper-figures/combined-expts_fig5_updated_SIG MARKERS.pdf", plot = fig5_withNS, width = 3.46, height = 3.46)
+
 ```
